@@ -156,6 +156,16 @@ them and add photos (drop images into `site/assets/` and reference them from the
 three places that must agree: the bundle buttons in `index.html`, `BUNDLES` in
 `supabase/functions/api/index.ts` and `BUNDLES` in `supabase/functions/stripe-webhook/index.ts`.
 
+## What Supabase's security advisor says
+
+The advisor reports two things on purpose:
+
+- **RLS enabled, no policies** on every table. Correct: nobody reads tables directly. The browser only calls
+  three read functions and the Edge Functions use the service role.
+- **`leaderboard`, `past_winners` and `stats` are SECURITY DEFINER and callable by `anon`.** Also correct:
+  they are the public read-outs (letters, scores, totals). They never return claim codes, emails or
+  player ids.
+
 ## How the game is kept honest
 
 - A play can only start when the server holds a paid credit, and the server hands out a one-time play.
