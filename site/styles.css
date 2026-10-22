@@ -226,6 +226,7 @@ p { margin: 0 0 10px; }
 .board .pts { font-size: 22px; font-weight: 900; color: var(--ink); }
 .sfx { font-size: .6em; color: var(--muted); letter-spacing: 0; margin-left: 2px; vertical-align: 2px; }
 .empty { color: var(--muted); text-align: center; padding: 18px 0; }
+.board + .h2, .board + .empty + .h2, .empty + .h2 { margin-top: 28px; }
 .winners { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
 .winners li { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: #fff; border: 2px solid var(--line); border-radius: 12px; padding: 10px 14px; font-size: 14px; color: var(--muted); }
 .winners .name { font-size: 18px; font-weight: 900; letter-spacing: .06em; color: var(--ink); }
