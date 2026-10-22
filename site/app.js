@@ -202,7 +202,7 @@
   function render(name) {
     if (!SCREENS.includes(name)) name = 'home';
     if (name === 'play' && !player) { go('home'); return; }
-    if (name === 'signin' && player) { go('you'); return; }
+
     if (name !== current) prevScreen = current;
     current = name;
     closeSheets();
@@ -243,9 +243,7 @@
   function renderPlayerBits() {
     const chip = $('#home-player');
     chip.hidden = !player;
-    if (player) { chip.innerHTML = nameHtml(player.display) + ` · ${cap(player.role)}`; $('#cab-player').innerHTML = nameHtml(player.display) + ` · ${cap(player.role)}`; }
-    const r = $(`#home-role input[value="${role}"]`);
-    if (r) r.checked = true;
+    if (player) { chip.innerHTML = nameHtml(player.display || player.initials); $('#cab-player').innerHTML = nameHtml(player.display || player.initials) + ` · ${cap(player.role)}`; }
     renderHome();
   }
   function renderHome() {
@@ -253,16 +251,8 @@
     const canPlay = !!player && (credits > 0 || !!openPlay);
     btn.textContent = canPlay ? (openPlay ? 'Play · a play is waiting' : `Play · ${credits} ${credits === 1 ? 'play' : 'plays'} left`) : 'Play · €2';
     btn.classList.toggle('ready', canPlay);
-    $('.bundles').hidden = false;
   }
-  $$('#home-role input').forEach((i) => i.addEventListener('change', async () => {
-    role = i.value;
-    store.set(ROLE_KEY, role);
-    if (player && player.role !== role) {
-      try { adoptPlayer(await api('update', { player_id: player.id, role })); toast(`You're now on the ${cap(role)}s board.`); }
-      catch (ex) { toast(msg(ex), true); }
-    }
-  }));
+
   $('#home-play').addEventListener('click', playOrBuy);
   function playOrBuy() {
     if (player && (credits > 0 || openPlay)) go('play');
@@ -676,13 +666,15 @@
   function showError(id, text) { const el = $('#' + id); el.textContent = text || ''; el.hidden = !text; }
 
   async function openYou() {
-    if (!player) { go('home'); ensurePlayer('single'); return; }
+    $('#you-empty').hidden = !!player;
+    $('#you-panel').hidden = !player;
+    if (!player) return;
     renderYou();
-    refreshMe().then(renderYou);
+    refreshMe().then(() => { $('#you-empty').hidden = !!player; $('#you-panel').hidden = !player; renderYou(); });
   }
   function renderYou() {
     if (!player) return;
-    $('#you-name').innerHTML = nameHtml(player.display);
+    $('#you-name').innerHTML = nameHtml(player.display || player.initials);
     $('#you-role').textContent = cap(player.role) + 's board';
     $('#you-code').textContent = player.claim_code;
     $('#you-credits').textContent = credits;
@@ -739,7 +731,7 @@
     try {
       adoptPlayer(await api('signin', { initials, code }));
       toast(`Welcome back, ${player.display}!`);
-      go('home');
+      go('you');
     } catch (ex) {
       showError('signin-error', msg(ex));
     } finally { btn.disabled = false; }

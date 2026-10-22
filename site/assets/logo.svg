@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="PresLink Arcade">
-  <rect width="64" height="64" rx="18" fill="#2bb24c"/>
-  <rect x="0" y="54" width="64" height="10" rx="5" fill="#22903d"/>
-  <rect x="10" y="26" width="44" height="12" rx="6" fill="#ffffff" opacity=".35"/>
-  <rect x="25" y="21" width="14" height="22" rx="5" fill="none" stroke="#ffffff" stroke-width="3.5"/>
-  <rect x="39" y="15" width="7" height="34" rx="3.5" fill="#f7c948"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="PresLink">
+  <!-- Two linked rings: Cork and West Africa. Replace this file with the real PresLink logo when you have it. -->
+  <rect width="64" height="64" rx="18" fill="#ffffff"/>
+  <circle cx="25" cy="32" r="13" fill="none" stroke="#1f2a44" stroke-width="6"/>
+  <circle cx="39" cy="32" r="13" fill="none" stroke="#22a06b" stroke-width="6"/>
+  <path d="M32 21.5a13 13 0 0 1 0 21" fill="none" stroke="#1f2a44" stroke-width="6"/>
 </svg>
