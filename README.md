@@ -29,6 +29,29 @@ a floating tab bar (Play, Board, About, You) and very little text.
 - **Stripe Checkout** takes the money. The app never sees card numbers. Apple Pay, Google Pay and
   cards (including Revolut) all work.
 
+## Put it online in three steps (about 5 minutes)
+
+You need a free Netlify account. Nothing else. No Stripe is needed for the demo: without a
+Stripe key the site gives free plays and says so on screen.
+
+1. Go to <https://app.netlify.com>, click **Sign up**, choose **GitHub**.
+2. Click **Add new site**, then **Import an existing project**, then **GitHub**. Pick the
+   **Preslink** repository. Choose the branch **claude/trusting-goodall-qzegrn**. In
+   **Publish directory** type `site`. Leave **Build command** empty. Click **Deploy**.
+3. Wait about a minute. Netlify shows a link like `https://something.netlify.app`. Open it on
+   your phone. That is the site. To print the QR poster, open the same link with `/qr.html` on the end.
+
+Optional: in Netlify, **Site configuration → Site details → Change site name** lets you pick a
+nicer address, for example `preslink-arcade`.
+
+The committee screen is at your link with `/#admin` on the end. Use the committee code you were given.
+
+To take real money later: an adult opens a Stripe account for the charity, then in Supabase
+(**Edge Functions → Secrets**) adds `STRIPE_SECRET_KEY` and, for the webhook, `STRIPE_WEBHOOK_SECRET`.
+The free plays switch off by themselves the moment a Stripe key exists. Details are in section 2 below.
+
+---
+
 ## Repository layout
 
 | Path | What it is |
@@ -51,7 +74,7 @@ a floating tab bar (Play, Board, About, You) and very little text.
 
 Do these in order. Steps 1 and 2 are a one-off technical setup; 3 to 6 are the launch.
 
-### 1. Supabase (database + functions): done
+### 1. Supabase (database + functions): already done
 
 The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all three migrations applied,
 both functions deployed, and `site/config.js` points at it. The committee code was set at deployment

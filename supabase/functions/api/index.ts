@@ -154,6 +154,12 @@ async function checkout(req: Request, body: Body) {
   const player = await rpc<{ initials: string }>("me_player", { p_id: playerId });
   const origin = siteOrigin(req);
 
+  // Demo mode: with no Stripe key configured, plays are free and clearly labelled as such.
+  if (!STRIPE_KEY) {
+    const id = `cs_demo_${bundle}_${playerId}_${crypto.randomUUID().replace(/-/g, "")}`;
+    return { url: `${origin}/?session_id=${id}`, session_id: id, demo: true };
+  }
+
   const session = await stripe("POST", "/v1/checkout/sessions", {
     mode: "payment",
     "line_items[0][quantity]": "1",
@@ -179,6 +185,13 @@ async function checkout(req: Request, body: Body) {
 // Called by the browser when Stripe sends it back. Idempotent with the webhook.
 async function confirm(body: Body) {
   const sessionId = String(body.session_id ?? "");
+  const demo = sessionId.match(/^cs_demo_(single|triple|seven)_([0-9a-f-]{36})_[0-9a-f]{32}$/);
+  if (demo && !STRIPE_KEY) {
+    const b = BUNDLES[demo[1]];
+    const grant = await rpc<{ credits: number }>("grant_demo_credits", { p_player_id: demo[2], p_credits: b.credits });
+    const player = await rpc("me_player", { p_id: demo[2] });
+    return { paid: true, granted: true, demo: true, credits_added: b.credits, bundle: demo[1], credits: grant.credits, player };
+  }
   if (!/^cs_(test|live)_[A-Za-z0-9]+$/.test(sessionId)) throw new HttpError(400, "BAD_SESSION");
 
   const s = await stripe("GET", `/v1/checkout/sessions/${sessionId}`);

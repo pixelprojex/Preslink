@@ -337,9 +337,12 @@
     if (result.player) adoptPlayer(result.player);
     const n = result.credits_added || 1;
     const b = BUNDLES[result.bundle];
-    $('#cab-text').textContent = b
-      ? `Your €${b.amount} is on its way to Presentation Brothers schools in Ghana and Nigeria.`
-      : 'Your donation is on its way to Presentation Brothers schools in Ghana and Nigeria.';
+    $('#cab-title').textContent = result.demo ? 'Demo play' : 'Thank you!';
+    $('#cab-text').textContent = result.demo
+      ? 'No payment was taken: payments are not switched on yet. Enjoy the free play!'
+      : b
+        ? `Your €${b.amount} is on its way to Presentation Brothers schools in Ghana and Nigeria.`
+        : 'Your donation is on its way to Presentation Brothers schools in Ghana and Nigeria.';
     cabinetBusy = true;
     go('cabinet');
     refreshStats();
