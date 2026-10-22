@@ -1,6 +1,13 @@
--- PresLink Arcade: queries for the committee.
--- Run these in the Supabase dashboard: SQL Editor -> New query -> paste -> Run.
--- Nothing here is visible to players; only people logged in to the Supabase project can run it.
+-- PresLink Arcade: extra SQL for the committee.
+-- Day-to-day admin (winners with claim codes, voiding, banning, blocking names, goal and prize)
+-- is in the app's Committee screen (/#admin). These queries are for anything beyond that.
+-- Run them in the Supabase dashboard: SQL Editor -> New query -> paste -> Run.
+
+-- 0. Set or change the committee code (the first call needs no old code).
+select public.admin_set_code(null, 'YourCommitteeCode');            -- first time
+select public.admin_set_code('OldCode', 'NewCommitteeCode');        -- later
+-- If the committee is locked out after too many wrong tries, clear the lock:
+delete from public.auth_attempts where scope = 'admin';
 
 -- 1. This week's leaderboard WITH claim codes (students). Change 'student' to 'teacher' for the other board.
 select l.rank, l.initials, p.claim_code, l.score, l.plays, l.achieved_at at time zone 'Europe/Dublin' as achieved_dublin

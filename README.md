@@ -5,6 +5,9 @@ Scan a QR code, pick three letters, insert a coin (€2 a play, €5 for 3, €1
 **stop the light in the green**. One tap, score out of 1,000. Highest score of the week
 wins, with separate boards for students and teachers. Every payment goes to PresLink.
 
+The look is deliberately simple and bright (think Duolingo): white background, colour tiles,
+chunky buttons, a bottom tab bar (Play, Board, About, You), very little text.
+
 ```
   Phone (QR)  ──▶  Netlify (static site: site/)
                        │
@@ -26,16 +29,17 @@ wins, with separate boards for students and teachers. Every payment goes to Pres
 
 | Path | What it is |
 |---|---|
-| `site/index.html` | The whole app: landing page, terms, sign-up, arcade, game, leaderboard |
+| `site/index.html` | The whole app: home, about, sign-up, sign back in, arcade, game, leaderboard, profile, committee panel, terms |
 | `site/styles.css` | Design |
 | `site/app.js` | Front-end logic and the game |
 | `site/config.js` | **The only file you must edit**: Supabase URL and publishable key |
 | `site/mock.js` | Demo backend. Active only while `config.js` is empty, so the site works before Supabase is wired |
 | `site/qr.html` | Printable QR poster that always encodes the live address |
 | `supabase/migrations/0001_init.sql` | Database tables and functions |
+| `supabase/migrations/0002_names_signin_admin.sql` | Unique names, name blocklist, sign back in, bans, goal and prize settings, committee functions |
 | `supabase/functions/api/index.ts` | Register, checkout, confirm payment, start play, submit score |
 | `supabase/functions/stripe-webhook/index.ts` | Receives Stripe's payment confirmation |
-| `docs/admin.sql` | Queries for the committee: find winners, void a play, totals |
+| `docs/admin.sql` | Extra SQL for the committee (most day-to-day admin is in the app's Committee screen) |
 | `netlify.toml` | Netlify settings and security headers |
 
 ## Launch checklist
@@ -47,7 +51,11 @@ Do these in order. Steps 1 and 2 are a one-off technical setup; 3 to 6 are the l
 1. Create a project at <https://supabase.com/dashboard> (region **West EU (Ireland)**). The free plan is enough.
    Give it a strong database password and keep it somewhere safe; you will not need it day to day.
 2. Apply the schema: Dashboard → **SQL Editor** → New query → paste the whole of
-   `supabase/migrations/0001_init.sql` → **Run**.
+   `supabase/migrations/0001_init.sql` → **Run**. Then do the same with `0002_names_signin_admin.sql`.
+   Finally set the committee code (6+ characters, pick something only the committee knows):
+   ```sql
+   select public.admin_set_code(null, 'YourCommitteeCode');
+   ```
 3. Deploy the two functions. Either ask Claude to deploy them through the Supabase connector, or with the
    Supabase CLI from this folder:
    ```bash
@@ -116,9 +124,31 @@ and registered details. A student cannot be the account holder.
 
 ### 6. Every Monday
 
-1. Supabase → **SQL Editor** → run query 2 in `docs/admin.sql`: last week's winners with their claim codes.
-2. Announce the initials. The winner shows the "My claim code" screen on their phone; it must match.
-3. If a score looks wrong, query 7 shows every play by that player and query 8 voids one.
+1. On the site, open the **You** tab → **Committee sign-in** (or go straight to `/#admin`) and enter the committee code.
+2. **Past winners** lists last week's winners for students and teachers with their claim codes.
+3. Announce the initials. The winner opens their **You** tab and shows their letters and claim code; they must match.
+4. Set **This week's prize** in the same panel. It appears at the top of the leaderboard.
+
+## The Committee screen
+
+Reachable from the **You** tab or at `/#admin`. It needs the committee code, which is stored only as a
+hash in the database and locks for 15 minutes after 8 wrong tries. From there the committee can:
+
+- see money raised, coins inserted, plays and players, and set the fundraising **goal** and the weekly **prize**;
+- see this week's boards **with claim codes**, and **void** a score or **ban** a player;
+- see past winners with claim codes and the most recent payments (with the receipt email);
+- **block** extra three-letter names on top of the built-in list of offensive ones;
+- change the committee code.
+
+## Names, codes and signing back in
+
+- Three letters, A to Z, and each name can only be taken once.
+- Offensive names are refused. The built-in list is in `0002_names_signin_admin.sql` (table `blocked_initials`)
+  and the committee can add more from the Committee screen.
+- Every player gets a four-digit **claim code**, shown in the welcome message and on the **You** tab.
+  It proves a winning score is theirs and lets them **sign back in** on another phone or after clearing
+  their browser (Join screen → "Already have a name? Sign back in"). Five wrong codes lock that name for
+  15 minutes. A lost code can be looked up by the committee.
 
 ## Editing the content
 
@@ -148,7 +178,8 @@ python3 -m http.server 8787 --directory site
 # open http://localhost:8787
 ```
 With `config.js` empty the site runs in demo mode: payments and scores are simulated in the browser and a
-few example players are on the leaderboard. Fill in `config.js` to talk to the real backend.
+few example players are on the leaderboard. The demo committee code is `PRESLINK`. Fill in `config.js` to
+talk to the real backend.
 
 ## Legal note
 

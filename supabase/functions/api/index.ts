@@ -2,7 +2,9 @@
 //
 // Dependency-free on purpose: Postgres is reached through PostgREST RPC with the
 // service-role key, Stripe through its REST API. Every action is a POST with a
-// JSON body: { action: "register" | "me" | "checkout" | "confirm" | "start" | "submit", ... }.
+// JSON body: { action: "register" | "signin" | "me" | "checkout" | "confirm" | "start" | "submit" | "admin", ... }.
+// Admin calls carry the committee code; the database verifies it (SHA-256 hash in settings) and
+// locks the admin scope after repeated failures.
 //
 // Secrets (Supabase dashboard -> Edge Functions -> Secrets):
 //   STRIPE_SECRET_KEY   sk_test_... / sk_live_...
@@ -72,6 +74,11 @@ export async function rpc<T = unknown>(name: string, args: Record<string, unknow
     const code = /^[A-Z_]{3,40}$/.test(msg) ? msg : "DB_ERROR";
     console.error("rpc error", name, res.status, text);
     throw new HttpError(code === "DB_ERROR" ? 500 : 400, code);
+  }
+  // Some functions return { error: CODE } instead of raising, so that a failed sign-in or admin
+  // attempt stays recorded for the lockout. Surface those the same way.
+  if (data && typeof data === "object" && !Array.isArray(data) && typeof (data as { error?: unknown }).error === "string") {
+    throw new HttpError(400, String((data as { error: string }).error));
   }
   return data as T;
 }
@@ -213,6 +220,58 @@ async function submit(req: Request, body: Body) {
   });
 }
 
+async function signin(body: Body) {
+  const initials = String(body.initials ?? "").toUpperCase().trim();
+  const code = String(body.code ?? "").replace(/\D/g, "");
+  if (!/^[A-Z]{3}$/.test(initials)) throw new HttpError(400, "BAD_INITIALS");
+  if (!/^\d{4}$/.test(code)) throw new HttpError(400, "BAD_SIGNIN");
+  return await rpc("signin_player", { p_initials: initials, p_code: code });
+}
+
+const ADMIN_OPS = new Set(["overview", "void", "ban", "block", "set_code", "settings"]);
+
+async function admin(body: Body) {
+  const code = String(body.code ?? "");
+  const op = String(body.op ?? "");
+  if (!code || code.length > 200) throw new HttpError(400, "BAD_ADMIN");
+  if (!ADMIN_OPS.has(op)) throw new HttpError(400, "BAD_ADMIN_OP");
+
+  switch (op) {
+    case "overview":
+      return await rpc("admin_overview", { p_code: code });
+    case "void": {
+      const playId = requireUuid(body.play_id, "BAD_PLAY");
+      await rpc("admin_void_play", { p_code: code, p_play_id: playId, p_voided: body.voided !== false, p_reason: String(body.reason ?? "committee").slice(0, 200) });
+      return { ok: true };
+    }
+    case "ban": {
+      const playerId = requireUuid(body.player_id, "BAD_PLAYER");
+      await rpc("admin_ban_player", { p_code: code, p_player_id: playerId, p_banned: body.banned !== false });
+      return { ok: true };
+    }
+    case "block": {
+      const initials = String(body.initials ?? "").toUpperCase().trim();
+      if (!/^[A-Z]{3}$/.test(initials)) throw new HttpError(400, "BAD_INITIALS");
+      await rpc("admin_block_initials", { p_code: code, p_initials: initials, p_block: body.block !== false });
+      return { ok: true };
+    }
+    case "set_code": {
+      const newCode = String(body.new_code ?? "");
+      if (newCode.length < 6 || newCode.length > 200) throw new HttpError(400, "CODE_TOO_SHORT");
+      await rpc("admin_set_code", { p_code: code, p_new_code: newCode });
+      return { ok: true };
+    }
+    case "settings": {
+      const goal = body.goal_cents == null ? null : Number(body.goal_cents);
+      if (goal !== null && (!Number.isInteger(goal) || goal < 0 || goal > 100000000)) throw new HttpError(400, "BAD_GOAL");
+      const prize = body.prize_text == null ? null : String(body.prize_text).slice(0, 200);
+      await rpc("admin_set_settings", { p_code: code, p_goal_cents: goal, p_prize_text: prize });
+      return { ok: true };
+    }
+  }
+  throw new HttpError(400, "BAD_ADMIN_OP");
+}
+
 export async function handler(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ error: "METHOD_NOT_ALLOWED" }, 405);
@@ -227,6 +286,8 @@ export async function handler(req: Request): Promise<Response> {
   try {
     switch (body.action) {
       case "register": return json(await register(body));
+      case "signin": return json(await signin(body));
+      case "admin": return json(await admin(body));
       case "me": return json(await me(body));
       case "checkout": return json(await checkout(req, body));
       case "confirm": return json(await confirm(body));
