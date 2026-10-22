@@ -1,7 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="PresLink">
-  <!-- Two linked rings: Cork and West Africa. Replace this file with the real PresLink logo when you have it. -->
-  <rect width="64" height="64" rx="18" fill="#ffffff"/>
-  <circle cx="25" cy="32" r="13" fill="none" stroke="#1f2a44" stroke-width="6"/>
-  <circle cx="39" cy="32" r="13" fill="none" stroke="#22a06b" stroke-width="6"/>
-  <path d="M32 21.5a13 13 0 0 1 0 21" fill="none" stroke="#1f2a44" stroke-width="6"/>
+  <!-- Simplified PresLink mark: a gold cross on navy. Replace with the official logo if the committee prefers. -->
+  <rect width="64" height="64" rx="16" fill="#1e2a4a"/>
+  <rect x="27" y="12" width="10" height="40" rx="5" fill="#f5b82e"/>
+  <rect x="15" y="24" width="34" height="10" rx="5" fill="#f5b82e"/>
 </svg>

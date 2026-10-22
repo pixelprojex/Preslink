@@ -9,10 +9,21 @@
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<div class="splash" id="splash" aria-hidden="true">
+  <div class="splash-mark">
+    <svg viewBox="0 0 64 64" class="splash-cross" aria-hidden="true">
+      <rect x="27" y="12" width="10" height="40" rx="5" fill="#f5b82e" class="splash-v"/>
+      <rect x="15" y="24" width="34" height="10" rx="5" fill="#f5b82e" class="splash-h"/>
+    </svg>
+    <span class="splash-light"></span>
+  </div>
+  <div class="splash-word">PresLink</div>
+  <div class="splash-sub">Arcade</div>
+</div>
 <canvas id="confetti" aria-hidden="true"></canvas>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -38,13 +49,13 @@
         <svg class="hero-art" viewBox="0 0 320 90" aria-hidden="true">
           <defs>
             <linearGradient id="hero-g" x1="0" x2="1">
-              <stop offset="0" stop-color="#e9ebef"/><stop offset=".35" stop-color="#d7e9df"/>
-              <stop offset=".5" stop-color="#22a06b"/><stop offset=".65" stop-color="#d7e9df"/><stop offset="1" stop-color="#e9ebef"/>
+              <stop offset="0" stop-color="#eef0f4"/><stop offset=".3" stop-color="#fde7c2"/><stop offset=".42" stop-color="#f5b82e"/>
+              <stop offset=".5" stop-color="#2fb380"/><stop offset=".58" stop-color="#f5b82e"/><stop offset=".7" stop-color="#fde7c2"/><stop offset="1" stop-color="#eef0f4"/>
             </linearGradient>
           </defs>
           <rect x="8" y="27" width="304" height="36" rx="18" fill="url(#hero-g)"/>
           <rect x="140" y="20" width="40" height="50" rx="12" fill="none" stroke="#fff" stroke-width="4"/>
-          <rect x="155" y="12" width="10" height="66" rx="5" fill="#1f2a44" class="hero-marker"/>
+          <rect x="155" y="12" width="10" height="66" rx="5" fill="#1e2a4a" class="hero-marker"/>
         </svg>
       </div>
       <h1>Stop the light.</h1>
@@ -146,9 +157,9 @@
     <header class="topbar"><h1 class="h1">About PresLink</h1></header>
     <p class="lede">PresLink is the student-run charity of Presentation Brothers College, Cork. Since 2005 it has raised money for the Presentation Brothers' schools in Ghana and Nigeria.</p>
     <div class="stack">
-      <div class="card about-item"><span class="about-icon">🏫</span><div><strong>Classrooms</strong><span>A three-classroom block in Sokabisi, Bolgatanga, Ghana.</span></div></div>
-      <div class="card about-item"><span class="about-icon">🚲</span><div><strong>Bikes to school</strong><span>So girls in Ghana and Nigeria can get to class.</span></div></div>
-      <div class="card about-item"><span class="about-icon">🍼</span><div><strong>Babies home</strong><span>Mother of Mercy Babies Home, Sirigu, Ghana.</span></div></div>
+      <div class="card about-item"><span class="about-icon tint-gold">🏫</span><div><strong>Classrooms</strong><span>A three-classroom block in Sokabisi, Bolgatanga, Ghana.</span></div></div>
+      <div class="card about-item"><span class="about-icon tint-sky">🚲</span><div><strong>Bikes to school</strong><span>So girls in Ghana and Nigeria can get to class.</span></div></div>
+      <div class="card about-item"><span class="about-icon tint-coral">🍼</span><div><strong>Babies home</strong><span>Mother of Mercy Babies Home, Sirigu, Ghana.</span></div></div>
     </div>
     <p class="muted center about-note">Every play, after card fees, goes to PresLink.</p>
     <button class="btn btn-green btn-xl js-play" type="button">Play · €2</button>

@@ -944,6 +944,17 @@
   // ---------------------------------------------------------------------------
   // Boot
   // ---------------------------------------------------------------------------
+  // Splash: once per session, skipped when returning from a payment.
+  (function splash() {
+    const el = $('#splash');
+    const returning = /session_id=|cancelled=/.test(location.search);
+    if (!el) return;
+    if (session.get('preslink.splash') || returning || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) { el.classList.add('gone'); return; }
+    session.set('preslink.splash', '1');
+    setTimeout(() => el.classList.add('gone'), 2500);
+    el.addEventListener('click', () => el.classList.add('gone'));
+  })();
+
   async function boot() {
     const params = new URLSearchParams(location.search);
     const sessionId = params.get('session_id');
