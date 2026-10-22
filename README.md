@@ -1,12 +1,16 @@
 # PresLink Arcade
 
 A phone-first web app for the PresLink charity at Presentation Brothers College, Cork.
-Scan a QR code, pick three letters, insert a coin (€2 a play, €5 for 3, €10 for 7), and
+Scan a QR code, tap **Play · €2**, pay with Apple Pay, Google Pay or a card, and
 **stop the light in the green**. One tap, score out of 1,000. Highest score of the week
 wins, with separate boards for students and teachers. Every payment goes to PresLink.
 
-The look is deliberately simple and bright (think Duolingo): white background, colour tiles,
-chunky buttons, a bottom tab bar (Play, Board, About, You), very little text.
+There is no sign-up. The first tap quietly creates a player with a random three-letter name
+that the phone remembers. Players can change their letters and board on the **You** tab, and a
+four-digit claim code proves a winning score is theirs (and signs them in on another phone).
+
+The look is PresLink's own: cream background, navy, teal, coral and gold tiles, pill buttons,
+a floating tab bar (Play, Board, About, You) and very little text.
 
 ```
   Phone (QR)  ──▶  Netlify (static site: site/)
@@ -29,7 +33,7 @@ chunky buttons, a bottom tab bar (Play, Board, About, You), very little text.
 
 | Path | What it is |
 |---|---|
-| `site/index.html` | The whole app: home, about, sign-up, sign back in, arcade, game, leaderboard, profile, committee panel, terms |
+| `site/index.html` | The whole app: home, coin cabinet, game, leaderboard, about, you, sign back in, committee panel, terms |
 | `site/styles.css` | Design |
 | `site/app.js` | Front-end logic and the game |
 | `site/config.js` | **The only file you must edit**: Supabase URL and publishable key |
@@ -37,6 +41,7 @@ chunky buttons, a bottom tab bar (Play, Board, About, You), very little text.
 | `site/qr.html` | Printable QR poster that always encodes the live address |
 | `supabase/migrations/0001_init.sql` | Database tables and functions |
 | `supabase/migrations/0002_names_signin_admin.sql` | Unique names, name blocklist, sign back in, bans, goal and prize settings, committee functions |
+| `supabase/migrations/0003_auto_names_admin_v2.sql` | Random names on first tap, name and board changes, richer committee overview, player lookup, name reset |
 | `supabase/functions/api/index.ts` | Register, checkout, confirm payment, start play, submit score |
 | `supabase/functions/stripe-webhook/index.ts` | Receives Stripe's payment confirmation |
 | `docs/admin.sql` | Extra SQL for the committee (most day-to-day admin is in the app's Committee screen) |
@@ -46,33 +51,22 @@ chunky buttons, a bottom tab bar (Play, Board, About, You), very little text.
 
 Do these in order. Steps 1 and 2 are a one-off technical setup; 3 to 6 are the launch.
 
-### 1. Supabase (database + functions)
+### 1. Supabase (database + functions): done
 
-1. Create a project at <https://supabase.com/dashboard> (region **West EU (Ireland)**). The free plan is enough.
-   Give it a strong database password and keep it somewhere safe; you will not need it day to day.
-2. Apply the schema: Dashboard → **SQL Editor** → New query → paste the whole of
-   `supabase/migrations/0001_init.sql` → **Run**. Then do the same with `0002_names_signin_admin.sql`.
-   Finally set the committee code (6+ characters, pick something only the committee knows):
-   ```sql
-   select public.admin_set_code(null, 'YourCommitteeCode');
-   ```
-3. Deploy the two functions. Either ask Claude to deploy them through the Supabase connector, or with the
-   Supabase CLI from this folder:
-   ```bash
-   supabase login
-   supabase link --project-ref <your-project-ref>
-   supabase functions deploy api --no-verify-jwt
-   supabase functions deploy stripe-webhook --no-verify-jwt
-   ```
-4. Dashboard → **Project Settings → API**: copy the **Project URL** and the **publishable key**
-   (`sb_publishable_...`, or the legacy `anon` key). Put them in `site/config.js`:
-   ```js
-   window.PRESLINK_CONFIG = {
-     SUPABASE_URL: "https://xxxxxxxxxxxx.supabase.co",
-     SUPABASE_KEY: "sb_publishable_...",
-   };
-   ```
-   Commit and push.
+The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all three migrations applied,
+both functions deployed, and `site/config.js` points at it. The committee code was set at deployment
+and handed over privately; change it any time from the Committee screen.
+
+If you ever need to redo this on a fresh project: Dashboard → **SQL Editor** → run the three files in
+`supabase/migrations/` in order, deploy the two functions with `--no-verify-jwt` (CLI below), set the
+committee code with `select public.admin_set_code(null, 'YourCode');`, and put the project URL and
+publishable key in `site/config.js`.
+```bash
+supabase login
+supabase link --project-ref <your-project-ref>
+supabase functions deploy api --no-verify-jwt
+supabase functions deploy stripe-webhook --no-verify-jwt
+```
 
 ### 2. Stripe (payments)
 
@@ -86,7 +80,7 @@ and registered details. A student cannot be the account holder.
    - `SITE_URL` = your site address, e.g. `https://preslink-arcade.netlify.app` (no trailing slash).
      Optional: without it the function uses the address the request came from.
 4. **Developers → Webhooks → Add endpoint**:
-   - Endpoint URL: `https://<your-project-ref>.supabase.co/functions/v1/stripe-webhook`
+   - Endpoint URL: `https://bsovummlmfclefdlvsic.supabase.co/functions/v1/stripe-webhook`
    - Events: `checkout.session.completed` and `checkout.session.async_payment_succeeded`
    - After saving, copy the **Signing secret** (`whsec_...`) and add it in Supabase secrets as
      `STRIPE_WEBHOOK_SECRET`.
@@ -106,9 +100,9 @@ and registered details. A student cannot be the account holder.
 
 ### 4. Test it end to end (still in Stripe test mode)
 
-1. Open the site on a phone. Pick initials. Insert a coin. Stripe's test page opens.
+1. Open the site on a phone. Tap **Play · €2**. Stripe's test page opens.
 2. Pay with card number `4242 4242 4242 4242`, any future expiry, any CVC, any postcode.
-3. You should land back in the arcade, see the coin drop, and have credits. Play, then check the leaderboard.
+3. You land back in the coin cabinet, see the coin go in and a token come out, and the game starts. Check the leaderboard after.
 4. In Supabase → **Table Editor** you will see the player, the payment and the play.
 5. In Stripe → **Developers → Webhooks** the endpoint should show a successful delivery.
 
@@ -134,21 +128,25 @@ and registered details. A student cannot be the account holder.
 Reachable from the **You** tab or at `/#admin`. It needs the committee code, which is stored only as a
 hash in the database and locks for 15 minutes after 8 wrong tries. From there the committee can:
 
-- see money raised, coins inserted, plays and players, and set the fundraising **goal** and the weekly **prize**;
-- see this week's boards **with claim codes**, and **void** a score or **ban** a player;
-- see past winners with claim codes and the most recent payments (with the receipt email);
+- see money raised, coins inserted, plays, players (students and teachers), money per day, and set the
+  fundraising **goal** and the weekly **prize**;
+- see the board for **any week** with claim codes and times, and **void** a score, **ban** a player or give
+  a player a **new random name**;
+- **find any player** by their letters: claim code, credits, every play (void or restore) and payments;
+- see past winners with claim codes, recent payments with receipt emails, and **download a CSV**;
 - **block** extra three-letter names on top of the built-in list of offensive ones;
 - change the committee code.
 
 ## Names, codes and signing back in
 
-- Three letters, A to Z, and each name can only be taken once.
-- Offensive names are refused. The built-in list is in `0002_names_signin_admin.sql` (table `blocked_initials`)
-  and the committee can add more from the Committee screen.
-- Every player gets a four-digit **claim code**, shown in the welcome message and on the **You** tab.
-  It proves a winning score is theirs and lets them **sign back in** on another phone or after clearing
-  their browser (Join screen → "Already have a name? Sign back in"). Five wrong codes lock that name for
-  15 minutes. A lost code can be looked up by the committee.
+- Nobody types a name. The first tap creates a player with a random three-letter name that is not on the
+  blocklist and not in use. Players can change their letters on the **You** tab; each name can only be
+  used once and offensive names are refused. The built-in list is in `0002_names_signin_admin.sql`
+  (table `blocked_initials`); the committee can add more, and can reset a player's name to a random one.
+- Student or teacher is a toggle on the home screen (and on the You tab).
+- Every player has a four-digit **claim code** on the **You** tab. It proves a winning score is theirs and
+  lets them **sign back in** on another phone or after clearing their browser (home screen → "Played
+  before?"). Five wrong codes lock that name for 15 minutes. A lost code can be looked up by the committee.
 
 ## Editing the content
 

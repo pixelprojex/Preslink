@@ -5,10 +5,11 @@
   const CONFIG = window.PRESLINK_CONFIG || {};
   const DEMO = !CONFIG.SUPABASE_URL;
   const STORAGE_KEY = 'preslink.player';
+  const ROLE_KEY = 'preslink.role';
   const PENDING_KEY = 'preslink.pendingScore';
   const ADMIN_KEY = 'preslink.adminCode';
   const SWEEP_GUARD_MS = 150;
-  const BUNDLE_AMOUNT = { single: 2, triple: 5, seven: 10 };
+  const BUNDLES = { single: { amount: 2, credits: 1 }, triple: { amount: 5, credits: 3 }, seven: { amount: 10, credits: 7 } };
 
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -20,17 +21,17 @@
 
   const MESSAGES = {
     NETWORK: 'No connection. Check your signal and try again.',
-    NO_CREDITS: 'No credits left. Insert a coin to play.',
+    NO_CREDITS: 'No plays left. Insert a coin to play.',
     BAD_INITIALS: 'Three letters, A to Z.',
     BLOCKED_INITIALS: "Those letters aren't allowed. Pick another three.",
-    TAKEN: 'Those letters are taken. Try another three, or sign back in.',
+    TAKEN: 'Those letters are taken. Try another three.',
     BAD_ROLE: 'Choose student or teacher.',
     BAD_SIGNIN: "That name and code don't match.",
     LOCKED: 'Too many tries. Wait 15 minutes and try again.',
     BANNED: 'This player has been removed by the committee.',
     STRIPE_NOT_CONFIGURED: "Payments aren't switched on yet. Try again soon.",
     NO_SITE_URL: "Payments aren't set up for this address yet.",
-    PLAYER_NOT_FOUND: "We couldn't find your player. Please pick your letters again.",
+    PLAYER_NOT_FOUND: "We couldn't find your player on this phone. Tap Play to start fresh.",
     SCORE_MISMATCH: "That score didn't check out, so it wasn't saved.",
     ALREADY_SCORED: 'That play was already scored.',
     PLAY_NOT_FOUND: "That play couldn't be found.",
@@ -57,6 +58,7 @@
   };
 
   let player = store.get(STORAGE_KEY);
+  let role = store.get(ROLE_KEY) || 'student';
   let credits = 0;
   let openPlay = null;
   let bestThisWeek = null;
@@ -68,10 +70,13 @@
   const clearPlayer = () => { player = null; credits = 0; openPlay = null; bestThisWeek = null; store.del(STORAGE_KEY); };
   function adoptPlayer(p) {
     player = { id: p.id, tag: p.tag, initials: p.initials, role: p.role, claim_code: p.claim_code };
+    role = p.role || role;
+    store.set(ROLE_KEY, role);
     credits = p.credits || 0;
     openPlay = p.open_play || null;
     bestThisWeek = p.best_this_week == null ? null : p.best_this_week;
     savePlayer();
+    renderPlayerBits();
   }
 
   // ---------------------------------------------------------------------------
@@ -104,6 +109,13 @@
     } catch (_) { throw new ApiError('NETWORK', 0); }
     if (!res.ok) throw new ApiError('SERVER_ERROR', res.status);
     return res.json();
+  }
+
+  // The first tap creates the player. No name to type: the server picks three letters.
+  async function ensurePlayer() {
+    if (player) return player;
+    adoptPlayer(await api('register', { role }));
+    return player;
   }
 
   // ---------------------------------------------------------------------------
@@ -143,7 +155,7 @@
     const canvas = $('#confetti');
     const ctx = canvas.getContext('2d');
     let parts = [], raf = 0;
-    const colors = ['#58cc02', '#1cb0f6', '#ffc800', '#ff9600', '#ff4b4b', '#ce82ff'];
+    const colors = ['#0e8a86', '#ff6b4a', '#f5b700', '#16213a', '#2bb673', '#ffffff'];
     function tick() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       parts = parts.filter((p) => p.life > 0);
@@ -172,34 +184,33 @@
   // ---------------------------------------------------------------------------
   // Router and tab bar
   // ---------------------------------------------------------------------------
-  const SCREENS = ['home', 'about', 'join', 'signin', 'arcade', 'play', 'board', 'you', 'admin'];
+  const SCREENS = ['home', 'cabinet', 'play', 'board', 'about', 'you', 'signin', 'admin'];
   const screens = $$('.screen');
   let current = 'home';
   function go(name) {
     if (location.hash === '#' + name) render(name);
     else location.hash = name;
   }
-  function goPlay() { go(player ? 'arcade' : 'join'); }
   function render(name) {
     if (!SCREENS.includes(name)) name = 'home';
-    if ((name === 'arcade' || name === 'play' || name === 'you') && !player) { go('join'); return; }
-    if ((name === 'join' || name === 'signin') && player) { go('arcade'); return; }
+    if (name === 'play' && !player) { go('home'); return; }
+    if (name === 'signin' && player) { go('you'); return; }
     if (name !== current) prevScreen = current;
     current = name;
     closeSheets();
     screens.forEach((s) => { s.hidden = s.dataset.screen !== name; });
     window.scrollTo(0, 0);
-    const tab = { home: 'play', arcade: 'play', join: 'play', signin: 'play', board: 'board', about: 'about', you: 'you' }[name];
+    const tab = { home: 'play', cabinet: 'play', play: 'play', signin: 'play', board: 'board', about: 'about', you: 'you' }[name];
     $$('#tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
-    $('#tabbar').hidden = name === 'play' || name === 'admin';
+    $('#tabbar').hidden = name === 'play' || name === 'admin' || name === 'cabinet';
     if (name !== 'play' && game.state !== 'idle' && game.state !== 'done') abandonGame();
-    if (name === 'home') { refreshStats(); $('#home-resume').hidden = !player; }
-    if (name === 'join') setTimeout(() => $('#join-initials').focus(), 60);
-    if (name === 'signin') setTimeout(() => $('#signin-initials').focus(), 60);
-    if (name === 'arcade') { renderArcade(); refreshMe(); refreshStats(); }
+    if (name === 'home') { renderHome(); refreshStats(); refreshMe(); }
+    if (name === 'cabinet' && !cabinetBusy) { go('home'); return; }
     if (name === 'play') startGame();
     if (name === 'board') loadBoard();
-    if (name === 'you') { renderYou(); refreshMe().then(renderYou); }
+    if (name === 'about') refreshStats();
+    if (name === 'you') openYou();
+    if (name === 'signin') setTimeout(() => $('#signin-initials').focus(), 60);
     if (name === 'admin') renderAdminEntry();
   }
   window.addEventListener('hashchange', () => render(location.hash.slice(1) || 'home'));
@@ -207,32 +218,61 @@
     const back = e.target.closest('[data-back]');
     if (back) { e.preventDefault(); go(prevScreen === current ? 'home' : prevScreen); return; }
     const p = e.target.closest('.js-play');
-    if (p) { e.preventDefault(); goPlay(); return; }
+    if (p) { e.preventDefault(); playOrBuy(); return; }
+    const b = e.target.closest('[data-bundle]');
+    if (b) { e.preventDefault(); buy(b.dataset.bundle); return; }
     const t = e.target.closest('[data-go]');
     if (t) { e.preventDefault(); go(t.dataset.go); }
   });
   $$('#tabbar button').forEach((b) => b.addEventListener('click', () => {
     const tab = b.dataset.tab;
-    if (tab === 'play') goPlay();
-    else if (tab === 'you') go(player ? 'you' : 'join');
-    else go(tab);
+    go(tab === 'play' ? 'home' : tab);
   }));
 
   // ---------------------------------------------------------------------------
-  // Stats, goal, prize
+  // Home
   // ---------------------------------------------------------------------------
+  function renderPlayerBits() {
+    const chip = $('#home-player');
+    chip.hidden = !player;
+    if (player) { chip.textContent = `${player.initials} · ${cap(player.role)}`; $('#cab-player').textContent = `${player.initials} · ${cap(player.role)}`; }
+    const r = $(`#home-role input[value="${role}"]`);
+    if (r) r.checked = true;
+    renderHome();
+  }
+  function renderHome() {
+    const btn = $('#home-play');
+    const canPlay = !!player && (credits > 0 || !!openPlay);
+    btn.textContent = canPlay ? (openPlay ? 'Play · a play is waiting' : `Play · ${credits} ${credits === 1 ? 'play' : 'plays'} left`) : 'Play · €2';
+    btn.classList.toggle('ready', canPlay);
+    $('.bundles').hidden = false;
+  }
+  $$('#home-role input').forEach((i) => i.addEventListener('change', async () => {
+    role = i.value;
+    store.set(ROLE_KEY, role);
+    if (player && player.role !== role) {
+      try { adoptPlayer(await api('update', { player_id: player.id, role })); toast(`You're now on the ${cap(role)}s board.`); }
+      catch (ex) { toast(msg(ex), true); }
+    }
+  }));
+  $('#home-play').addEventListener('click', playOrBuy);
+  function playOrBuy() {
+    if (player && (credits > 0 || openPlay)) go('play');
+    else buy('single');
+  }
+
   async function refreshStats() {
     try { stats = await rpc('stats'); } catch (_) { return; }
     const raised = Number(stats.total_raised_cents || 0);
     const goal = Number(stats.goal_cents || 0);
     $('#home-raised').textContent = euro(raised);
-    $('#home-goal').textContent = goal > 0 ? `raised of ${euro(goal)}` : 'raised';
+    $('#home-goal').textContent = goal > 0 ? `raised of ${euro(goal)}` : 'raised so far';
     const pct = goal > 0 ? Math.min(100, Math.max(raised > 0 ? 2 : 0, (raised / goal) * 100)) : (raised > 0 ? 100 : 0);
     $('#home-bar').style.width = pct + '%';
     const plays = Number(stats.plays || 0);
     $('#home-raised-sub').textContent = plays > 0
-      ? `${Number(stats.payments).toLocaleString('en-IE')} coins in · ${plays.toLocaleString('en-IE')} plays · for schools in Ghana and Nigeria`
-      : 'For Presentation Brothers schools in Ghana and Nigeria';
+      ? `${Number(stats.payments).toLocaleString('en-IE')} coins in · ${plays.toLocaleString('en-IE')} plays · every cent after card fees goes to PresLink`
+      : 'Every cent after card fees goes to PresLink.';
     renderWeekChip();
     const prize = (stats.prize_text || '').trim();
     $('#board-prize').hidden = !prize;
@@ -250,110 +290,24 @@
     $('#board-week').textContent = text;
   }
 
-  // ---------------------------------------------------------------------------
-  // Initials field (used by join and sign in)
-  // ---------------------------------------------------------------------------
-  function initialsField(inputId) {
-    const input = $('#' + inputId);
-    const label = input.closest('.initials');
-    const boxes = $$('.box', label);
-    const sync = () => {
-      const v = input.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
-      if (v !== input.value) input.value = v;
-      boxes.forEach((b, i) => {
-        b.textContent = v[i] || '';
-        b.classList.toggle('filled', !!v[i]);
-        b.classList.toggle('active', i === Math.min(v.length, 2));
-      });
-    };
-    input.addEventListener('input', sync);
-    input.addEventListener('focus', sync);
-    label.addEventListener('click', () => input.focus());
-    sync();
-    return { input, value: () => input.value.toUpperCase(), clear: () => { input.value = ''; sync(); } };
-  }
-  const joinInitials = initialsField('join-initials');
-  const signinInitials = initialsField('signin-initials');
-
-  function showError(id, text) {
-    const el = $('#' + id);
-    el.textContent = text || '';
-    el.hidden = !text;
-  }
-
-  $('#join-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const initials = joinInitials.value();
-    const role = ($('input[name="role"]:checked') || {}).value;
-    if (!/^[A-Z]{3}$/.test(initials)) { showError('join-error', MESSAGES.BAD_INITIALS); joinInitials.input.focus(); return; }
-    const btn = $('#join-submit');
-    btn.disabled = true;
-    showError('join-error', '');
-    try {
-      adoptPlayer(await api('register', { initials, role }));
-      toast(`Welcome, ${player.initials}! Your claim code is ${player.claim_code}.`, false, 6000);
-      go('arcade');
-    } catch (ex) {
-      showError('join-error', msg(ex));
-    } finally {
-      btn.disabled = false;
-    }
-  });
-
-  $('#signin-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const initials = signinInitials.value();
-    const code = $('#signin-code').value.replace(/\D/g, '');
-    if (!/^[A-Z]{3}$/.test(initials)) { showError('signin-error', MESSAGES.BAD_INITIALS); return; }
-    if (!/^\d{4}$/.test(code)) { showError('signin-error', 'Your claim code is four digits.'); return; }
-    const btn = $('#signin-submit');
-    btn.disabled = true;
-    showError('signin-error', '');
-    try {
-      adoptPlayer(await api('signin', { initials, code }));
-      toast(`Welcome back, ${player.initials}!`);
-      go('arcade');
-    } catch (ex) {
-      showError('signin-error', msg(ex));
-    } finally {
-      btn.disabled = false;
-    }
-  });
-
-  // ---------------------------------------------------------------------------
-  // Arcade
-  // ---------------------------------------------------------------------------
   async function refreshMe() {
     if (!player) return;
     try {
       const me = await api('me', { player_id: player.id });
       adoptPlayer(me);
-      if (me.banned) { toast(MESSAGES.BANNED, true, 6000); }
-      renderArcade();
+      if (me.banned) toast(MESSAGES.BANNED, true, 6000);
     } catch (ex) {
-      if (ex.code === 'PLAYER_NOT_FOUND') { clearPlayer(); toast(MESSAGES.PLAYER_NOT_FOUND, true); go('join'); return; }
-      renderArcade();
-      toast(msg(ex), true);
+      if (ex.code === 'PLAYER_NOT_FOUND') { clearPlayer(); renderPlayerBits(); toast(MESSAGES.PLAYER_NOT_FOUND, true); }
     }
   }
-  function renderArcade() {
-    if (!player) return;
-    $('#arcade-player').textContent = `${player.initials} · ${cap(player.role)}`;
-    $('#arcade-credits').textContent = credits;
-    const canPlay = credits > 0 || !!openPlay;
-    const play = $('#arcade-play');
-    play.disabled = !canPlay;
-    play.classList.toggle('ready', canPlay);
-    $('#arcade-hint').textContent = openPlay ? 'A play is waiting for you' : credits > 0 ? `${credits} ${credits === 1 ? 'play' : 'plays'} ready` : 'Insert a coin to play';
-    $('#bundles-title').textContent = credits > 0 ? 'Top up' : 'Insert a coin';
-  }
-  $('#arcade-play').addEventListener('click', () => go('play'));
 
-  $$('.bundle').forEach((b) => b.addEventListener('click', () => buy(b.dataset.bundle)));
+  // ---------------------------------------------------------------------------
+  // Paying: one tap to Stripe, and back into the cabinet
+  // ---------------------------------------------------------------------------
   async function buy(bundle) {
-    if (!player) { go('join'); return; }
     overlay('Opening secure checkout…');
     try {
+      await ensurePlayer();
       const r = await api('checkout', { player_id: player.id, bundle });
       location.assign(r.url);
     } catch (ex) {
@@ -362,6 +316,7 @@
     }
   }
 
+  let cabinetBusy = false;
   async function confirmPayment(sessionId) {
     overlay('Confirming your payment…');
     let result = null;
@@ -376,34 +331,32 @@
     }
     overlay(null);
     if (!result || !result.paid) {
-      toast("We couldn't confirm the payment yet. If you were charged, your credits will appear shortly.", true, 6000);
+      toast("We couldn't confirm the payment yet. If you were charged, your plays will appear shortly.", true, 6000);
       return;
     }
     if (result.player) adoptPlayer(result.player);
-    if (location.hash !== '#arcade') location.hash = 'arcade';
-    screens.forEach((s) => { s.hidden = s.dataset.screen !== 'arcade'; });
-    current = 'arcade';
-    $('#tabbar').hidden = false;
-    renderArcade();
-    refreshStats();
     const n = result.credits_added || 1;
-    await coinDrop(n);
-    const amount = BUNDLE_AMOUNT[result.bundle] || (n === 1 ? 2 : n === 3 ? 5 : n === 7 ? 10 : null);
-    $('#thanks-text').textContent = amount
-      ? `Your €${amount} is on its way to Presentation Brothers schools in Ghana and Nigeria.`
+    const b = BUNDLES[result.bundle];
+    $('#cab-text').textContent = b
+      ? `Your €${b.amount} is on its way to Presentation Brothers schools in Ghana and Nigeria.`
       : 'Your donation is on its way to Presentation Brothers schools in Ghana and Nigeria.';
-    openSheet('thanks');
+    cabinetBusy = true;
+    go('cabinet');
+    refreshStats();
+    await coinDrop(n);
+    await wait(900);
+    if (current === 'cabinet') go('play');
+    cabinetBusy = false;
   }
-  $('#thanks-play').addEventListener('click', () => { closeSheets(); go('play'); });
+  $('#cab-play').addEventListener('click', () => go('play'));
 
   // A coin goes into the slot at the top, a play token pops out of the tray at the bottom.
   async function coinDrop(n) {
-    const coin = $('#coin'), slot = $('.slot'), token = $('#token'), val = $('#arcade-credits'), play = $('#arcade-play');
+    const coin = $('#coin'), slot = $('.slot'), token = $('#token'), val = $('#cab-credits');
     const target = credits;
     const from = Math.max(0, target - n);
-    play.classList.remove('ready');
     val.textContent = from;
-    $('#arcade-hint').textContent = 'Coin in!';
+    $('#cab-hint').textContent = 'Coin in!';
     coin.classList.remove('drop'); void coin.offsetWidth; coin.classList.add('drop');
     await wait(620);
     slot.classList.add('glow');
@@ -422,7 +375,7 @@
     }
     await wait(420);
     token.classList.remove('out');
-    renderArcade();
+    $('#cab-hint').textContent = `${n} ${n === 1 ? 'play' : 'plays'} ready`;
   }
 
   // ---------------------------------------------------------------------------
@@ -478,10 +431,11 @@
   }
 
   async function startGame() {
-    if (!player) { go('join'); return; }
+    if (!player) { go('home'); return; }
     if (game.state === 'countdown' || game.state === 'sweeping' || game.state === 'loading') return;
     resetGameUI();
     updatePlayCredits();
+    $('#tabbar').hidden = true;
     game.state = 'loading';
     let res;
     try {
@@ -489,7 +443,7 @@
     } catch (ex) {
       game.state = 'idle';
       toast(ex.code === 'NO_CREDITS' ? MESSAGES.NO_CREDITS : msg(ex), ex.code !== 'NO_CREDITS');
-      go('arcade');
+      go('home');
       return;
     }
     if (game.state !== 'loading') return;
@@ -595,8 +549,9 @@
 
   function showResult(score, r, note) {
     updatePlayCredits();
-    $('#result-title').textContent = titleFor(score);
     $('#game').classList.add('done');
+    $('#tabbar').hidden = false; // the game is over: let people move around again
+    $('#result-title').textContent = titleFor(score);
     $('#result-score').textContent = score;
     $('#result-best').textContent = r ? r.best_this_week : '–';
     $('#result-rank').textContent = r && r.rank ? '#' + r.rank : '–';
@@ -604,15 +559,17 @@
     n.textContent = note || '';
     n.hidden = !note;
     const again = $('#result-again');
+    $('#result-topup').hidden = true;
     if (game.pending) {
       again.textContent = 'Try again';
       again.onclick = () => { n.hidden = true; submitPending(score); };
     } else if (credits > 0) {
-      again.textContent = `Play again (${credits} left)`;
+      again.textContent = `Play again · ${credits} left`;
       again.onclick = () => { game.state = 'idle'; startGame(); };
     } else {
-      again.textContent = 'Insert a coin';
-      again.onclick = () => go('arcade');
+      again.textContent = 'Play again · €2';
+      again.onclick = () => buy('single');
+      $('#result-topup').hidden = false;
     }
     $('#result').hidden = false;
     if (r && r.rank === 1) toast('You are top of the board!');
@@ -631,18 +588,14 @@
   // ---------------------------------------------------------------------------
   // Leaderboard
   // ---------------------------------------------------------------------------
-  $$('#screen-board .tab, [data-screen="board"] .tab').forEach((t) => t.addEventListener('click', () => {
-    boardRole = t.dataset.role;
-    loadBoard();
-  }));
+  $$('[data-screen="board"] .tab').forEach((t) => t.addEventListener('click', () => { boardRole = t.dataset.role; boardTouched = true; loadBoard(); }));
   function fmtWhen(iso) {
     const d = new Date(iso);
     return d.toLocaleDateString('en-IE', { weekday: 'short' }) + ' ' + d.toLocaleTimeString('en-IE', { hour: '2-digit', minute: '2-digit' });
   }
   let boardTouched = false;
   async function loadBoard() {
-    if (!boardTouched && player) boardRole = player.role;
-    boardTouched = true;
+    if (!boardTouched) boardRole = player ? player.role : role;
     $$('[data-screen="board"] .tab').forEach((x) => { x.classList.toggle('active', x.dataset.role === boardRole); x.setAttribute('aria-selected', x.dataset.role === boardRole); });
     const list = $('#board-list');
     list.innerHTML = '';
@@ -673,27 +626,102 @@
   }
 
   // ---------------------------------------------------------------------------
-  // You
+  // You: name, board, claim code
   // ---------------------------------------------------------------------------
+  function initialsField(inputId) {
+    const input = $('#' + inputId);
+    const label = input.closest('.initials');
+    const boxes = $$('.box', label);
+    const sync = () => {
+      const v = input.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+      if (v !== input.value) input.value = v;
+      boxes.forEach((b, i) => { b.textContent = v[i] || ''; b.classList.toggle('active', i === Math.min(v.length, 2)); });
+    };
+    input.addEventListener('input', sync);
+    input.addEventListener('focus', sync);
+    label.addEventListener('click', () => input.focus());
+    sync();
+    return { input, value: () => input.value.toUpperCase(), set: (v) => { input.value = v || ''; sync(); } };
+  }
+  const editInitials = initialsField('edit-initials');
+  const signinInitials = initialsField('signin-initials');
+  function showError(id, text) { const el = $('#' + id); el.textContent = text || ''; el.hidden = !text; }
+
+  async function openYou() {
+    try { await ensurePlayer(); } catch (ex) { toast(msg(ex), true); go('home'); return; }
+    renderYou();
+    refreshMe().then(renderYou);
+  }
   function renderYou() {
     if (!player) return;
     $('#you-initials').textContent = player.initials;
-    $('#you-role').textContent = cap(player.role);
+    $('#you-role').textContent = cap(player.role) + 's board';
     $('#you-code').textContent = player.claim_code;
     $('#you-credits').textContent = credits;
     $('#you-best').textContent = bestThisWeek == null ? '–' : bestThisWeek;
   }
+  $('#you-edit').addEventListener('click', () => {
+    const f = $('#edit-form');
+    f.hidden = !f.hidden;
+    if (!f.hidden) {
+      editInitials.set(player.initials);
+      const r = $(`#edit-form input[value="${player.role}"]`);
+      if (r) r.checked = true;
+      showError('edit-error', '');
+      setTimeout(() => editInitials.input.focus(), 50);
+    }
+  });
+  $('#edit-cancel').addEventListener('click', () => { $('#edit-form').hidden = true; });
+  $('#edit-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const initials = editInitials.value();
+    const newRole = ($('#edit-form input[name="edit-role"]:checked') || {}).value;
+    if (!/^[A-Z]{3}$/.test(initials)) { showError('edit-error', MESSAGES.BAD_INITIALS); return; }
+    const payload = { player_id: player.id };
+    if (initials !== player.initials) payload.initials = initials;
+    if (newRole && newRole !== player.role) payload.role = newRole;
+    if (!payload.initials && !payload.role) { $('#edit-form').hidden = true; return; }
+    $('#edit-save').disabled = true;
+    try {
+      adoptPlayer(await api('update', payload));
+      $('#edit-form').hidden = true;
+      renderYou();
+      toast(`Saved. You play as ${player.initials}.`);
+    } catch (ex) {
+      showError('edit-error', msg(ex));
+    } finally { $('#edit-save').disabled = false; }
+  });
   $('#you-signout').addEventListener('click', () => {
     if (!confirm(`Sign out ${player.initials} on this phone? You can sign back in with your letters and claim code ${player.claim_code}.`)) return;
     clearPlayer();
+    renderPlayerBits();
     toast('Signed out.');
     go('home');
   });
 
+  $('#signin-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const initials = signinInitials.value();
+    const code = $('#signin-code').value.replace(/\D/g, '');
+    if (!/^[A-Z]{3}$/.test(initials)) { showError('signin-error', MESSAGES.BAD_INITIALS); return; }
+    if (!/^\d{4}$/.test(code)) { showError('signin-error', 'Your claim code is four digits.'); return; }
+    const btn = $('#signin-submit');
+    btn.disabled = true;
+    showError('signin-error', '');
+    try {
+      adoptPlayer(await api('signin', { initials, code }));
+      toast(`Welcome back, ${player.initials}!`);
+      go('home');
+    } catch (ex) {
+      showError('signin-error', msg(ex));
+    } finally { btn.disabled = false; }
+  });
+
   // ---------------------------------------------------------------------------
-  // Committee admin
+  // Committee
   // ---------------------------------------------------------------------------
   let adminRole = 'student';
+  let adminWeek = null;
   let adminData = null;
   const adminCode = () => session.get(ADMIN_KEY) || '';
 
@@ -706,33 +734,29 @@
     if (code) loadAdmin();
     else setTimeout(() => $('#admin-code').focus(), 60);
   }
-  async function adminCall(op, extra = {}) {
-    return api('admin', { code: adminCode(), op, ...extra });
-  }
+  const adminCall = (op, extra = {}) => api('admin', { code: adminCode(), op, ...extra });
   $('#admin-login').addEventListener('submit', async (e) => {
     e.preventDefault();
     const code = $('#admin-code').value.trim();
     showError('admin-error', '');
     try {
-      const data = await api('admin', { code, op: 'overview' });
+      adminData = await api('admin', { code, op: 'overview' });
       session.set(ADMIN_KEY, code);
       $('#admin-code').value = '';
-      adminData = data;
       renderAdminEntry();
-    } catch (ex) {
-      showError('admin-error', msg(ex));
-    }
+    } catch (ex) { showError('admin-error', msg(ex)); }
   });
   $('#admin-logout').addEventListener('click', () => { session.del(ADMIN_KEY); adminData = null; renderAdminEntry(); });
 
   async function loadAdmin() {
-    try { adminData = await adminCall('overview'); }
+    try { adminData = await adminCall('overview', adminWeek ? { week: adminWeek } : {}); }
     catch (ex) {
-      if (ex.code === 'BAD_ADMIN' || ex.code === 'LOCKED' || ex.code === 'ADMIN_NOT_SET') { session.del(ADMIN_KEY); renderAdminEntry(); showError('admin-error', msg(ex)); return; }
+      if (['BAD_ADMIN', 'LOCKED', 'ADMIN_NOT_SET'].includes(ex.code)) { session.del(ADMIN_KEY); renderAdminEntry(); showError('admin-error', msg(ex)); return; }
       toast(msg(ex), true); return;
     }
     renderAdmin();
   }
+  const fmtDate = (iso, withTime) => new Date(iso).toLocaleString('en-IE', withTime ? { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' } : { day: 'numeric', month: 'short' });
   function renderAdmin() {
     const d = adminData;
     if (!d) return;
@@ -741,35 +765,51 @@
     $('#adm-payments').textContent = s.payments || 0;
     $('#adm-plays').textContent = s.plays || 0;
     $('#adm-players').textContent = s.players || 0;
+    const roles = d.players_by_role || {};
+    $('#adm-roles').textContent = `${roles.student || 0} students · ${roles.teacher || 0} teachers`;
     if (document.activeElement !== $('#adm-goal')) $('#adm-goal').value = Math.round((s.goal_cents || 0) / 100);
     if (document.activeElement !== $('#adm-prize')) $('#adm-prize').value = s.prize_text || '';
+    const goal = Number(s.goal_cents || 0);
+    $('#adm-progress').value = goal > 0 ? Math.round((Number(s.total_raised_cents || 0) / goal) * 100) + '%' : '–';
+
+    const sel = $('#adm-week');
+    const weeks = d.weeks || [d.week];
+    sel.innerHTML = weeks.map((w) => `<option value="${esc(w)}"${w === d.week ? ' selected' : ''}>${w === s.week_start ? 'This week' : 'Week of ' + fmtDate(w + 'T12:00:00')}</option>`).join('');
     $$('#admin-tabs .tab').forEach((x) => x.classList.toggle('active', x.dataset.role === adminRole));
 
     const tb = $('#adm-board tbody');
     tb.innerHTML = '';
     (d.board || []).filter((r) => r.role === adminRole).forEach((r) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${r.rank}</td><td><b>${esc(r.initials)}</b>${r.banned ? ' <span class="muted">(banned)</span>' : ''}</td><td>${esc(r.claim_code)}</td><td>${r.score}</td><td>${r.plays}</td>
-        <td><button class="mini" data-void="${esc(r.play_id)}">Void</button> <button class="mini ${r.banned ? 'undo' : ''}" data-ban="${esc(r.player_id)}" data-banned="${r.banned ? '1' : ''}">${r.banned ? 'Unban' : 'Ban'}</button></td>`;
+      tr.innerHTML = `<td>${r.rank}</td><td><b>${esc(r.initials)}</b>${r.banned ? ' <span class="muted">(banned)</span>' : ''}</td><td>${esc(r.claim_code)}</td><td><b>${r.score}</b></td><td>${r.plays}</td><td>${esc(fmtDate(r.finished_at, true))}</td>
+        <td><button class="mini" data-void="${esc(r.play_id)}">Void</button> <button class="mini ${r.banned ? 'undo' : ''}" data-ban="${esc(r.player_id)}" data-banned="${r.banned ? '1' : ''}">${r.banned ? 'Unban' : 'Ban'}</button> <button class="mini alt" data-reset="${esc(r.player_id)}">New name</button></td>`;
       tb.appendChild(tr);
     });
-    if (!tb.children.length) tb.innerHTML = '<tr><td colspan="6" class="muted">No scores yet this week.</td></tr>';
+    if (!tb.children.length) tb.innerHTML = '<tr><td colspan="7" class="muted">No scores for this week.</td></tr>';
 
     const tw = $('#adm-winners tbody');
     tw.innerHTML = '';
     (d.past_winners || []).forEach((r) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${esc(r.week_start)}</td><td>${cap(r.role)}s</td><td><b>${esc(r.initials)}</b></td><td>${esc(r.claim_code)}</td><td>${r.score}</td>`;
+      tr.innerHTML = `<td>${esc(fmtDate(r.week_start + 'T12:00:00'))}</td><td>${cap(r.role)}s</td><td><b>${esc(r.initials)}</b></td><td>${esc(r.claim_code)}</td><td>${r.score}</td>`;
       tw.appendChild(tr);
     });
     if (!tw.children.length) tw.innerHTML = '<tr><td colspan="5" class="muted">None yet.</td></tr>';
+
+    const td = $('#adm-days tbody');
+    td.innerHTML = '';
+    (d.by_day || []).forEach((x) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${esc(fmtDate(x.day + 'T12:00:00'))}</td><td>${x.payments}</td><td>${(x.amount_cents / 100).toFixed(2)}</td>`;
+      td.appendChild(tr);
+    });
+    if (!td.children.length) td.innerHTML = '<tr><td colspan="3" class="muted">No payments in the last three weeks.</td></tr>';
 
     const tp = $('#adm-payments tbody');
     tp.innerHTML = '';
     (d.payments || []).forEach((p) => {
       const tr = document.createElement('tr');
-      const when = new Date(p.created_at).toLocaleString('en-IE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-      tr.innerHTML = `<td>${esc(when)}</td><td><b>${esc(p.initials)}</b></td><td>${p.credits}</td><td>${(p.amount_cents / 100).toFixed(2)}</td><td>${esc(p.email || '')}</td>`;
+      tr.innerHTML = `<td>${esc(fmtDate(p.created_at, true))}</td><td><b>${esc(p.initials)}</b></td><td>${p.credits}</td><td>${(p.amount_cents / 100).toFixed(2)}</td><td>${esc(p.email || '')}</td>`;
       tp.appendChild(tr);
     });
     if (!tp.children.length) tp.innerHTML = '<tr><td colspan="5" class="muted">No payments yet.</td></tr>';
@@ -777,7 +817,7 @@
     const blocked = d.blocked_by_committee || [];
     $('#adm-blocked-list').innerHTML = blocked.length
       ? 'Added by the committee: ' + blocked.map((b) => `<button class="mini undo" data-unblock="${esc(b)}">${esc(b)} ×</button>`).join(' ')
-      : 'The built-in list of offensive names is active. Add more here.';
+      : 'The built-in list of offensive names is active. Add more above.';
 
     const ul = $('#adm-banned');
     ul.innerHTML = '';
@@ -788,11 +828,13 @@
     });
     if (!ul.children.length) ul.innerHTML = '<li class="muted">Nobody is banned.</li>';
   }
+  $('#adm-week').addEventListener('change', (e) => { adminWeek = e.target.value; loadAdmin(); });
   $$('#admin-tabs .tab').forEach((t) => t.addEventListener('click', () => { adminRole = t.dataset.role; renderAdmin(); }));
   $('#admin-panel').addEventListener('click', async (e) => {
     const v = e.target.closest('[data-void]');
     const b = e.target.closest('[data-ban]');
     const u = e.target.closest('[data-unblock]');
+    const r = e.target.closest('[data-reset]');
     try {
       if (v) {
         if (!confirm('Void this score? It disappears from the leaderboard.')) return;
@@ -803,9 +845,16 @@
         await adminCall('ban', { player_id: b.dataset.ban, banned });
       } else if (u) {
         await adminCall('block', { initials: u.dataset.unblock, block: false });
+      } else if (r) {
+        if (!confirm('Give this player a new random name?')) return;
+        const res = await adminCall('reset_name', { player_id: r.dataset.reset });
+        toast(`Renamed to ${res.initials}.`);
+        loadAdmin();
+        return;
       } else return;
       toast('Done.');
       loadAdmin();
+      if (!$('#adm-player').hidden) $('#admin-find').requestSubmit();
     } catch (ex) { toast(msg(ex), true); }
   });
   $('#admin-settings').addEventListener('submit', async (e) => {
@@ -817,6 +866,26 @@
       loadAdmin();
       refreshStats();
     } catch (ex) { toast(msg(ex), true); }
+  });
+  $('#admin-find').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const initials = $('#adm-find-initials').value.toUpperCase().trim();
+    if (!/^[A-Z]{3}$/.test(initials)) { toast(MESSAGES.BAD_INITIALS, true); return; }
+    const box = $('#adm-player');
+    try {
+      const res = await adminCall('player', { initials });
+      const p = res.player;
+      box.innerHTML = `<dl><dt>Name</dt><dd>${esc(p.initials)}${p.banned ? ' (banned)' : ''}</dd><dt>Board</dt><dd>${cap(p.role)}s</dd><dt>Claim code</dt><dd>${esc(p.claim_code)}</dd><dt>Credits</dt><dd>${p.credits}</dd><dt>First seen</dt><dd>${esc(fmtDate(p.created_at, true))}</dd><dt>Last seen</dt><dd>${esc(fmtDate(p.last_seen_at, true))}</dd></dl>
+        <div class="table-wrap"><table class="table"><thead><tr><th>Play</th><th>Score</th><th>Week</th><th></th></tr></thead><tbody>${(res.plays || []).map((x) => `<tr><td>${esc(fmtDate(x.started_at, true))}</td><td>${x.score == null ? '<span class="muted">open</span>' : '<b>' + x.score + '</b>'}${x.voided ? ' <span class="muted">(void)</span>' : ''}</td><td>${esc(x.week_start || '')}</td><td>${x.score == null ? '' : x.voided ? `<button class="mini undo" data-unvoid="${esc(x.play_id)}">Restore</button>` : `<button class="mini" data-void="${esc(x.play_id)}">Void</button>`}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">No plays.</td></tr>'}</tbody></table></div>
+        <p class="small muted" style="margin:10px 0 0">${(res.payments || []).length} payment(s) · €${((res.payments || []).reduce((s, x) => s + x.amount_cents, 0) / 100).toFixed(2)}</p>`;
+      box.hidden = false;
+    } catch (ex) { box.hidden = true; toast(msg(ex), true); }
+  });
+  $('#adm-player').addEventListener('click', async (e) => {
+    const uv = e.target.closest('[data-unvoid]');
+    if (!uv) return;
+    try { await adminCall('void', { play_id: uv.dataset.unvoid, voided: false }); toast('Restored.'); $('#admin-find').requestSubmit(); loadAdmin(); }
+    catch (ex) { toast(msg(ex), true); }
   });
   $('#admin-block').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -840,6 +909,17 @@
       toast('Committee code changed.');
     } catch (ex) { toast(msg(ex), true); }
   });
+  $('#adm-csv').addEventListener('click', () => {
+    const d = adminData;
+    if (!d) return;
+    const rows = [['when', 'name', 'board', 'bundle', 'plays', 'amount_eur', 'email', 'stripe_session']];
+    (d.payments || []).forEach((p) => rows.push([p.created_at, p.initials, p.role || '', p.bundle, p.credits, (p.amount_cents / 100).toFixed(2), p.email || '', p.stripe_session_id]));
+    const csv = rows.map((r) => r.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = 'preslink-payments.csv';
+    a.click();
+  });
 
   // ---------------------------------------------------------------------------
   // Boot
@@ -848,7 +928,7 @@
     const params = new URLSearchParams(location.search);
     const sessionId = params.get('session_id');
     const cancelled = params.get('cancelled');
-    if (sessionId || cancelled) history.replaceState(null, '', location.pathname + '#arcade');
+    if (sessionId || cancelled) history.replaceState(null, '', location.pathname + '#home');
 
     const pending = store.get(PENDING_KEY);
     if (pending && player && pending.player_id === player.id) {
@@ -856,6 +936,7 @@
     }
     if (DEMO) toast('Demo mode: payments and scores are simulated on this device.', false, 4000);
 
+    renderPlayerBits();
     render(location.hash.slice(1) || 'home');
     if (sessionId) await confirmPayment(sessionId);
     else if (cancelled) toast('Payment cancelled. Nothing was charged.');

@@ -1,7 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="PresLink Arcade">
-  <rect width="64" height="64" rx="16" fill="#58cc02"/>
-  <rect x="0" y="52" width="64" height="12" rx="6" fill="#46a302"/>
-  <path d="M20 46V17h12.5a10 10 0 0 1 0 20H25" fill="none" stroke="#fff" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="45" cy="44" r="7" fill="#ffc800"/>
-  <circle cx="45" cy="44" r="3" fill="#e5a800"/>
+  <rect width="64" height="64" rx="18" fill="#16213A"/>
+  <rect x="10" y="26" width="44" height="12" rx="6" fill="#0E8A86"/>
+  <rect x="26" y="22" width="12" height="20" rx="4" fill="none" stroke="#F5B700" stroke-width="3"/>
+  <rect x="38" y="16" width="6" height="32" rx="3" fill="#FF6B4A"/>
 </svg>

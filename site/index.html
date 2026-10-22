@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#ffffff">
+  <meta name="theme-color" content="#faf7f0">
   <title>PresLink Arcade</title>
   <meta name="description" content="Stop the light, top the leaderboard, and fund Presentation Brothers schools in Ghana and Nigeria. €2 a play.">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -19,7 +19,7 @@
   <defs>
     <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 8 5.5z" fill="currentColor"/></symbol>
     <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M7 4h10v3a5 5 0 0 1-10 0V4zM5 5h2v2a3 3 0 0 1-3-3h1zm14 0h-2v2a3 3 0 0 0 3-3h-1zM10 13h4v3h-4zM7 18h10v2H7z" fill="currentColor"/></symbol>
-    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M12 10.5v6M12 7.2v.6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.5-9.3C1.2 8.6 3.2 5 6.8 5c2 0 3.4 1 4.2 2.3C11.8 6 13.2 5 15.2 5c3.6 0 5.6 3.6 4.3 6.7C19.5 16.4 12 21 12 21z" fill="currentColor"/></symbol>
     <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4.2" fill="currentColor"/><path d="M4 20a8 8 0 0 1 16 0z" fill="currentColor"/></symbol>
   </defs>
 </svg>
@@ -29,124 +29,78 @@
   <!-- ================= HOME ================= -->
   <section class="screen" data-screen="home">
     <header class="topbar">
-      <a class="brand" href="#home"><img src="assets/logo.svg" alt="" class="brand-mark"><span>PresLink</span></a>
-      <button class="chip chip-green" id="home-resume" data-go="arcade" hidden>Continue</button>
+      <a class="brand" href="#home"><img src="assets/logo.svg" alt="" class="brand-mark"><span>PresLink <em>Arcade</em></span></a>
+      <button class="chip" id="home-player" type="button" data-go="you" hidden>···</button>
     </header>
 
-    <div class="hero tile tile-green">
-      <svg class="hero-art" viewBox="0 0 320 96" aria-hidden="true">
+    <div class="hero tile tile-navy">
+      <svg class="hero-art" viewBox="0 0 320 90" aria-hidden="true">
         <defs>
           <linearGradient id="hero-g" x1="0" x2="1">
-            <stop offset="0" stop-color="#ff4b4b"/><stop offset=".32" stop-color="#ffc800"/>
-            <stop offset=".5" stop-color="#7ee73b"/><stop offset=".68" stop-color="#ffc800"/><stop offset="1" stop-color="#ff4b4b"/>
+            <stop offset="0" stop-color="#e4484b"/><stop offset=".32" stop-color="#f5b700"/>
+            <stop offset=".5" stop-color="#2bb673"/><stop offset=".68" stop-color="#f5b700"/><stop offset="1" stop-color="#e4484b"/>
           </linearGradient>
         </defs>
-        <rect x="8" y="28" width="304" height="40" rx="20" fill="url(#hero-g)"/>
-        <rect x="135" y="20" width="50" height="56" rx="14" fill="none" stroke="#fff" stroke-width="4"/>
-        <rect x="154" y="12" width="12" height="72" rx="6" fill="#fff" class="hero-marker"/>
+        <rect x="8" y="27" width="304" height="36" rx="18" fill="url(#hero-g)"/>
+        <rect x="138" y="19" width="44" height="52" rx="12" fill="none" stroke="#fff" stroke-width="3.5"/>
+        <rect x="154" y="11" width="12" height="68" rx="6" fill="#fff" class="hero-marker"/>
       </svg>
       <h1>Stop the light.<br>Fund a school.</h1>
-      <p>€2 a play. Highest score of the week wins.</p>
-      <button class="btn btn-white btn-xl js-play" type="button" id="home-play">Play</button>
+      <p class="hero-sub">One tap. Score out of 1,000. Highest score each week wins.</p>
+      <button class="btn btn-coral btn-xl" id="home-play" type="button">Play · €2</button>
+      <div class="seg seg-dark" id="home-role" role="radiogroup" aria-label="I am a">
+        <label><input type="radio" name="home-role" value="student" checked><span>Student</span></label>
+        <label><input type="radio" name="home-role" value="teacher"><span>Teacher</span></label>
+      </div>
+    </div>
+
+    <div class="grid-2 bundles">
+      <button class="tile tile-teal bundle" type="button" data-bundle="triple"><b>€5</b><span>3 plays</span><em>Save €1</em></button>
+      <button class="tile tile-gold bundle" type="button" data-bundle="seven"><b>€10</b><span>7 plays</span><em>Save €4</em></button>
     </div>
 
     <div class="card progress-card">
       <div class="progress-head"><strong id="home-raised">€0</strong><span id="home-goal">raised</span></div>
       <div class="bar"><div class="bar-fill" id="home-bar" style="width:0%"></div></div>
-      <p class="small muted" id="home-raised-sub">For Presentation Brothers schools in Ghana and Nigeria</p>
+      <p class="small muted" id="home-raised-sub">Every cent after card fees goes to PresLink.</p>
     </div>
 
-    <div class="grid-2">
-      <button class="tile tile-blue tile-btn" type="button" data-go="about"><svg><use href="#i-info"/></svg><span>About PresLink</span></button>
-      <button class="tile tile-orange tile-btn" type="button" data-go="board"><svg><use href="#i-trophy"/></svg><span>Leaderboard</span></button>
-    </div>
+    <button class="card card-link" type="button" data-go="about">
+      <span class="card-link-icon"><svg><use href="#i-heart"/></svg></span>
+      <span class="card-link-text"><strong>About PresLink</strong><span>Where the money goes</span></span>
+      <span class="card-link-arrow">›</span>
+    </button>
 
-    <footer class="footer"><button class="link" type="button" data-sheet="terms">Terms</button><span>·</span><span>Payments by Stripe</span></footer>
+    <footer class="footer">
+      <button class="link" type="button" data-sheet="terms">Terms</button><span>·</span><span>Payments by Stripe</span><span>·</span><button class="link" type="button" data-go="signin">Played before?</button>
+    </footer>
   </section>
 
-  <!-- ================= ABOUT ================= -->
-  <section class="screen" data-screen="about" hidden>
-    <header class="topbar"><button class="back" type="button" data-back aria-label="Back">‹</button><span class="topbar-title">About PresLink</span><span class="topbar-spacer"></span></header>
-    <p class="lede">PresLink is the student-run charity of Presentation Brothers College, Cork. Since 2005 it has funded the Presentation Brothers' schools in Ghana and Nigeria.</p>
-    <div class="stack">
-      <div class="tile tile-green tile-row"><span class="tile-icon">🏫</span><div><strong>Classrooms</strong><span>A three-classroom block in Sokabisi, Bolgatanga.</span></div></div>
-      <div class="tile tile-gold tile-row"><span class="tile-icon">🚲</span><div><strong>Bikes to school</strong><span>So girls in Ghana and Nigeria can get to class.</span></div></div>
-      <div class="tile tile-blue tile-row"><span class="tile-icon">🍼</span><div><strong>Babies home</strong><span>Mother of Mercy Babies Home, Sirigu.</span></div></div>
-    </div>
-    <p class="small muted center">Every play, after card fees, goes to PresLink.</p>
-    <button class="btn btn-green btn-xl js-play" type="button">Play</button>
-  </section>
-
-  <!-- ================= JOIN ================= -->
-  <section class="screen" data-screen="join" hidden>
-    <header class="topbar"><button class="back" type="button" data-back aria-label="Back">‹</button><span class="topbar-title">Your name</span><span class="topbar-spacer"></span></header>
-    <h1 class="h1">Pick three letters</h1>
-    <form id="join-form" autocomplete="off" novalidate>
-      <label class="initials" for="join-initials">
-        <input id="join-initials" inputmode="text" autocapitalize="characters" autocorrect="off" spellcheck="false" autocomplete="off" maxlength="3" aria-label="Your three letters">
-        <span class="box"></span><span class="box"></span><span class="box"></span>
-      </label>
-      <p class="field-error" id="join-error" role="alert" hidden></p>
-      <div class="seg" role="radiogroup" aria-label="I am a">
-        <label><input type="radio" name="role" value="student" checked><span>Student</span></label>
-        <label><input type="radio" name="role" value="teacher"><span>Teacher</span></label>
-      </div>
-      <button class="btn btn-green btn-xl" type="submit" id="join-submit">Continue</button>
-    </form>
-    <button class="link center" type="button" data-go="signin">Already have a name? Sign back in</button>
-    <p class="fineprint">By playing you agree to the <button class="link" type="button" data-sheet="terms">terms</button>. Under 18? Ask a parent or guardian before you pay.</p>
-  </section>
-
-  <!-- ================= SIGN IN ================= -->
-  <section class="screen" data-screen="signin" hidden>
-    <header class="topbar"><button class="back" type="button" data-back aria-label="Back">‹</button><span class="topbar-title">Welcome back</span><span class="topbar-spacer"></span></header>
-    <h1 class="h1">Your letters and code</h1>
-    <form id="signin-form" autocomplete="off" novalidate>
-      <label class="initials" for="signin-initials">
-        <input id="signin-initials" inputmode="text" autocapitalize="characters" autocorrect="off" spellcheck="false" autocomplete="off" maxlength="3" aria-label="Your three letters">
-        <span class="box"></span><span class="box"></span><span class="box"></span>
-      </label>
-      <label class="field"><span>Claim code</span><input id="signin-code" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="0000" autocomplete="off"></label>
-      <p class="field-error" id="signin-error" role="alert" hidden></p>
-      <button class="btn btn-blue btn-xl" type="submit" id="signin-submit">Sign in</button>
-    </form>
-    <p class="fineprint">Your code was shown when you picked your name. Lost it? Ask the PresLink committee.</p>
-  </section>
-
-  <!-- ================= ARCADE ================= -->
-  <section class="screen" data-screen="arcade" hidden>
-    <header class="topbar">
-      <a class="brand" href="#home"><img src="assets/logo.svg" alt="" class="brand-mark"><span>PresLink</span></a>
-      <button class="chip" id="arcade-player" type="button" data-go="you">···</button>
-    </header>
-
-    <div class="cabinet" id="cabinet">
-      <div class="cab-head"><span class="cab-label">Credits</span><span class="credits" id="arcade-credits">0</span></div>
+  <!-- ================= CABINET (after a payment) ================= -->
+  <section class="screen" data-screen="cabinet" hidden>
+    <header class="topbar"><span></span><span class="chip" id="cab-player">···</span></header>
+    <div class="cabinet">
+      <div class="cab-head"><span class="cab-label">Credits</span><span class="credits" id="cab-credits">0</span></div>
       <div class="slot-area">
         <div class="coin" id="coin" aria-hidden="true"><span>€</span></div>
         <div class="slot" aria-hidden="true"></div>
-        <span class="cab-hint" id="arcade-hint">Insert a coin to play</span>
+        <span class="cab-hint" id="cab-hint">Coin in!</span>
       </div>
-      <button class="btn btn-green btn-xl" id="arcade-play" type="button">Play</button>
       <div class="tray-area" aria-hidden="true">
         <div class="tray"></div>
         <div class="token" id="token">1</div>
       </div>
     </div>
-
-    <h2 class="h2" id="bundles-title">Insert a coin</h2>
-    <div class="bundle-grid">
-      <button class="tile tile-green bundle" type="button" data-bundle="single"><b>€2</b><span>1 play</span></button>
-      <button class="tile tile-gold bundle" type="button" data-bundle="triple"><em>Popular</em><b>€5</b><span>3 plays</span></button>
-      <button class="tile tile-blue bundle" type="button" data-bundle="seven"><em>Best value</em><b>€10</b><span>7 plays</span></button>
-    </div>
-    <p class="fineprint">Apple Pay, Google Pay or card. Every cent after card fees goes to PresLink.</p>
+    <h2 class="h2 center" id="cab-title">Thank you!</h2>
+    <p class="center lede" id="cab-text">Your €2 is on its way to Presentation Brothers schools in Ghana and Nigeria.</p>
+    <button class="btn btn-coral btn-xl" id="cab-play" type="button">Play</button>
+    <button class="link center" type="button" data-go="about">See what PresLink does</button>
   </section>
 
   <!-- ================= PLAY ================= -->
   <section class="screen screen-game" data-screen="play" hidden>
     <header class="topbar">
-      <button class="back" id="play-back" type="button" data-go="arcade" aria-label="Back to arcade">‹</button>
+      <button class="back" id="play-back" type="button" data-go="home" aria-label="Back">‹</button>
       <span class="chip" id="play-credits">0 plays left</span>
     </header>
     <div class="game" id="game">
@@ -165,12 +119,16 @@
     <div class="result" id="result" hidden>
       <h2 class="result-title" id="result-title">Nice!</h2>
       <div class="stat-row">
-        <div class="stat stat-green"><span>Score</span><strong id="result-score">0</strong></div>
-        <div class="stat stat-blue"><span>Best</span><strong id="result-best">0</strong></div>
-        <div class="stat stat-gold"><span>Rank</span><strong id="result-rank">–</strong></div>
+        <div class="stat"><span>Score</span><strong id="result-score">0</strong></div>
+        <div class="stat"><span>Your best</span><strong id="result-best">0</strong></div>
+        <div class="stat"><span>Rank</span><strong id="result-rank">–</strong></div>
       </div>
       <p class="result-note" id="result-note" hidden></p>
-      <button class="btn btn-green btn-xl" type="button" id="result-again">Play again</button>
+      <button class="btn btn-coral btn-xl" type="button" id="result-again">Play again</button>
+      <div class="grid-2" id="result-topup" hidden>
+        <button class="btn btn-teal" type="button" data-bundle="triple">3 plays · €5</button>
+        <button class="btn btn-gold" type="button" data-bundle="seven">7 plays · €10</button>
+      </div>
       <div class="grid-2">
         <button class="btn btn-ghost" type="button" id="result-share">Share</button>
         <button class="btn btn-ghost" type="button" data-go="board">Leaderboard</button>
@@ -193,14 +151,54 @@
     <p class="empty small" id="winners-empty">Winners appear here after the first week.</p>
   </section>
 
+  <!-- ================= ABOUT ================= -->
+  <section class="screen" data-screen="about" hidden>
+    <header class="topbar"><span class="topbar-title">About PresLink</span></header>
+    <div class="tile tile-teal about-hero">
+      <h1>Students in Cork, schools in Ghana and Nigeria.</h1>
+      <p>PresLink is the student-run charity of Presentation Brothers College, Cork. It was started in 2005 by a group of junior students, and every year a new committee of students takes it on, with teachers as mentors.</p>
+    </div>
+    <p class="lede">It raises money for the schools and missions run by the Presentation Brothers in Ghana and Nigeria. The Brothers are a Catholic congregation founded by Blessed Edmund Rice in Waterford in 1802, and they work in Ireland, Ghana, Nigeria and the West Indies.</p>
+
+    <h2 class="h2">What PresLink has funded</h2>
+    <div class="stack">
+      <div class="card about-item"><span class="about-icon tile-navy">🏫</span><div><strong>Classrooms in Bolgatanga</strong><p>A three-classroom block at the new Presentation Primary School in Sokabisi, Bolgatanga, Ghana. In 2021 the school had 107 pupils and four staff.</p></div></div>
+      <div class="card about-item"><span class="about-icon tile-coral">🚲</span><div><strong>Bikes to school</strong><p>A 2018 campaign to provide bicycles so that girls in Ghana and Nigeria can travel to school and stay in education.</p></div></div>
+      <div class="card about-item"><span class="about-icon tile-gold">🍼</span><div><strong>Mother of Mercy Babies Home</strong><p>Donations to the babies home in Sirigu, Ghana, which the Brothers' community in Bolgatanga supports.</p></div></div>
+      <div class="card about-item"><span class="about-icon tile-teal">🎄</span><div><strong>Year after year</strong><p>Table quizzes, bag-packs, carol concerts, fantasy football and a Christmas raffle. In 2017 the students sent €6,160 to the Brothers' West Africa Province.</p></div></div>
+    </div>
+
+    <h2 class="h2">Where your €2 goes</h2>
+    <div class="card">
+      <p>Every play is a payment to PresLink. Stripe's card fee, about 1.5% plus 25 cent, is the only deduction. The PresLink committee passes the money on to the Presentation Brothers' mission office for their schools in Ghana and Nigeria.</p>
+      <p class="small muted" style="margin:0">Facts from the Pres Gazette newsletters (2016 to 2021) and presentationbrothers.org. The committee keeps this page up to date.</p>
+    </div>
+    <button class="btn btn-coral btn-xl js-play" type="button">Play · €2</button>
+  </section>
+
   <!-- ================= YOU ================= -->
   <section class="screen" data-screen="you" hidden>
     <header class="topbar"><span class="topbar-title">You</span></header>
-    <div class="tile tile-blue profile"><span class="profile-initials" id="you-initials">···</span><span class="profile-role" id="you-role"></span></div>
+    <div class="tile tile-navy profile">
+      <div><span class="profile-label">You play as</span><span class="profile-initials" id="you-initials">···</span><span class="profile-role" id="you-role"></span></div>
+      <button class="btn btn-white btn-small" type="button" id="you-edit">Change</button>
+    </div>
+    <form id="edit-form" class="card stack" autocomplete="off" novalidate hidden>
+      <label class="initials" for="edit-initials">
+        <input id="edit-initials" inputmode="text" autocapitalize="characters" autocorrect="off" spellcheck="false" autocomplete="off" maxlength="3" aria-label="Your three letters">
+        <span class="box"></span><span class="box"></span><span class="box"></span>
+      </label>
+      <div class="seg" role="radiogroup" aria-label="Board">
+        <label><input type="radio" name="edit-role" value="student"><span>Student</span></label>
+        <label><input type="radio" name="edit-role" value="teacher"><span>Teacher</span></label>
+      </div>
+      <p class="field-error" id="edit-error" role="alert" hidden></p>
+      <div class="grid-2"><button class="btn btn-ghost" type="button" id="edit-cancel">Cancel</button><button class="btn btn-teal" type="submit" id="edit-save">Save</button></div>
+    </form>
     <div class="card code-card">
       <span class="small muted">Claim code</span>
       <strong id="you-code">0000</strong>
-      <p class="small muted">Show your letters and this code to collect a prize, or to sign back in on another phone. Take a screenshot.</p>
+      <p class="small muted">Show your letters and this code to collect a prize. They also sign you in on another phone. Take a screenshot.</p>
     </div>
     <div class="card">
       <div class="row"><span>Credits</span><strong id="you-credits">0</strong></div>
@@ -208,6 +206,22 @@
     </div>
     <button class="btn btn-ghost" type="button" id="you-signout">Sign out on this phone</button>
     <button class="link center small" type="button" data-go="admin">Committee sign-in</button>
+  </section>
+
+  <!-- ================= SIGN IN ================= -->
+  <section class="screen" data-screen="signin" hidden>
+    <header class="topbar"><button class="back" type="button" data-back aria-label="Back">‹</button><span class="topbar-title">Played before?</span><span class="topbar-spacer"></span></header>
+    <p class="lede">Enter your letters and claim code to pick up where you left off.</p>
+    <form id="signin-form" autocomplete="off" novalidate>
+      <label class="initials" for="signin-initials">
+        <input id="signin-initials" inputmode="text" autocapitalize="characters" autocorrect="off" spellcheck="false" autocomplete="off" maxlength="3" aria-label="Your three letters">
+        <span class="box"></span><span class="box"></span><span class="box"></span>
+      </label>
+      <label class="field"><span>Claim code</span><input id="signin-code" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="0000" autocomplete="off"></label>
+      <p class="field-error" id="signin-error" role="alert" hidden></p>
+      <button class="btn btn-teal btn-xl" type="submit" id="signin-submit">Sign in</button>
+    </form>
+    <p class="fineprint">Both are on your You tab. Lost them? Ask the PresLink committee.</p>
   </section>
 
   <!-- ================= ADMIN ================= -->
@@ -220,38 +234,64 @@
     <form id="admin-login" class="card stack" autocomplete="off">
       <label class="field"><span>Committee code</span><input type="password" id="admin-code" autocomplete="current-password"></label>
       <p class="field-error" id="admin-error" role="alert" hidden></p>
-      <button class="btn btn-blue" type="submit">Open</button>
+      <button class="btn btn-teal" type="submit">Open</button>
     </form>
     <div id="admin-panel" hidden>
       <div class="stat-row stat-row-4">
-        <div class="stat stat-gold"><span>Raised</span><strong id="adm-raised">€0</strong></div>
-        <div class="stat stat-green"><span>Coins</span><strong id="adm-payments">0</strong></div>
-        <div class="stat stat-blue"><span>Plays</span><strong id="adm-plays">0</strong></div>
-        <div class="stat stat-purple"><span>Players</span><strong id="adm-players">0</strong></div>
+        <div class="stat"><span>Raised</span><strong id="adm-raised">€0</strong></div>
+        <div class="stat"><span>Coins</span><strong id="adm-payments">0</strong></div>
+        <div class="stat"><span>Plays</span><strong id="adm-plays">0</strong></div>
+        <div class="stat"><span>Players</span><strong id="adm-players">0</strong></div>
       </div>
+      <p class="small muted center" id="adm-roles"></p>
+
       <form id="admin-settings" class="card stack" autocomplete="off">
-        <label class="field"><span>Goal (€)</span><input id="adm-goal" inputmode="numeric" pattern="[0-9]*"></label>
+        <div class="grid-2">
+          <label class="field"><span>Goal (€)</span><input id="adm-goal" inputmode="numeric" pattern="[0-9]*"></label>
+          <label class="field"><span>Progress</span><input id="adm-progress" disabled></label>
+        </div>
         <label class="field"><span>This week's prize (shown on the leaderboard)</span><input id="adm-prize" maxlength="200" placeholder="e.g. €20 voucher and the PresLink trophy"></label>
-        <button class="btn btn-blue" type="submit">Save</button>
+        <button class="btn btn-teal" type="submit">Save</button>
       </form>
-      <h2 class="h2">This week</h2>
+
+      <div class="admin-head">
+        <h2 class="h2">Board</h2>
+        <select id="adm-week" class="select" aria-label="Week"></select>
+      </div>
       <div class="tabs" role="tablist" id="admin-tabs">
         <button role="tab" type="button" class="tab active" data-role="student">Students</button>
         <button role="tab" type="button" class="tab" data-role="teacher">Teachers</button>
       </div>
-      <div class="table-wrap"><table class="table" id="adm-board"><thead><tr><th>#</th><th>Name</th><th>Code</th><th>Score</th><th>Plays</th><th></th></tr></thead><tbody></tbody></table></div>
+      <div class="table-wrap"><table class="table" id="adm-board"><thead><tr><th>#</th><th>Name</th><th>Code</th><th>Score</th><th>Plays</th><th>When</th><th></th></tr></thead><tbody></tbody></table></div>
+      <p class="small muted">Winner: highest score, earlier time wins a tie. Ask the winner to open their You tab and check the code.</p>
+
+      <h2 class="h2">Find a player</h2>
+      <form id="admin-find" class="row-form" autocomplete="off">
+        <input id="adm-find-initials" maxlength="3" autocapitalize="characters" placeholder="ABC" aria-label="Letters">
+        <button class="btn btn-teal" type="submit">Find</button>
+      </form>
+      <div class="card" id="adm-player" hidden></div>
+
       <h2 class="h2">Past winners</h2>
       <div class="table-wrap"><table class="table" id="adm-winners"><thead><tr><th>Week</th><th>Board</th><th>Name</th><th>Code</th><th>Score</th></tr></thead><tbody></tbody></table></div>
-      <h2 class="h2">Recent payments</h2>
+
+      <div class="admin-head">
+        <h2 class="h2">Money</h2>
+        <button class="link small" type="button" id="adm-csv">Download CSV</button>
+      </div>
+      <div class="table-wrap"><table class="table" id="adm-days"><thead><tr><th>Day</th><th>Coins</th><th>€</th></tr></thead><tbody></tbody></table></div>
+      <h3 class="h3">Recent payments</h3>
       <div class="table-wrap"><table class="table" id="adm-payments"><thead><tr><th>When</th><th>Name</th><th>Plays</th><th>€</th><th>Email</th></tr></thead><tbody></tbody></table></div>
-      <h2 class="h2">Blocked names</h2>
+
+      <h2 class="h2">Names</h2>
       <form id="admin-block" class="row-form" autocomplete="off">
         <input id="adm-block-initials" maxlength="3" autocapitalize="characters" placeholder="ABC" aria-label="Letters to block">
-        <button class="btn btn-red" type="submit">Block</button>
+        <button class="btn btn-coral" type="submit">Block</button>
       </form>
-      <p class="small muted" id="adm-blocked-list">Built-in list active.</p>
-      <h2 class="h2">Banned players</h2>
+      <p class="small muted" id="adm-blocked-list"></p>
+      <h3 class="h3">Banned players</h3>
       <ul class="plain" id="adm-banned"></ul>
+
       <form id="admin-newcode" class="card stack" autocomplete="off">
         <label class="field"><span>New committee code (6+ characters)</span><input type="password" id="adm-newcode" autocomplete="new-password"></label>
         <button class="btn btn-ghost" type="submit">Change code</button>
@@ -262,10 +302,10 @@
 </main>
 
 <nav class="tabbar" id="tabbar" aria-label="Main">
-  <button type="button" data-tab="play"><svg><use href="#i-play"/></svg>Play</button>
-  <button type="button" data-tab="board"><svg><use href="#i-trophy"/></svg>Board</button>
-  <button type="button" data-tab="about"><svg><use href="#i-info"/></svg>About</button>
-  <button type="button" data-tab="you"><svg><use href="#i-user"/></svg>You</button>
+  <button type="button" data-tab="play"><svg><use href="#i-play"/></svg><span>Play</span></button>
+  <button type="button" data-tab="board"><svg><use href="#i-trophy"/></svg><span>Board</span></button>
+  <button type="button" data-tab="about"><svg><use href="#i-heart"/></svg><span>About</span></button>
+  <button type="button" data-tab="you"><svg><use href="#i-user"/></svg><span>You</span></button>
 </nav>
 
 <div class="sheet-backdrop" id="sheet-backdrop" hidden></div>
@@ -281,7 +321,7 @@
     <h3>3. Who can play</h3>
     <p>Students and staff of Presentation Brothers College and their supporters. Under 18s must have a parent's or guardian's permission before paying. The Committee may refuse or remove any player.</p>
     <h3>4. Your name and claim code</h3>
-    <p>You play under three letters of your choice. Each name can be used by one person only. Offensive names are blocked and the Committee may remove any name. Your four-digit claim code proves a score is yours and lets you sign back in. Keep it private.</p>
+    <p>Your phone is given a random three-letter name the first time you play. You can change it on the You tab; each name can be used by one person only and offensive names are blocked or removed. Your four-digit claim code proves a score is yours and signs you in on another phone. Keep it private.</p>
     <h3>5. How winning works</h3>
     <p>A competition week runs Monday 00:00 to Sunday 23:59, Irish time. The highest score of the week on the Students board and on the Teachers board wins. Equal scores: the earlier one wins. Winners are announced by the Committee <span class="placeholder">[where and when]</span> and must show their letters and claim code to collect. The prize is set by the Committee each week and has no cash alternative.</p>
     <h3>6. Fair play</h3>
@@ -289,21 +329,11 @@
     <h3>7. Payments and refunds</h3>
     <p>Payments are processed by Stripe; we never see your card number. Plays are not refundable except where the law requires it or a fault on our side meant a paid play could not be used. Contact the Committee and we will put it right.</p>
     <h3>8. Your data</h3>
-    <p>We store your three letters, student or teacher, your scores and play times, and a record of each payment (amount, time, Stripe reference and the email you give Stripe for your receipt). We do not ask for your name. Data is held by Supabase (EU) and Stripe and is deleted when the campaign ends. To have it removed sooner, contact the Committee with your letters and claim code.</p>
+    <p>We store your three letters, whether you play on the student or teacher board, your scores and play times, and a record of each payment (amount, time, Stripe reference and the email you give Stripe for your receipt). We do not ask for your name. Data is held by Supabase (UK/EU) and Stripe and is deleted when the campaign ends. To have it removed sooner, contact the Committee with your letters and claim code.</p>
     <h3>9. Availability</h3>
     <p>The game may be unavailable at times. We are not responsible for plays lost because of your device, network or browser, though we will try to help.</p>
     <h3>10. Changes and law</h3>
     <p>The Committee may change these terms, prices or prizes, or end the game, at any time. These terms are governed by the laws of Ireland.</p>
-  </div>
-</div>
-
-<div class="sheet sheet-thanks" id="sheet-thanks" role="dialog" aria-modal="true" hidden>
-  <div class="sheet-body center">
-    <div class="thanks-icon">🎉</div>
-    <h2>Thank you!</h2>
-    <p id="thanks-text">Your €2 is on its way to Presentation Brothers schools in Ghana and Nigeria.</p>
-    <button class="btn btn-green btn-xl" type="button" data-close id="thanks-play">Play</button>
-    <button class="link center" type="button" data-go="about" data-close>What PresLink does</button>
   </div>
 </div>
 

@@ -4,6 +4,8 @@
 -- Run them in the Supabase dashboard: SQL Editor -> New query -> paste -> Run.
 
 -- 0. Set or change the committee code (the first call needs no old code).
+--    Everything below can also be done from the Committee screen in the app (/#admin):
+--    boards for any week with claim codes, find a player, void/restore, ban, rename, block names, CSV.
 select public.admin_set_code(null, 'YourCommitteeCode');            -- first time
 select public.admin_set_code('OldCode', 'NewCommitteeCode');        -- later
 -- If the committee is locked out after too many wrong tries, clear the lock:

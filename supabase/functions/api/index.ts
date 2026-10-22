@@ -2,7 +2,8 @@
 //
 // Dependency-free on purpose: Postgres is reached through PostgREST RPC with the
 // service-role key, Stripe through its REST API. Every action is a POST with a
-// JSON body: { action: "register" | "signin" | "me" | "checkout" | "confirm" | "start" | "submit" | "admin", ... }.
+// JSON body: { action: "register" | "update" | "signin" | "me" | "checkout" | "confirm" | "start" | "submit" | "admin", ... }.
+// "register" needs no name: the database assigns a random three-letter one.
 // Admin calls carry the committee code; the database verifies it (SHA-256 hash in settings) and
 // locks the admin scope after repeated failures.
 //
@@ -124,11 +125,19 @@ function requireUuid(v: unknown, code: string): string {
 type Body = Record<string, unknown>;
 
 async function register(body: Body) {
-  const initials = String(body.initials ?? "").toUpperCase().trim();
-  const role = String(body.role ?? "");
-  if (!/^[A-Z]{3}$/.test(initials)) throw new HttpError(400, "BAD_INITIALS");
+  const role = String(body.role ?? "student");
   if (role !== "student" && role !== "teacher") throw new HttpError(400, "BAD_ROLE");
-  return await rpc("register_player", { p_initials: initials, p_role: role });
+  return await rpc("register_player", { p_role: role });
+}
+
+async function update(body: Body) {
+  const playerId = requireUuid(body.player_id, "BAD_PLAYER");
+  const initials = body.initials == null ? null : String(body.initials).toUpperCase().trim();
+  const role = body.role == null ? null : String(body.role);
+  if (initials !== null && !/^[A-Z]{3}$/.test(initials)) throw new HttpError(400, "BAD_INITIALS");
+  if (role !== null && role !== "student" && role !== "teacher") throw new HttpError(400, "BAD_ROLE");
+  if (initials === null && role === null) throw new HttpError(400, "NOTHING_TO_UPDATE");
+  return await rpc("update_player", { p_id: playerId, p_initials: initials, p_role: role });
 }
 
 async function me(body: Body) {
@@ -195,7 +204,7 @@ async function confirm(body: Body) {
 
   // Returning the player lets a browser that lost its storage recover its account from the receipt URL.
   const player = await rpc("me_player", { p_id: meta.player_id });
-  return { paid: true, granted: grant.granted, credits_added: b.credits, player };
+  return { paid: true, granted: grant.granted, credits_added: b.credits, bundle: meta.bundle, player };
 }
 
 async function start(body: Body) {
@@ -228,7 +237,7 @@ async function signin(body: Body) {
   return await rpc("signin_player", { p_initials: initials, p_code: code });
 }
 
-const ADMIN_OPS = new Set(["overview", "void", "ban", "block", "set_code", "settings"]);
+const ADMIN_OPS = new Set(["overview", "void", "ban", "block", "set_code", "settings", "player", "reset_name"]);
 
 async function admin(body: Body) {
   const code = String(body.code ?? "");
@@ -237,8 +246,20 @@ async function admin(body: Body) {
   if (!ADMIN_OPS.has(op)) throw new HttpError(400, "BAD_ADMIN_OP");
 
   switch (op) {
-    case "overview":
-      return await rpc("admin_overview", { p_code: code });
+    case "overview": {
+      const week = body.week == null ? null : String(body.week);
+      if (week !== null && !/^\d{4}-\d{2}-\d{2}$/.test(week)) throw new HttpError(400, "BAD_WEEK");
+      return await rpc("admin_overview", { p_code: code, p_week: week });
+    }
+    case "player": {
+      const initials = String(body.initials ?? "").toUpperCase().trim();
+      if (!/^[A-Z]{3}$/.test(initials)) throw new HttpError(400, "BAD_INITIALS");
+      return await rpc("admin_player", { p_code: code, p_initials: initials });
+    }
+    case "reset_name": {
+      const playerId = requireUuid(body.player_id, "BAD_PLAYER");
+      return await rpc("admin_reset_name", { p_code: code, p_player_id: playerId });
+    }
     case "void": {
       const playId = requireUuid(body.play_id, "BAD_PLAY");
       await rpc("admin_void_play", { p_code: code, p_play_id: playId, p_voided: body.voided !== false, p_reason: String(body.reason ?? "committee").slice(0, 200) });
@@ -286,6 +307,7 @@ export async function handler(req: Request): Promise<Response> {
   try {
     switch (body.action) {
       case "register": return json(await register(body));
+      case "update": return json(await update(body));
       case "signin": return json(await signin(body));
       case "admin": return json(await admin(body));
       case "me": return json(await me(body));
