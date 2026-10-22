@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0b14">
+  <title>PresLink Arcade</title>
+  <meta name="description" content="Stop the light, top the leaderboard, and fund Presentation Brothers schools in Ghana and Nigeria. €2 a play.">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="bg" aria-hidden="true"></div>
+
+<main class="shell">
+
+  <!-- ================= HOME ================= -->
+  <section class="screen" id="screen-home" data-screen="home">
+    <header class="topbar">
+      <a class="brand" href="#home"><img src="assets/logo.svg" alt="" class="brand-mark"><span>PresLink <em>Arcade</em></span></a>
+      <button class="chip chip-accent" id="home-resume" data-go="arcade" hidden>Continue ›</button>
+    </header>
+
+    <div class="hero">
+      <p class="eyebrow">Presentation Brothers College, Cork</p>
+      <h1 class="display">Stop the light.<br><span class="neon">Fund a school.</span></h1>
+      <p class="lede">€2 a play. Every play goes to Presentation Brothers schools in Ghana and Nigeria. The highest score of the week wins the prize.</p>
+      <div class="raised card">
+        <span class="raised-label">Raised so far</span>
+        <span class="raised-amount" id="home-raised">€0</span>
+        <span class="raised-sub" id="home-raised-sub">Be the first to play</span>
+      </div>
+      <a href="#how" class="btn btn-ghost">How it works ↓</a>
+    </div>
+
+    <section class="section">
+      <h2>What is PresLink?</h2>
+      <p>PresLink is the student-run charity of Presentation Brothers College in Cork. A new committee of students takes it on every year, with teachers as mentors, and raises money for the schools and missions the Presentation Brothers run in Ghana and Nigeria.</p>
+      <ul class="facts">
+        <li><strong>2005</strong><span>Started by a group of junior students at Pres</span></li>
+        <li><strong>Ghana &amp; Nigeria</strong><span>Where the Brothers run the schools you're funding</span></li>
+        <li><strong>100%</strong><span>Of what you pay, after card fees, goes to PresLink</span></li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>What your €2 does</h2>
+      <div class="cards">
+        <article class="card">
+          <div class="card-icon">🏫</div>
+          <h3>Classrooms</h3>
+          <p>PresLink financed a three-classroom block at Presentation Primary School in Sokabisi, Bolgatanga, Ghana. It opened with 107 pupils.</p>
+        </article>
+        <article class="card">
+          <div class="card-icon">🚲</div>
+          <h3>Bikes to school</h3>
+          <p>Bicycles so girls in Ghana and Nigeria can make the journey to school and stay in education.</p>
+        </article>
+        <article class="card">
+          <div class="card-icon">🍼</div>
+          <h3>Babies home</h3>
+          <p>Support for the Mother of Mercy Babies Home in Sirigu, Ghana, which the Brothers' community in Bolgatanga looks after.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="how">
+      <h2>How it works</h2>
+      <ol class="steps">
+        <li><span class="step-n">1</span><div><strong>Pick your three letters</strong><p>Arcade style. No sign-up, no email, no real name.</p></div></li>
+        <li><span class="step-n">2</span><div><strong>Insert a coin</strong><p>€2 for a play, €5 for three, €10 for seven. Paid securely through Stripe. Apple Pay and Google Pay work.</p></div></li>
+        <li><span class="step-n">3</span><div><strong>Stop the light in the green</strong><p>One tap. Score out of 1,000. Highest score each week wins, with separate boards for students and teachers.</p></div></li>
+      </ol>
+    </section>
+
+    <section class="section" id="terms">
+      <details class="terms">
+        <summary><span class="summary-title">Terms &amp; conditions</span><span class="summary-hint">Tap to read</span></summary>
+        <div class="terms-body">
+          <p class="terms-updated">Last updated 22 October 2026</p>
+
+          <h3>1. Who runs this</h3>
+          <p>PresLink Arcade is run by the PresLink student committee of Presentation Brothers College, Cork (“the Committee”), with staff mentors. Questions: <span class="placeholder">[committee contact email]</span>.</p>
+
+          <h3>2. What it is</h3>
+          <p>PresLink Arcade is a game of skill. Each play costs €2. You can also buy 3 plays for €5 or 7 plays for €10. All payments, less the card-processing fees charged by Stripe, go to PresLink for the Presentation Brothers' schools and projects in Ghana and Nigeria.</p>
+
+          <h3>3. Who can play</h3>
+          <p>The game is for students and staff of Presentation Brothers College and their supporters. If you are under 18 you must have the permission of a parent or guardian before you pay. The Committee may refuse or remove any player.</p>
+
+          <h3>4. Your arcade name and claim code</h3>
+          <p>You play under three letters of your choice. Names that are offensive or impersonate someone will be removed. Your device remembers your player. The app also gives you a four-digit claim code. Keep it: it is how you prove a winning score is yours.</p>
+
+          <h3>5. How winning works</h3>
+          <p>Each competition week runs from Monday 00:00 to Sunday 23:59, Irish time. The highest score of the week on the Students board and on the Teachers board wins. If two scores are equal, the one achieved first wins. Winners are announced by the Committee <span class="placeholder">[where and when, e.g. at Monday assembly]</span> and must show their arcade name and claim code on their device to collect. The prize is set and announced by the Committee each week and has no cash alternative.</p>
+
+          <h3>6. Fair play</h3>
+          <p>One tap per play. Scores are checked by our server. Plays may be voided, and players removed, for cheating, tampering with the game, or interfering with other players. The Committee's decision is final.</p>
+
+          <h3>7. Payments and refunds</h3>
+          <p>Payments are processed by Stripe. We never see or store your card number. Plays are not refundable, except where the law requires it or where a technical fault on our side meant a paid play could not be used. In that case contact the Committee and we will put it right.</p>
+
+          <h3>8. Your data</h3>
+          <p>We store your three letters, whether you are a student or teacher, your scores and play times, and a record of each payment (amount, time, Stripe reference and the email address you give Stripe for your receipt). We do not ask for your name. Data is held by Supabase (EU) and Stripe and is deleted when the campaign ends. To have your data removed sooner, contact the Committee with your arcade name and claim code.</p>
+
+          <h3>9. Availability</h3>
+          <p>We will do our best to keep the game running, but it may be unavailable at times. We are not responsible for plays lost because of your device, network or browser, though we will try to help.</p>
+
+          <h3>10. Changes</h3>
+          <p>The Committee may change these terms, prices or prizes, or end the game, at any time. Changes are posted on this page.</p>
+
+          <h3>11. Law</h3>
+          <p>These terms are governed by the laws of Ireland.</p>
+        </div>
+      </details>
+    </section>
+
+    <div class="cta-block">
+      <button class="btn btn-primary btn-xl" id="home-play">I've read the terms. Let's play!</button>
+      <p class="fineprint">By playing you agree to the terms above. Under 18? Ask a parent or guardian before you pay.</p>
+    </div>
+
+    <footer class="footer">
+      <p>PresLink is the student-run charity of Presentation Brothers College, Cork.</p>
+      <p>Payments by Stripe. We never see your card details.</p>
+    </footer>
+  </section>
+
+  <!-- ================= JOIN ================= -->
+  <section class="screen" id="screen-join" data-screen="join" hidden>
+    <header class="topbar">
+      <button class="back" data-go="home">‹ Back</button>
+    </header>
+    <div class="join">
+      <h1 class="display">Enter your<br><span class="neon">initials</span></h1>
+      <p class="lede">Three letters. This is your name on the leaderboard.</p>
+      <form id="join-form" autocomplete="off" novalidate>
+        <label class="initials" for="join-initials">
+          <input id="join-initials" inputmode="text" autocapitalize="characters" autocorrect="off" spellcheck="false" autocomplete="off" maxlength="3" aria-label="Your three letters">
+          <span class="box" data-i="0"></span>
+          <span class="box" data-i="1"></span>
+          <span class="box" data-i="2"></span>
+        </label>
+        <p class="field-error" id="join-error" role="alert" hidden></p>
+        <fieldset class="seg" id="join-role">
+          <legend>I am a</legend>
+          <div class="seg-options">
+            <label><input type="radio" name="role" value="student" checked><span>Student</span></label>
+            <label><input type="radio" name="role" value="teacher"><span>Teacher</span></label>
+          </div>
+        </fieldset>
+        <button class="btn btn-primary btn-xl" type="submit" id="join-submit">Continue</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ================= ARCADE ================= -->
+  <section class="screen" id="screen-arcade" data-screen="arcade" hidden>
+    <header class="topbar">
+      <a class="brand" href="#home"><img src="assets/logo.svg" alt="" class="brand-mark"><span>PresLink <em>Arcade</em></span></a>
+      <button class="chip player-chip" id="arcade-player" type="button">···</button>
+    </header>
+
+    <div class="raised raised-inline"><span>Raised so far</span><strong id="arcade-raised">€0</strong></div>
+
+    <div class="machine" id="machine">
+      <div class="marquee"><span>STOP THE LIGHT</span></div>
+      <div class="credits-display" aria-live="polite">
+        <span class="credits-label">Credits</span>
+        <span class="credits-value" id="arcade-credits">0</span>
+      </div>
+      <div class="slot-wrap">
+        <div class="coin" id="coin" aria-hidden="true"><span>€</span></div>
+        <div class="slot" id="slot"><span class="slot-hole"></span><span class="slot-text" id="slot-text">Insert coin</span></div>
+      </div>
+      <button class="btn btn-play btn-xl" id="arcade-play" type="button">Play</button>
+      <p class="machine-hint" id="arcade-hint">Insert a coin to play</p>
+    </div>
+
+    <div class="bundles" id="bundles">
+      <h2>Insert coin</h2>
+      <div class="bundle-grid">
+        <button class="bundle" type="button" data-bundle="single">
+          <span class="bundle-plays">1 play</span>
+          <span class="bundle-price">€2</span>
+        </button>
+        <button class="bundle bundle-popular" type="button" data-bundle="triple">
+          <span class="bundle-tag">Most popular</span>
+          <span class="bundle-plays">3 plays</span>
+          <span class="bundle-price">€5</span>
+          <span class="bundle-save">Save €1</span>
+        </button>
+        <button class="bundle" type="button" data-bundle="seven">
+          <span class="bundle-tag">Best value</span>
+          <span class="bundle-plays">7 plays</span>
+          <span class="bundle-price">€10</span>
+          <span class="bundle-save">Save €4</span>
+        </button>
+      </div>
+      <p class="fineprint">Secure checkout by Stripe. Apple Pay, Google Pay and cards. Every cent after card fees goes to PresLink.</p>
+    </div>
+
+    <div class="arcade-links">
+      <button class="btn btn-ghost" type="button" data-go="board">Leaderboard</button>
+      <button class="btn btn-ghost" type="button" id="arcade-code">My claim code</button>
+    </div>
+  </section>
+
+  <!-- ================= PLAY ================= -->
+  <section class="screen screen-game" id="screen-play" data-screen="play" hidden>
+    <header class="topbar">
+      <button class="back" id="play-back" data-go="arcade">‹ Arcade</button>
+      <span class="chip" id="play-credits">0 plays left</span>
+    </header>
+
+    <div class="game" id="game">
+      <div class="game-msg" id="game-msg">Ready?</div>
+      <div class="track-wrap">
+        <div class="track" id="track">
+          <div class="zone zone-amber"></div>
+          <div class="zone zone-green"></div>
+          <div class="centre-line"></div>
+          <div class="marker" id="marker"></div>
+        </div>
+        <div class="track-labels" aria-hidden="true"><span>0</span><span>1000</span><span>0</span></div>
+      </div>
+      <div class="score" aria-live="polite"><span id="score-value">0</span><span class="score-max">/1000</span></div>
+      <div class="verdict" id="verdict"></div>
+      <p class="tap-hint" id="tap-hint">Tap anywhere to stop</p>
+    </div>
+
+    <div class="result" id="result" hidden>
+      <div class="result-stats">
+        <div><span class="stat-label">This play</span><strong id="result-score">0</strong></div>
+        <div><span class="stat-label">Best this week</span><strong id="result-best">0</strong></div>
+        <div><span class="stat-label">Your rank</span><strong id="result-rank">–</strong></div>
+      </div>
+      <p class="result-note" id="result-note" hidden></p>
+      <button class="btn btn-primary btn-xl" type="button" id="result-again">Play again</button>
+      <button class="btn btn-ghost" type="button" data-go="board">Leaderboard</button>
+    </div>
+  </section>
+
+  <!-- ================= LEADERBOARD ================= -->
+  <section class="screen" id="screen-board" data-screen="board" hidden>
+    <header class="topbar">
+      <button class="back" data-go="arcade">‹ Arcade</button>
+      <span class="chip" id="board-week">This week</span>
+    </header>
+    <h1 class="display">Leader<span class="neon">board</span></h1>
+    <div class="tabs" role="tablist">
+      <button role="tab" type="button" class="tab active" data-role="student" aria-selected="true">Students</button>
+      <button role="tab" type="button" class="tab" data-role="teacher" aria-selected="false">Teachers</button>
+    </div>
+    <ol class="board" id="board-list"></ol>
+    <p class="empty" id="board-empty" hidden>No scores yet this week. Be the first!</p>
+    <section class="section">
+      <h2>Past winners</h2>
+      <ul class="winners" id="winners"></ul>
+      <p class="empty" id="winners-empty">The first winners will appear here next week.</p>
+    </section>
+    <p class="fineprint">The prize is announced each week by the PresLink committee. Winners show their initials and claim code to collect.</p>
+  </section>
+
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="overlay-card">
+    <div class="spinner" aria-hidden="true"></div>
+    <p id="overlay-text">Confirming your payment…</p>
+  </div>
+</div>
+
+<dialog class="dialog" id="code-dialog">
+  <h2>Your claim code</h2>
+  <p class="dialog-code"><span id="dialog-initials">···</span><span class="dialog-sep">·</span><span id="dialog-code">0000</span></p>
+  <p>If you top the leaderboard, show this screen to the PresLink committee to collect your prize. Take a screenshot so you don't lose it.</p>
+  <form method="dialog"><button class="btn btn-primary" type="submit">Got it</button></form>
+</dialog>
+
+<script src="config.js"></script>
+<script src="mock.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
