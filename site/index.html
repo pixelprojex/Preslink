@@ -3,21 +3,29 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#ffffff">
+  <meta name="theme-color" content="#5b3a9a">
   <title>PresLink Arcade</title>
   <meta name="description" content="Stop the light on the mark. Best score of the week wins the prize, and every play funds Presentation Brothers schools in Ghana and Nigeria.">
-  <link rel="icon" href="assets/favicon.svg?v=6" type="image/svg+xml">
-  <link rel="icon" href="assets/favicon-32.png?v=6" type="image/png" sizes="32x32">
-  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=6">
+  <link rel="icon" href="assets/favicon.svg?v=8" type="image/svg+xml">
+  <link rel="icon" href="assets/favicon-32.png?v=8" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=8">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=6">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=8">
 </head>
 <body>
 <div class="splash" id="splash" aria-hidden="true">
-  <div class="splash-mark"><img src="assets/cross.svg" alt=""></div>
-  <div class="splash-word">PresLink</div>
+  <div class="splash-mark">
+    <svg viewBox="0 0 100 100" aria-hidden="true">
+      <g class="arm arm-t"><path fill="#F6C21F" stroke="#F6C21F" stroke-width="3" stroke-linejoin="round" d="M45 50h10l12-43H33z"/></g>
+      <g class="arm arm-r"><path fill="#F6C21F" stroke="#F6C21F" stroke-width="3" stroke-linejoin="round" d="M50 45v10l43 12V33z"/></g>
+      <g class="arm arm-b"><path fill="#F6C21F" stroke="#F6C21F" stroke-width="3" stroke-linejoin="round" d="M55 50H45L33 93h34z"/></g>
+      <g class="arm arm-l"><path fill="#F6C21F" stroke="#F6C21F" stroke-width="3" stroke-linejoin="round" d="M50 55V45L7 33v34z"/></g>
+      <g class="dots" fill="#F26A1B" fill-opacity=".85"><circle cx="50" cy="41" r="8.5"/><circle cx="59" cy="50" r="8.5"/><circle cx="50" cy="59" r="8.5"/><circle cx="41" cy="50" r="8.5"/></g>
+    </svg>
+  </div>
+  <div class="splash-word" aria-label="PresLink"><span>P</span><span>r</span><span>e</span><span>s</span><span>L</span><span>i</span><span>n</span><span>k</span></div>
   <div class="splash-sub">Arcade</div>
 </div>
 <canvas id="confetti" aria-hidden="true"></canvas>
@@ -25,41 +33,41 @@
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
     <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 8 5.5z" fill="currentColor"/></symbol>
-    <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M7 4h10v3a5 5 0 0 1-10 0V4zM5 5h2v2a3 3 0 0 1-3-3h1zm14 0h-2v2a3 3 0 0 0 3-3h-1zM10 13h4v3h-4zM7 18h10v2H7z" fill="currentColor"/></symbol>
-    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M12 10.6v6M12 7.3v.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24"><path fill="currentColor" d="M8 3h8a1 1 0 0 1 1 1v1h2.5a1 1 0 0 1 1 1V8a4 4 0 0 1-3.6 4 5 5 0 0 1-3.9 3.9V18H15a1 1 0 0 1 1 1v1H8v-1a1 1 0 0 1 1-1h2v-2.1A5 5 0 0 1 7.1 12 4 4 0 0 1 3.5 8V6a1 1 0 0 1 1-1H7V4a1 1 0 0 1 1-1zm9 4v3a2 2 0 0 0 1.5-2V7H17zM7 7H5.5v1A2 2 0 0 0 7 10V7z"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 10.6v6M12 7.3v.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
     <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4.2" fill="currentColor"/><path d="M4 20a8 8 0 0 1 16 0z" fill="currentColor"/></symbol>
   </defs>
 </svg>
 
 <main class="shell">
   <header class="appbar">
-    <a class="brand" href="#home" aria-label="PresLink Arcade home"><img src="assets/logo.svg?v=6" alt="">PresLink</a>
-    <div class="raised" id="raised" aria-live="polite"><span class="raised-n" id="raised-n">€0</span><span class="raised-l">raised</span></div>
+    <a class="brand" href="#home" aria-label="PresLink Arcade home"><img src="assets/cross.svg?v=8" alt=""><span>PresLink</span></a>
+    <div class="raised" id="raised" aria-live="polite">
+      <svg class="ring" viewBox="0 0 36 36" aria-hidden="true"><circle class="ring-bg" cx="18" cy="18" r="15.5"/><circle class="ring-fg" id="ring-fg" cx="18" cy="18" r="15.5" stroke-dasharray="0 97.4"/></svg>
+      <span class="raised-t"><span class="raised-n" id="raised-n">€0</span><span class="raised-l">raised</span></span>
+    </div>
   </header>
 
   <!-- ================= HOME ================= -->
   <section class="screen" data-screen="home">
-    <div class="hero">
+    <div class="title"><h1>Arcade</h1><p class="subtitle">Stop the light on the mark. Three lights a play, best of the week wins.</p></div>
+    <div class="card hero-card">
       <div class="demo-track" aria-hidden="true"><span class="demo-pin"></span><span class="demo-marker"></span></div>
-      <h1>Stop the light.</h1>
-      <p class="hero-sub">Line it up with the mark. Three lights a play, best of the week wins.</p>
       <button class="btn btn-primary btn-xl" id="home-play" type="button">Play · €2</button>
       <p class="bundles"><button class="link" type="button" data-bundle="triple">3 plays · €5</button><span>·</span><button class="link" type="button" data-bundle="seven">7 plays · €10</button></p>
     </div>
-
-    <button class="prize-row" type="button" data-go="prize">
+    <h2 class="section">This week</h2>
+    <button class="card prize-card" type="button" data-go="prize">
       <img src="assets/photo-prize.svg" alt="">
-      <span><small>This week's prize</small><strong id="home-prize">Set by the committee</strong></span>
+      <span><small>Prize</small><strong id="home-prize">Set by the committee</strong></span>
       <span class="chev">›</span>
     </button>
-
-    <div class="home-links">
-      <button class="rowlink" type="button" data-go="about">Where the money goes <span class="chev">›</span></button>
+    <h2 class="section school">PresLink</h2>
+    <div class="card">
+      <button class="cell" type="button" data-go="about">Where the money goes <span class="chev">›</span></button>
+      <button class="cell" type="button" data-sheet="terms">Terms <span class="chev">›</span></button>
     </div>
-
-    <footer class="footer">
-      <button class="link" type="button" data-sheet="terms">Terms</button><span>·</span><span>Payments by Stripe</span>
-    </footer>
+    <footer class="footer"><span>Payments by Stripe</span></footer>
   </section>
 
   <!-- ================= CABINET (after a payment) ================= -->
@@ -70,9 +78,11 @@
       <span class="cab-hint" id="cab-hint"></span>
       <div class="cab-tray"><div class="tray"></div><div class="token" id="token">1</div></div>
     </div>
-    <h2 class="h1 center" id="cab-title">Thank you</h2>
-    <p class="lede center" id="cab-text"></p>
-    <button class="btn btn-primary btn-xl" id="cab-play" type="button">Play</button>
+    <div class="cab-text">
+      <h2 id="cab-title">Thank you</h2>
+      <p id="cab-text"></p>
+      <button class="btn btn-primary btn-xl" id="cab-play" type="button">Play</button>
+    </div>
   </section>
 
   <!-- ================= PLAY ================= -->
@@ -83,22 +93,26 @@
         <div class="rounds" id="rounds" aria-label="Rounds"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
         <span class="chip" id="play-credits">0 left</span>
       </div>
-      <div class="game-msg" id="game-msg">Ready</div>
-      <div class="track-wrap">
-        <div class="track" id="track">
-          <div class="pin" id="pin" style="left:50%"><span class="swatch" id="swatch"></span></div>
-          <div class="marker" id="marker"></div>
+      <div class="game-mid">
+        <div class="game-msg" id="game-msg">Ready</div>
+        <div class="track-wrap">
+          <div class="track" id="track">
+            <div class="pin" id="pin" style="left:50%"><span class="swatch" id="swatch"></span></div>
+            <div class="marker" id="marker"></div>
+          </div>
         </div>
+        <div class="score" aria-live="polite"><span id="score-value">0</span></div>
+        <div class="verdict" id="verdict"></div>
       </div>
-      <div class="score" aria-live="polite"><span id="score-value">0</span></div>
-      <div class="verdict" id="verdict"></div>
       <p class="tap-hint" id="tap-hint">Tap when the light reaches the mark</p>
     </div>
 
     <div class="result" id="result" hidden>
-      <p class="result-kicker" id="result-title">Nice</p>
-      <div class="result-score" id="result-score">0</div>
-      <div class="result-rounds" id="result-rounds"></div>
+      <div class="result-head">
+        <p class="result-kicker" id="result-title">Score</p>
+        <div class="result-score" id="result-score">0</div>
+        <div class="result-rounds" id="result-rounds"></div>
+      </div>
       <div class="role-ask" id="role-ask" hidden>
         <p>Which board are you on?</p>
         <div class="choice" id="role-choice">
@@ -123,91 +137,98 @@
 
   <!-- ================= LEADERBOARD ================= -->
   <section class="screen" data-screen="board" hidden>
-    <div class="head"><h1 class="h1">Leaderboard</h1><span class="chip" id="board-week">This week</span></div>
-    <button class="prize-strip" type="button" data-go="prize" id="board-prize">
-      <img src="assets/photo-prize.svg" alt="">
-      <span><small>Prize</small><strong id="board-prize-text">Set by the committee</strong></span>
-      <span class="chev">›</span>
-    </button>
-    <div class="tabs" role="tablist">
+    <div class="title"><h1>Leaderboard</h1><p class="subtitle" id="board-week">This week</p></div>
+    <div class="segmented" role="tablist">
       <button role="tab" type="button" class="tab active" data-role="student" aria-selected="true">Students</button>
       <button role="tab" type="button" class="tab" data-role="teacher" aria-selected="false">Teachers</button>
     </div>
-    <ol class="board" id="board-list"></ol>
-    <p class="empty" id="board-empty" hidden>No scores yet this week.</p>
-    <h2 class="h2">Past winners</h2>
-    <ul class="winners" id="winners"></ul>
-    <p class="empty small" id="winners-empty">After the first week.</p>
+    <div class="card">
+      <ol class="board" id="board-list"></ol>
+      <p class="empty" id="board-empty" hidden>No scores yet this week.</p>
+    </div>
+    <h2 class="section">Prize</h2>
+    <button class="card prize-card" type="button" data-go="prize" id="board-prize">
+      <img src="assets/photo-prize.svg" alt="">
+      <span><small>This week</small><strong id="board-prize-text">Set by the committee</strong></span>
+      <span class="chev">›</span>
+    </button>
+    <h2 class="section">Past winners</h2>
+    <div class="card">
+      <ul class="winners" id="winners"></ul>
+      <p class="empty" id="winners-empty">After the first week.</p>
+    </div>
   </section>
 
   <!-- ================= PRIZE ================= -->
-  <section class="screen prize-page" data-screen="prize" hidden>
-    <img class="photo" src="assets/photo-prize.svg" alt="This week's prize">
-    <p class="prize-text" id="prize-text">Set by the committee</p>
-    <p class="prize-meta"><span id="prize-week">Ends Sunday</span> · best score on each board</p>
-    <ol class="steps">
-      <li>Top the Students or Teachers board by Sunday night.</li>
-      <li>Show your name and code from the You tab.</li>
-      <li>Collect your prize from the PresLink committee.</li>
-    </ol>
-    <button class="btn btn-primary btn-xl js-play" type="button">Play · €2</button>
+  <section class="screen" data-screen="prize" hidden>
+    <div class="title"><h1>Prize</h1><p class="subtitle"><span id="prize-week">Ends Sunday</span> · best score on each board</p></div>
+    <div class="card photo-card">
+      <img class="photo" src="assets/photo-prize.svg" alt="This week's prize">
+      <div class="photo-cap"><strong id="prize-text">Set by the committee</strong><span>This week's prize</span></div>
+    </div>
+    <h2 class="section">How to collect</h2>
+    <div class="card">
+      <ol class="steps">
+        <li>Top the Students or Teachers board by Sunday night.</li>
+        <li>Show your name and code from the You tab.</li>
+        <li>Collect from the PresLink committee.</li>
+      </ol>
+    </div>
+    <button class="btn btn-primary btn-xl page-cta js-play" type="button">Play · €2</button>
   </section>
 
   <!-- ================= ABOUT ================= -->
   <section class="screen" data-screen="about" hidden>
-    <div class="head"><h1 class="h1">PresLink</h1></div>
-    <p class="lede">The student-run charity of Presentation Brothers College, Cork. Since 2005 it has funded Presentation Brothers schools and projects in Ghana and Nigeria.</p>
-
-    <div class="story">
+    <div class="title"><h1>PresLink</h1><p class="subtitle">The student-run charity of Presentation Brothers College, Cork. Since 2005 it has funded Presentation Brothers schools and projects in Ghana and Nigeria.</p></div>
+    <div class="card story">
       <img class="photo" src="assets/photo-school.svg" alt="Presentation Brothers College, Cork">
-      <h2>Run by students</h2>
-      <p>A committee of PBC students plans the fundraising each year, with staff mentors. Every cent raised here, after card fees, goes to PresLink.</p>
+      <div class="story-body"><h2>Run by students</h2><p>A committee of PBC students plans the fundraising each year, with staff mentors. Every cent raised here, after card fees, goes to PresLink.</p></div>
     </div>
-    <div class="story">
+    <div class="card story">
       <img class="photo" src="assets/photo-classrooms.svg" alt="Classrooms in Sokabisi, Ghana">
-      <h2>Classrooms in Ghana</h2>
-      <p>PresLink funded a three-classroom block in Sokabisi, Bolgatanga, in the north of Ghana.</p>
+      <div class="story-body"><h2>Classrooms in Ghana</h2><p>PresLink funded a three-classroom block in Sokabisi, Bolgatanga, in the north of Ghana.</p></div>
     </div>
-    <div class="story">
+    <div class="card story">
       <img class="photo" src="assets/photo-bikes.svg" alt="Bicycles for students">
-      <h2>Bikes to school</h2>
-      <p>Bicycles so that girls in Ghana and Nigeria can get to class and stay in education.</p>
+      <div class="story-body"><h2>Bikes to school</h2><p>Bicycles so that girls in Ghana and Nigeria can get to class and stay in education.</p></div>
     </div>
-    <div class="story">
+    <div class="card story">
       <img class="photo" src="assets/photo-babies.svg" alt="Mother of Mercy Babies Home, Sirigu">
-      <h2>Mother of Mercy Babies Home</h2>
-      <p>Support for the babies home run by the Presentation Brothers in Sirigu, Ghana.</p>
+      <div class="story-body"><h2>Mother of Mercy Babies Home</h2><p>Support for the babies home run by the Presentation Brothers in Sirigu, Ghana.</p></div>
     </div>
-    <button class="btn btn-primary btn-xl js-play" type="button">Play · €2</button>
+    <button class="btn btn-primary btn-xl page-cta js-play" type="button">Play · €2</button>
   </section>
 
   <!-- ================= YOU ================= -->
   <section class="screen" data-screen="you" hidden>
+    <div class="title"><h1>You</h1></div>
     <div id="you-empty" hidden>
-      <div class="profile">
-        <p class="lede">Play once and your name and code appear here.</p>
+      <div class="card you-empty">
+        <p>Play once and your name and code appear here.</p>
         <button class="btn btn-primary btn-xl js-play" type="button">Play · €2</button>
         <button class="link center" type="button" data-go="signin">Played before? Sign in</button>
       </div>
       <button class="link center quiet small" type="button" data-go="admin">Committee</button>
     </div>
     <div id="you-panel" hidden>
-      <div class="profile">
-        <span class="profile-label">You play as</span>
+      <div class="card profile">
+        <span class="avatar big" id="you-avatar">··</span>
         <span class="profile-name" id="you-name">···</span>
-        <div class="choice" id="you-role" aria-label="Board">
+        <div class="segmented choice" id="you-role" aria-label="Board">
           <button type="button" data-role="student">Student</button>
           <button type="button" data-role="teacher">Teacher</button>
         </div>
       </div>
-      <div class="panel code-panel">
+      <div class="card code-card">
         <span class="profile-label">Your code</span>
         <strong id="you-code">0000</strong>
-        <p class="small muted">Name and code collect the prize. They also sign you in anywhere.</p>
+        <p class="small">Name and code collect the prize. They also sign you in anywhere.</p>
       </div>
-      <div class="row"><span>Plays left</span><strong id="you-credits">0</strong></div>
-      <div class="row"><span>Best this week</span><strong id="you-best">–</strong></div>
-      <form id="edit-form" class="stack" autocomplete="off" novalidate hidden>
+      <div class="card">
+        <div class="cell"><span>Plays left</span><strong id="you-credits">0</strong></div>
+        <div class="cell"><span>Best this week</span><strong id="you-best">–</strong></div>
+      </div>
+      <form id="edit-form" class="card pad stack" autocomplete="off" novalidate hidden>
         <label class="initials" for="edit-initials">
           <input id="edit-initials" inputmode="text" autocapitalize="characters" autocorrect="off" spellcheck="false" autocomplete="off" maxlength="3" aria-label="Your letters, two or three">
           <span class="box"></span><span class="box"></span><span class="box opt"></span>
@@ -215,38 +236,38 @@
         <p class="field-error" id="edit-error" role="alert" hidden></p>
         <div class="grid-2"><button class="btn" type="button" id="edit-cancel">Cancel</button><button class="btn btn-primary" type="submit" id="edit-save">Save</button></div>
       </form>
-      <div class="you-links">
-        <button class="link" type="button" id="you-edit">Change my letters</button>
-        <button class="link" type="button" data-go="signin">Sign in as someone else</button>
-        <button class="link quiet" type="button" id="you-signout">Sign out on this device</button>
-        <button class="link quiet small" type="button" data-go="admin">Committee</button>
+      <div class="card">
+        <button class="cell" type="button" id="you-edit">Change my letters <span class="chev">›</span></button>
+        <button class="cell" type="button" data-go="signin">Sign in as someone else <span class="chev">›</span></button>
+        <button class="cell danger" type="button" id="you-signout">Sign out on this device</button>
       </div>
+      <button class="link center quiet small" type="button" data-go="admin">Committee</button>
     </div>
   </section>
 
   <!-- ================= SIGN IN ================= -->
   <section class="screen" data-screen="signin" hidden>
-    <div class="head"><button class="back" type="button" data-back aria-label="Back">‹</button><h1 class="h1">Sign in</h1></div>
-    <form id="signin-form" class="stack" autocomplete="off" novalidate>
-      <label class="field"><span>Your letters</span><input id="signin-name" autocapitalize="characters" autocorrect="off" spellcheck="false" maxlength="7" placeholder="JAK" autocomplete="off"></label>
-      <label class="field"><span>Your code</span><input id="signin-code" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="0000" autocomplete="off"></label>
+    <div class="title"><h1>Sign in</h1><p class="subtitle">Your letters and the four-digit code from your You tab.</p></div>
+    <form id="signin-form" autocomplete="off" novalidate>
+      <div class="card">
+        <label class="field"><span>Letters</span><input id="signin-name" autocapitalize="characters" autocorrect="off" spellcheck="false" maxlength="7" placeholder="JAK or JAK#2" autocomplete="off"></label>
+        <label class="field"><span>Code</span><input id="signin-code" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="0000" autocomplete="off"></label>
+      </div>
       <p class="field-error" id="signin-error" role="alert" hidden></p>
-      <button class="btn btn-primary btn-xl" type="submit" id="signin-submit">Sign in</button>
+      <button class="btn btn-primary btn-xl page-cta" type="submit" id="signin-submit">Sign in</button>
     </form>
-    <p class="fineprint">Same letters as someone else? Yours may be JAK#2. Lost your code? Ask the committee.</p>
+    <p class="fineprint">Lost your code? Ask the committee.</p>
   </section>
 
   <!-- ================= ADMIN ================= -->
   <section class="screen" data-screen="admin" hidden>
-    <div class="head">
-      <button class="back" type="button" data-back aria-label="Back">‹</button>
-      <h1 class="h1">Committee</h1>
-      <button class="link small" type="button" id="admin-logout" hidden>Sign out</button>
-    </div>
-    <form id="admin-login" class="stack" autocomplete="off">
-      <label class="field"><span>Committee code</span><input type="password" id="admin-code" autocomplete="current-password"></label>
+    <div class="title"><h1>Committee</h1><p class="subtitle" id="admin-sub">Committee code required.</p></div>
+    <form id="admin-login" autocomplete="off">
+      <div class="card">
+        <label class="field"><span>Committee code</span><input type="password" id="admin-code" autocomplete="current-password"></label>
+      </div>
       <p class="field-error" id="admin-error" role="alert" hidden></p>
-      <button class="btn btn-primary" type="submit">Open</button>
+      <button class="btn btn-primary page-cta" type="submit">Open</button>
     </form>
     <div id="admin-panel" class="stack-lg" hidden>
       <div>
@@ -256,65 +277,72 @@
           <div class="stat"><span>Plays</span><strong id="adm-plays">0</strong></div>
           <div class="stat"><span>Players</span><strong id="adm-players">0</strong></div>
         </div>
-        <p class="small muted center" id="adm-roles"></p>
+        <p class="small muted center" id="adm-roles" style="margin-top:10px"></p>
       </div>
 
-      <form id="admin-settings" class="panel stack" autocomplete="off">
-        <div class="grid-2">
-          <label class="field"><span>Goal (€)</span><input id="adm-goal" inputmode="numeric" pattern="[0-9]*"></label>
-          <label class="field"><span>Progress</span><input id="adm-progress" disabled></label>
-        </div>
-        <label class="field"><span>This week's prize (shown on the Prize page)</span><input id="adm-prize" maxlength="200" placeholder="e.g. €20 voucher and the PresLink trophy"></label>
-        <p class="small muted">Prize photo: replace <code>site/assets/photo-prize.svg</code> in the repository.</p>
-        <button class="btn btn-primary" type="submit">Save</button>
-      </form>
+      <div>
+        <h2 class="section">Settings</h2>
+        <form id="admin-settings" autocomplete="off">
+          <div class="card">
+            <label class="field"><span>Goal (€)</span><input id="adm-goal" inputmode="numeric" pattern="[0-9]*"></label>
+            <label class="field"><span>Progress</span><input id="adm-progress" disabled></label>
+            <label class="field"><span>This week's prize (shown on the Prize page)</span><input id="adm-prize" maxlength="200" placeholder="e.g. €20 voucher and the PresLink trophy"></label>
+            <p class="note">Prize photo: replace <code>site/assets/photo-prize.svg</code> in the repository.</p>
+          </div>
+          <button class="btn btn-primary page-cta" type="submit">Save</button>
+        </form>
+      </div>
 
       <div>
-        <div class="admin-head"><h2 class="h2">Board</h2><select id="adm-week" class="select" aria-label="Week"></select></div>
-        <div class="tabs" role="tablist" id="admin-tabs">
+        <div class="admin-head"><h2 class="section">Board</h2><select id="adm-week" class="select" aria-label="Week"></select></div>
+        <div class="segmented" role="tablist" id="admin-tabs">
           <button role="tab" type="button" class="tab active" data-role="student">Students</button>
           <button role="tab" type="button" class="tab" data-role="teacher">Teachers</button>
         </div>
-        <div class="table-wrap"><table class="table" id="adm-board"><thead><tr><th>#</th><th>Name</th><th>Code</th><th>Score</th><th>Plays</th><th>When</th><th></th></tr></thead><tbody></tbody></table></div>
-        <p class="small muted">Highest score wins; the earlier time wins a tie. The winner shows their You tab: name and code must match.</p>
+        <div class="card"><div class="table-wrap"><table class="table" id="adm-board"><thead><tr><th>#</th><th>Name</th><th>Code</th><th>Score</th><th>Plays</th><th>When</th><th></th></tr></thead><tbody></tbody></table></div></div>
+        <p class="note">Highest score wins; the earlier time wins a tie. The winner shows their You tab: name and code must match.</p>
       </div>
 
       <div>
-        <h2 class="h2">Find a player</h2>
+        <h2 class="section">Find a player</h2>
         <form id="admin-find" class="row-form" autocomplete="off">
           <input id="adm-find-initials" maxlength="7" autocapitalize="characters" placeholder="JAK or JAK#2" aria-label="Name">
           <button class="btn btn-primary" type="submit">Find</button>
         </form>
-        <div class="panel" id="adm-player" hidden></div>
+        <div class="card" id="adm-player" hidden style="margin-top:10px"></div>
       </div>
 
       <div>
-        <h2 class="h2">Past winners</h2>
-        <div class="table-wrap"><table class="table" id="adm-winners"><thead><tr><th>Week</th><th>Board</th><th>Name</th><th>Code</th><th>Score</th></tr></thead><tbody></tbody></table></div>
+        <h2 class="section">Past winners</h2>
+        <div class="card"><div class="table-wrap"><table class="table" id="adm-winners"><thead><tr><th>Week</th><th>Board</th><th>Name</th><th>Code</th><th>Score</th></tr></thead><tbody></tbody></table></div></div>
       </div>
 
       <div>
-        <div class="admin-head"><h2 class="h2">Money</h2><button class="link small" type="button" id="adm-csv">Download CSV</button></div>
-        <div class="table-wrap"><table class="table" id="adm-days"><thead><tr><th>Day</th><th>Coins</th><th>€</th></tr></thead><tbody></tbody></table></div>
-        <h3 class="h3">Recent payments</h3>
-        <div class="table-wrap"><table class="table" id="adm-payments"><thead><tr><th>When</th><th>Name</th><th>Plays</th><th>€</th><th>Email</th></tr></thead><tbody></tbody></table></div>
+        <div class="admin-head"><h2 class="section">Money</h2><button class="link small" type="button" id="adm-csv">Download CSV</button></div>
+        <div class="card"><div class="table-wrap"><table class="table" id="adm-days"><thead><tr><th>Day</th><th>Coins</th><th>€</th></tr></thead><tbody></tbody></table></div></div>
+        <h2 class="section">Recent payments</h2>
+        <div class="card"><div class="table-wrap"><table class="table" id="adm-payments"><thead><tr><th>When</th><th>Name</th><th>Plays</th><th>€</th><th>Email</th></tr></thead><tbody></tbody></table></div></div>
       </div>
 
       <div>
-        <h2 class="h2">Names</h2>
+        <h2 class="section">Names</h2>
         <form id="admin-block" class="row-form" autocomplete="off">
           <input id="adm-block-initials" maxlength="3" autocapitalize="characters" placeholder="ABC" aria-label="Letters to block">
           <button class="btn btn-red" type="submit">Block</button>
         </form>
-        <p class="small muted" id="adm-blocked-list"></p>
-        <h3 class="h3">Banned players</h3>
-        <ul class="plain" id="adm-banned"></ul>
+        <p class="note" id="adm-blocked-list"></p>
+        <h2 class="section">Banned players</h2>
+        <div class="card"><ul class="plain" id="adm-banned"></ul></div>
       </div>
 
-      <form id="admin-newcode" class="panel stack" autocomplete="off">
-        <label class="field"><span>New committee code (6+ characters)</span><input type="password" id="adm-newcode" autocomplete="new-password"></label>
-        <button class="btn" type="submit">Change code</button>
-      </form>
+      <div>
+        <h2 class="section">Committee code</h2>
+        <form id="admin-newcode" autocomplete="off">
+          <div class="card"><label class="field"><span>New code (6+ characters)</span><input type="password" id="adm-newcode" autocomplete="new-password"></label></div>
+          <button class="btn page-cta" type="submit">Change code</button>
+        </form>
+        <button class="link center quiet" type="button" id="admin-logout" hidden>Sign out of the committee screen</button>
+      </div>
     </div>
   </section>
 
@@ -374,7 +402,7 @@
 <div class="overlay" id="overlay" hidden><div class="overlay-card"><div class="spinner" aria-hidden="true"></div><p id="overlay-text">One moment</p></div></div>
 
 <script src="config.js"></script>
-<script src="mock.js?v=6"></script>
-<script src="app.js?v=6"></script>
+<script src="mock.js?v=8"></script>
+<script src="app.js?v=8"></script>
 </body>
 </html>

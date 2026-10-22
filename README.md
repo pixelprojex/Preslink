@@ -11,9 +11,11 @@ then goes straight to payment. After the first play the result screen asks **Stu
 small tag (JAK, JAK#2, JAK#3), so nobody is ever refused. Players can change their letters and board
 on the **You** tab, and a four-digit code proves a winning score is theirs (and signs them in on any device).
 
-The look is the school's: white, purple and black, with the yellow of the Presentation Brothers cross as
-the only accent. No boxes or borders, a logo and the running total raised at the top of every screen,
-a tab bar (Play, Board, About, You), a Prize page with a photo, and very little text.
+The look follows the conventions of native apps (grouped white cards on a soft grey canvas, large titles,
+segmented controls, avatars, a progress ring) in PresLink's colours: green for actions, orange for the
+light and the ring, the yellow of the Presentation Brothers cross for the logo. The logo and the running
+total raised sit at the top of every screen; there is a tab bar (Play, Board, About, You), a Prize page
+with a photo, and very little text.
 
 ```
   Phone (QR)  ──▶  Netlify (static site: site/)

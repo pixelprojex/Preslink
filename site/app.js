@@ -22,6 +22,8 @@
   const reduceMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   // "JAK#2" -> JAK with a small #2
   const nameHtml = (display) => { const [l, n] = String(display || '').split('#'); return esc(l) + (n ? `<span class="sfx">#${esc(n)}</span>` : ''); };
+  // A coloured circle with the letters, like an avatar; the tint comes from the letters so it is stable.
+  const avatarHtml = (display, big) => { const l = String(display || '').split('#')[0]; let h = 0; for (const c of l) h = (h * 31 + c.charCodeAt(0)) % 5; return `<span class="avatar c${h + 1}${big ? ' big' : ''}">${esc(l)}</span>`; };
 
   const MESSAGES = {
     NETWORK: 'No connection. Check your signal and try again.',
@@ -181,7 +183,7 @@
     const canvas = $('#confetti');
     const ctx = canvas.getContext('2d');
     let parts = [], raf = 0;
-    const colors = ['#5b3a9a', '#f6c21f', '#16122a', '#e6dff3', '#ffffff'];
+    const colors = ['#f26a1b', '#f6c21f', '#1f9d5a', '#ffffff', '#ffe08a'];
     function tick() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       parts = parts.filter((p) => p.life > 0);
@@ -271,6 +273,12 @@
   }
 
   let shownRaised = null; // whole euro shown in the app bar
+  function showRing(cents, goalCents) {
+    const ring = $('#ring-fg');
+    const circ = 97.4;
+    const pct = goalCents > 0 ? Math.min(1, cents / goalCents) : (cents > 0 ? 1 : 0);
+    ring.setAttribute('stroke-dasharray', `${Math.max(pct > 0 ? 3 : 0, pct * circ).toFixed(1)} ${circ}`);
+  }
   function showRaised(cents) {
     const el = $('#raised-n');
     const wrap = $('#raised');
@@ -278,7 +286,7 @@
     const fmt = (n) => '€' + n.toLocaleString('en-IE');
     if (shownRaised === null) {
       shownRaised = target;
-      countUp(el, 0, target, target > 0 ? 1100 : 0, fmt);
+      countUp(el, 0, target, target > 0 ? 1600 : 0, fmt);
       return;
     }
     if (target > shownRaised) {
@@ -288,8 +296,8 @@
       wrap.appendChild(plus);
       setTimeout(() => plus.remove(), 1400);
       wrap.classList.remove('up'); void wrap.offsetWidth; wrap.classList.add('up');
-      setTimeout(() => wrap.classList.remove('up'), 1500);
-      countUp(el, shownRaised, target, 900, fmt);
+      setTimeout(() => wrap.classList.remove('up'), 2000);
+      countUp(el, shownRaised, target, 1400, fmt);
     } else {
       el.textContent = fmt(target);
     }
@@ -299,6 +307,7 @@
   async function refreshStats() {
     try { stats = await rpc('stats'); } catch (_) { return; }
     showRaised(Number(stats.total_raised_cents || 0));
+    showRing(Number(stats.total_raised_cents || 0), Number(stats.goal_cents || 0));
     const prize = (stats.prize_text || '').trim() || 'Set by the committee';
     $('#home-prize').textContent = prize;
     $('#board-prize-text').textContent = prize;
@@ -370,10 +379,12 @@
       ? 'No payment was taken: payments are not switched on yet.'
       : `Your €${b ? b.amount : 2} is on its way to schools in Ghana and Nigeria.`;
     cabinetBusy = true;
+    await splashDone;
     go('cabinet');
     refreshStats();
+    await wait(300);
     await coinDrop(n);
-    await wait(900);
+    await wait(1200);
     if (current === 'cabinet') go('play');
     cabinetBusy = false;
   }
@@ -387,13 +398,13 @@
     val.textContent = from;
     $('#cab-hint').textContent = '';
     coin.classList.remove('drop'); void coin.offsetWidth; coin.classList.add('drop');
-    await wait(620);
+    await wait(1000);
     slot.classList.add('glow');
     vibrate(30);
-    await wait(260);
+    await wait(450);
     slot.classList.remove('glow');
     coin.classList.remove('drop');
-    const step = n > 3 ? 260 : 420;
+    const step = n > 3 ? 380 : 650;
     for (let i = 0; i < n; i++) {
       token.textContent = String(from + i + 1);
       token.classList.remove('out'); void token.offsetWidth; token.classList.add('out');
@@ -437,7 +448,7 @@
   function setPin(target) {
     pin.style.left = (target * 100) + '%';
     // the swatch shows the colour of the bar at the mark, which is what you line the light up with
-    swatch.style.background = `color-mix(in srgb, #efe9f8 ${Math.round((1 - target) * 100)}%, #5b3a9a)`;
+    swatch.style.background = `color-mix(in srgb, #ffe08a ${Math.round((1 - target) * 100)}%, #f26a1b)`;
   }
   function measure() { game.trackW = track.clientWidth; }
   window.addEventListener('resize', measure);
@@ -500,7 +511,7 @@
     renderDots();
     const m = $('#game-msg');
     m.textContent = 'Ready';
-    await wait(900);
+    await wait(1100);
     if (game.state !== 'countdown') return;
     m.textContent = 'Go';
     m.classList.add('go');
@@ -562,7 +573,7 @@
     v.textContent = verdictFor(s);
     v.classList.toggle('miss', s < 850);
     $('#game-msg').textContent = '';
-    await wait(900);
+    await wait(1150);
     if (game.state !== 'between') return;
     if (game.round < ROUNDS - 1) {
       v.textContent = '';
@@ -582,11 +593,11 @@
     $('#tap-hint').classList.remove('live');
     $('#verdict').textContent = '';
     const el = $('#score-value');
-    await countUp(el, 0, score, 800, String);
+    await countUp(el, 0, score, 1200, String);
     $('.score').classList.add('pop');
     vibrate(score >= 900 ? [30, 40, 30, 40, 60] : 40);
     if (score >= 900) confetti.burst(score >= 950 ? 180 : 110);
-    await wait(500);
+    await wait(900);
 
     const payload = { player_id: player.id, play_id: game.play.play_id, score, taps: game.taps.slice() };
     game.pending = payload;
@@ -710,7 +721,7 @@
       const li = document.createElement('li');
       const me = player && r.tag === player.tag;
       li.className = (me ? 'me ' : '') + (r.rank <= 3 ? 'r' + r.rank : '');
-      li.innerHTML = `<span class="rank">${r.rank}</span>
+      li.innerHTML = `<span class="rank">${r.rank}</span>${avatarHtml(r.initials)}
         <span class="name">${nameHtml(r.initials)}<span class="meta">${r.plays} ${Number(r.plays) === 1 ? 'play' : 'plays'} · ${fmtWhen(r.achieved_at)}${me ? ' · you' : ''}</span></span>
         <span class="pts">${r.score}</span>`;
       list.appendChild(li);
@@ -777,6 +788,7 @@
   function renderYou() {
     if (!player) return;
     $('#you-name').innerHTML = nameHtml(player.display || player.initials);
+    $('#you-avatar').outerHTML = avatarHtml(player.display || player.initials, true).replace('<span ', '<span id="you-avatar" ');
     $$('#you-role button').forEach((b) => b.classList.toggle('on', roleSet && b.dataset.role === player.role));
     $$('#you-role button').forEach((b) => b.setAttribute('aria-pressed', roleSet && b.dataset.role === player.role ? 'true' : 'false'));
     $('#you-code').textContent = player.claim_code;
@@ -858,6 +870,7 @@
     $('#admin-login').hidden = !!code;
     $('#admin-panel').hidden = !code;
     $('#admin-logout').hidden = !code;
+    $('#admin-sub').textContent = code ? 'Money, boards, players and settings.' : 'Committee code required.';
     if (DEMO) $('#admin-code').placeholder = 'Demo code: PRESLINK';
     if (code) loadAdmin();
     else setTimeout(() => $('#admin-code').focus(), 60);
@@ -1052,16 +1065,15 @@
   // ---------------------------------------------------------------------------
   // Boot
   // ---------------------------------------------------------------------------
-  // Splash: once per session, skipped when returning from a payment.
-  (function splash() {
+  // Splash: plays on every open and reload. A tap skips it.
+  const splashDone = new Promise((resolve) => {
     const el = $('#splash');
-    const returning = /session_id=|cancelled=/.test(location.search);
-    if (!el) return;
-    if (session.get('preslink.splash') || returning || reduceMotion()) { el.classList.add('gone'); return; }
-    session.set('preslink.splash', '1');
-    setTimeout(() => el.classList.add('gone'), 2200);
-    el.addEventListener('click', () => el.classList.add('gone'));
-  })();
+    if (!el) { resolve(); return; }
+    const finish = () => { el.classList.add('gone'); resolve(); };
+    if (reduceMotion()) { finish(); return; }
+    setTimeout(finish, 3300);
+    el.addEventListener('click', finish);
+  });
 
   async function boot() {
     const params = new URLSearchParams(location.search);
