@@ -18,11 +18,13 @@
   const euro = (cents) => '€' + Math.round((cents || 0) / 100).toLocaleString('en-IE');
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const vibrate = (p) => { try { if (navigator.vibrate) navigator.vibrate(p); } catch (_) { /* ignore */ } };
+  // "JAK#2" -> JAK with a small #2
+  const nameHtml = (display) => { const [l, n] = String(display || '').split('#'); return esc(l) + (n ? `<span class="sfx">#${esc(n)}</span>` : ''); };
 
   const MESSAGES = {
     NETWORK: 'No connection. Check your signal and try again.',
     NO_CREDITS: 'No plays left. Insert a coin to play.',
-    BAD_INITIALS: 'Three letters, A to Z.',
+    BAD_INITIALS: 'Two or three letters, A to Z.',
     BLOCKED_INITIALS: "Those letters aren't allowed. Pick another three.",
     TAKEN: 'Those letters are taken. Try another three.',
     BAD_ROLE: 'Choose student or teacher.',
@@ -69,7 +71,7 @@
   const savePlayer = () => store.set(STORAGE_KEY, player);
   const clearPlayer = () => { player = null; credits = 0; openPlay = null; bestThisWeek = null; store.del(STORAGE_KEY); };
   function adoptPlayer(p) {
-    player = { id: p.id, tag: p.tag, initials: p.initials, role: p.role, claim_code: p.claim_code };
+    player = { id: p.id, tag: p.tag, initials: p.initials, suffix: p.suffix || 1, display: p.display || p.initials, role: p.role, claim_code: p.claim_code };
     role = p.role || role;
     store.set(ROLE_KEY, role);
     credits = p.credits || 0;
@@ -111,11 +113,17 @@
     return res.json();
   }
 
-  // The first tap creates the player. No name to type: the server picks three letters.
-  async function ensurePlayer() {
-    if (player) return player;
-    adoptPlayer(await api('register', { role }));
-    return player;
+  // The first tap opens a small sheet asking for initials; the player is created on submit.
+  let pendingBundle = null;
+  function ensurePlayer(bundle) {
+    if (player) return true;
+    pendingBundle = bundle || 'single';
+    const r = $(`#name-role input[value="${role}"]`);
+    if (r) r.checked = true;
+    showError('name-error', '');
+    openSheet('name');
+    setTimeout(() => nameInitials.input.focus(), 80);
+    return false;
   }
 
   // ---------------------------------------------------------------------------
@@ -210,7 +218,7 @@
     if (name === 'board') loadBoard();
     if (name === 'about') refreshStats();
     if (name === 'you') openYou();
-    if (name === 'signin') setTimeout(() => $('#signin-initials').focus(), 60);
+    if (name === 'signin') setTimeout(() => $('#signin-name').focus(), 60);
     if (name === 'admin') renderAdminEntry();
   }
   window.addEventListener('hashchange', () => render(location.hash.slice(1) || 'home'));
@@ -235,7 +243,7 @@
   function renderPlayerBits() {
     const chip = $('#home-player');
     chip.hidden = !player;
-    if (player) { chip.textContent = `${player.initials} · ${cap(player.role)}`; $('#cab-player').textContent = `${player.initials} · ${cap(player.role)}`; }
+    if (player) { chip.innerHTML = nameHtml(player.display) + ` · ${cap(player.role)}`; $('#cab-player').innerHTML = nameHtml(player.display) + ` · ${cap(player.role)}`; }
     const r = $(`#home-role input[value="${role}"]`);
     if (r) r.checked = true;
     renderHome();
@@ -305,9 +313,9 @@
   // Paying: one tap to Stripe, and back into the cabinet
   // ---------------------------------------------------------------------------
   async function buy(bundle) {
+    if (!ensurePlayer(bundle)) return;
     overlay('Opening secure checkout…');
     try {
-      await ensurePlayer();
       const r = await api('checkout', { player_id: player.id, bundle });
       location.assign(r.url);
     } catch (ex) {
@@ -392,7 +400,7 @@
     x = x - 2 * Math.floor(x / 2);
     return x < 1 ? x : 2 - x;
   }
-  const scoreFor = (pos) => Math.round(1000 * (1 - 2 * Math.abs(pos - 0.5)));
+  const scoreFor = (pos) => Math.round(1000 * Math.pow(Math.max(0, 1 - 2 * Math.abs(pos - 0.5)), 1.6));
   function titleFor(s) {
     if (s >= 990) return 'Perfect run!';
     if (s >= 950) return 'Nearly perfect!';
@@ -613,7 +621,7 @@
       const me = player && r.tag === player.tag;
       li.className = (me ? 'me ' : '') + (r.rank <= 3 ? 'r' + r.rank : '');
       li.innerHTML = `<span class="rank">${r.rank}</span>
-        <span class="name">${esc(r.initials)}<span class="meta">${r.plays} ${Number(r.plays) === 1 ? 'play' : 'plays'} · ${fmtWhen(r.achieved_at)}${me ? ' · you' : ''}</span></span>
+        <span class="name">${nameHtml(r.initials)}<span class="meta">${r.plays} ${Number(r.plays) === 1 ? 'play' : 'plays'} · ${fmtWhen(r.achieved_at)}${me ? ' · you' : ''}</span></span>
         <span class="pts">${r.score}</span>`;
       list.appendChild(li);
     });
@@ -623,7 +631,7 @@
     winners.forEach((r) => {
       const li = document.createElement('li');
       const d = new Date(r.week_start + 'T12:00:00');
-      li.innerHTML = `<span>${d.toLocaleDateString('en-IE', { day: 'numeric', month: 'short' })} · ${cap(r.role)}s</span><span class="name">${esc(r.initials)}</span><span class="pts">${r.score}</span>`;
+      li.innerHTML = `<span>${d.toLocaleDateString('en-IE', { day: 'numeric', month: 'short' })} · ${cap(r.role)}s</span><span class="name">${nameHtml(r.initials)}</span><span class="pts">${r.score}</span>`;
       w.appendChild(li);
     });
   }
@@ -647,17 +655,34 @@
     return { input, value: () => input.value.toUpperCase(), set: (v) => { input.value = v || ''; sync(); } };
   }
   const editInitials = initialsField('edit-initials');
-  const signinInitials = initialsField('signin-initials');
+  const nameInitials = initialsField('name-initials');
+  $('#name-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const initials = nameInitials.value();
+    const r = ($('#name-form input[name="name-role"]:checked') || {}).value || role;
+    if (!/^[A-Z]{2,3}$/.test(initials)) { showError('name-error', 'Two or three letters, A to Z.'); nameInitials.input.focus(); return; }
+    const btn = $('#name-submit');
+    btn.disabled = true;
+    try {
+      role = r;
+      store.set(ROLE_KEY, role);
+      adoptPlayer(await api('register', { role, initials }));
+      closeSheets();
+      buy(pendingBundle || 'single');
+    } catch (ex) {
+      showError('name-error', msg(ex));
+    } finally { btn.disabled = false; }
+  });
   function showError(id, text) { const el = $('#' + id); el.textContent = text || ''; el.hidden = !text; }
 
   async function openYou() {
-    try { await ensurePlayer(); } catch (ex) { toast(msg(ex), true); go('home'); return; }
+    if (!player) { go('home'); ensurePlayer('single'); return; }
     renderYou();
     refreshMe().then(renderYou);
   }
   function renderYou() {
     if (!player) return;
-    $('#you-initials').textContent = player.initials;
+    $('#you-name').innerHTML = nameHtml(player.display);
     $('#you-role').textContent = cap(player.role) + 's board';
     $('#you-code').textContent = player.claim_code;
     $('#you-credits').textContent = credits;
@@ -679,7 +704,7 @@
     e.preventDefault();
     const initials = editInitials.value();
     const newRole = ($('#edit-form input[name="edit-role"]:checked') || {}).value;
-    if (!/^[A-Z]{3}$/.test(initials)) { showError('edit-error', MESSAGES.BAD_INITIALS); return; }
+    if (!/^[A-Z]{2,3}$/.test(initials)) { showError('edit-error', MESSAGES.BAD_INITIALS); return; }
     const payload = { player_id: player.id };
     if (initials !== player.initials) payload.initials = initials;
     if (newRole && newRole !== player.role) payload.role = newRole;
@@ -689,13 +714,13 @@
       adoptPlayer(await api('update', payload));
       $('#edit-form').hidden = true;
       renderYou();
-      toast(`Saved. You play as ${player.initials}.`);
+      toast(`Saved. You play as ${player.display}.`);
     } catch (ex) {
       showError('edit-error', msg(ex));
     } finally { $('#edit-save').disabled = false; }
   });
   $('#you-signout').addEventListener('click', () => {
-    if (!confirm(`Sign out ${player.initials} on this phone? You can sign back in with your letters and claim code ${player.claim_code}.`)) return;
+    if (!confirm(`Sign out ${player.display} on this phone? You can sign back in with your name and claim code ${player.claim_code}.`)) return;
     clearPlayer();
     renderPlayerBits();
     toast('Signed out.');
@@ -704,16 +729,16 @@
 
   $('#signin-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const initials = signinInitials.value();
+    const initials = $('#signin-name').value.toUpperCase().replace(/\s/g, '');
     const code = $('#signin-code').value.replace(/\D/g, '');
-    if (!/^[A-Z]{3}$/.test(initials)) { showError('signin-error', MESSAGES.BAD_INITIALS); return; }
+    if (!/^[A-Z]{2,3}(#\d{1,3})?$/.test(initials)) { showError('signin-error', 'Your name is two or three letters, like JAK or JAK#2.'); return; }
     if (!/^\d{4}$/.test(code)) { showError('signin-error', 'Your claim code is four digits.'); return; }
     const btn = $('#signin-submit');
     btn.disabled = true;
     showError('signin-error', '');
     try {
       adoptPlayer(await api('signin', { initials, code }));
-      toast(`Welcome back, ${player.initials}!`);
+      toast(`Welcome back, ${player.display}!`);
       go('home');
     } catch (ex) {
       showError('signin-error', msg(ex));
@@ -872,13 +897,13 @@
   });
   $('#admin-find').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const initials = $('#adm-find-initials').value.toUpperCase().trim();
-    if (!/^[A-Z]{3}$/.test(initials)) { toast(MESSAGES.BAD_INITIALS, true); return; }
+    const initials = $('#adm-find-initials').value.toUpperCase().replace(/\s/g, '');
+    if (!/^[A-Z]{2,3}(#\d{1,3})?$/.test(initials)) { toast('Type a name like JAK or JAK#2.', true); return; }
     const box = $('#adm-player');
     try {
       const res = await adminCall('player', { initials });
       const p = res.player;
-      box.innerHTML = `<dl><dt>Name</dt><dd>${esc(p.initials)}${p.banned ? ' (banned)' : ''}</dd><dt>Board</dt><dd>${cap(p.role)}s</dd><dt>Claim code</dt><dd>${esc(p.claim_code)}</dd><dt>Credits</dt><dd>${p.credits}</dd><dt>First seen</dt><dd>${esc(fmtDate(p.created_at, true))}</dd><dt>Last seen</dt><dd>${esc(fmtDate(p.last_seen_at, true))}</dd></dl>
+      box.innerHTML = `<dl><dt>Name</dt><dd>${esc(p.initials)}${p.banned ? ' (banned)' : ''}${(res.others || []).length ? ` <span class="muted">(also: ${res.others.map(esc).join(', ')})</span>` : ''}</dd><dt>Board</dt><dd>${cap(p.role)}s</dd><dt>Claim code</dt><dd>${esc(p.claim_code)}</dd><dt>Credits</dt><dd>${p.credits}</dd><dt>First seen</dt><dd>${esc(fmtDate(p.created_at, true))}</dd><dt>Last seen</dt><dd>${esc(fmtDate(p.last_seen_at, true))}</dd></dl>
         <div class="table-wrap"><table class="table"><thead><tr><th>Play</th><th>Score</th><th>Week</th><th></th></tr></thead><tbody>${(res.plays || []).map((x) => `<tr><td>${esc(fmtDate(x.started_at, true))}</td><td>${x.score == null ? '<span class="muted">open</span>' : '<b>' + x.score + '</b>'}${x.voided ? ' <span class="muted">(void)</span>' : ''}</td><td>${esc(x.week_start || '')}</td><td>${x.score == null ? '' : x.voided ? `<button class="mini undo" data-unvoid="${esc(x.play_id)}">Restore</button>` : `<button class="mini" data-void="${esc(x.play_id)}">Void</button>`}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">No plays.</td></tr>'}</tbody></table></div>
         <p class="small muted" style="margin:10px 0 0">${(res.payments || []).length} payment(s) · €${((res.payments || []).reduce((s, x) => s + x.amount_cents, 0) / 100).toFixed(2)}</p>`;
       box.hidden = false;

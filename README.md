@@ -5,9 +5,11 @@ Scan a QR code, tap **Play · €2**, pay with Apple Pay, Google Pay or a card, 
 **stop the light in the green**. One tap, score out of 1,000. Highest score of the week
 wins, with separate boards for students and teachers. Every payment goes to PresLink.
 
-There is no sign-up. The first tap quietly creates a player with a random three-letter name
-that the phone remembers. Players can change their letters and board on the **You** tab, and a
-four-digit claim code proves a winning score is theirs (and signs them in on another phone).
+There is no sign-up. On the first tap a small sheet asks for two or three letters (your initials)
+and Student or Teacher, then goes straight to payment. If someone already has those letters you still
+get them, shown with a small tag (JAK, JAK#2, JAK#3), so nobody is ever refused. Players can change
+their letters and board on the **You** tab, and a four-digit claim code proves a winning score is
+theirs (and signs them in on another phone).
 
 The look is PresLink's own: cream background, navy, teal, coral and gold tiles, pill buttons,
 a floating tab bar (Play, Board, About, You) and very little text.
@@ -162,10 +164,12 @@ hash in the database and locks for 15 minutes after 8 wrong tries. From there th
 
 ## Names, codes and signing back in
 
-- Nobody types a name. The first tap creates a player with a random three-letter name that is not on the
-  blocklist and not in use. Players can change their letters on the **You** tab; each name can only be
-  used once and offensive names are refused. The built-in list is in `0002_names_signin_admin.sql`
-  (table `blocked_initials`); the committee can add more, and can reset a player's name to a random one.
+- Two or three letters, chosen on the first tap. Duplicates get a tag (JAK#2) instead of a refusal, so
+  the real initials always work. Offensive letters are refused; the built-in list is in
+  `0002_names_signin_admin.sql` (table `blocked_initials`), the committee can add more, and can reset a
+  player's name to a random one.
+- The game: the light's speed is different every play and the score curve is steep near the centre, so
+  900 is very reachable, 980 is rare and 1,000 is practically impossible.
 - Student or teacher is a toggle on the home screen (and on the You tab).
 - Every player has a four-digit **claim code** on the **You** tab. It proves a winning score is theirs and
   lets them **sign back in** on another phone or after clearing their browser (home screen → "Played

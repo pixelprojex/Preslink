@@ -127,14 +127,16 @@ type Body = Record<string, unknown>;
 async function register(body: Body) {
   const role = String(body.role ?? "student");
   if (role !== "student" && role !== "teacher") throw new HttpError(400, "BAD_ROLE");
-  return await rpc("register_player", { p_role: role });
+  const initials = body.initials == null ? null : String(body.initials).toUpperCase().trim();
+  if (initials !== null && !/^[A-Z]{2,3}$/.test(initials)) throw new HttpError(400, "BAD_INITIALS");
+  return await rpc("register_player", { p_role: role, p_initials: initials });
 }
 
 async function update(body: Body) {
   const playerId = requireUuid(body.player_id, "BAD_PLAYER");
   const initials = body.initials == null ? null : String(body.initials).toUpperCase().trim();
   const role = body.role == null ? null : String(body.role);
-  if (initials !== null && !/^[A-Z]{3}$/.test(initials)) throw new HttpError(400, "BAD_INITIALS");
+  if (initials !== null && !/^[A-Z]{2,3}$/.test(initials)) throw new HttpError(400, "BAD_INITIALS");
   if (role !== null && role !== "student" && role !== "teacher") throw new HttpError(400, "BAD_ROLE");
   if (initials === null && role === null) throw new HttpError(400, "NOTHING_TO_UPDATE");
   return await rpc("update_player", { p_id: playerId, p_initials: initials, p_role: role });
@@ -245,7 +247,7 @@ async function submit(req: Request, body: Body) {
 async function signin(body: Body) {
   const initials = String(body.initials ?? "").toUpperCase().trim();
   const code = String(body.code ?? "").replace(/\D/g, "");
-  if (!/^[A-Z]{3}$/.test(initials)) throw new HttpError(400, "BAD_INITIALS");
+  if (!/^[A-Z]{2,3}(#\d{1,3})?$/.test(initials)) throw new HttpError(400, "BAD_INITIALS");
   if (!/^\d{4}$/.test(code)) throw new HttpError(400, "BAD_SIGNIN");
   return await rpc("signin_player", { p_initials: initials, p_code: code });
 }
@@ -266,7 +268,7 @@ async function admin(body: Body) {
     }
     case "player": {
       const initials = String(body.initials ?? "").toUpperCase().trim();
-      if (!/^[A-Z]{3}$/.test(initials)) throw new HttpError(400, "BAD_INITIALS");
+      if (!/^[A-Z]{2,3}(#\d{1,3})?$/.test(initials)) throw new HttpError(400, "BAD_INITIALS");
       return await rpc("admin_player", { p_code: code, p_initials: initials });
     }
     case "reset_name": {

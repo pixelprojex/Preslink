@@ -28,7 +28,7 @@
   function expectedScore(tapMs, phase, speedMs) {
     let x = tapMs / speedMs + phase; x = x - 2 * Math.floor(x / 2);
     const pos = x < 1 ? x : 2 - x;
-    return Math.round(1000 * (1 - 2 * Math.abs(pos - 0.5)));
+    return Math.round(1000 * Math.pow(Math.max(0, 1 - 2 * Math.abs(pos - 0.5)), 1.6));
   }
 
   function seed() {
@@ -48,10 +48,12 @@
   if (!db.blocked) db.blocked = [];
   save(db);
 
+  const disp = (p) => p.initials + ((p.suffix || 1) > 1 ? '#' + p.suffix : '');
+  const nextSuffix = (initials, exceptId) => Object.values(db.players).filter((x) => x.initials === initials && x.id !== exceptId).reduce((m, x) => Math.max(m, x.suffix || 1), 0) + 1;
   const me = (p) => {
     const open = db.plays.find((x) => x.player_id === p.id && x.score == null && !x.voided);
     const best = db.plays.filter((x) => x.player_id === p.id && x.score != null && !x.voided && x.week_start === weekStart()).reduce((m, x) => Math.max(m, x.score), null);
-    return { id: p.id, tag: tag(p.id), initials: p.initials, role: p.role, claim_code: p.claim_code, credits: p.credits, banned: !!p.banned, best_this_week: best, open_play: open ? { play_id: open.id, phase: open.phase, speed_ms: open.speed_ms } : null };
+    return { id: p.id, tag: tag(p.id), initials: p.initials, suffix: p.suffix || 1, display: disp(p), role: p.role, claim_code: p.claim_code, credits: p.credits, banned: !!p.banned, best_this_week: best, open_play: open ? { play_id: open.id, phase: open.phase, speed_ms: open.speed_ms } : null };
   };
   const board = (role, week, withIds) => {
     week = week || null;
@@ -66,8 +68,9 @@
     return Object.values(best).map((p) => ({ ...p, player: db.players[p.player_id] }))
       .filter((p) => !role || p.player.role === role)
       .sort((a, b) => b.score - a.score || a.finished_at.localeCompare(b.finished_at))
-      .map((p, i) => ({ rank: i + 1, tag: tag(p.player_id), initials: p.player.initials, role: p.player.role, score: p.score, achieved_at: p.finished_at, plays: p.plays,
+      .map((p, i) => ({ rank: i + 1, tag: tag(p.player_id), initials: disp(p.player), role: p.player.role, score: p.score, achieved_at: p.finished_at, plays: p.plays,
         ...(withIds ? { play_id: p.id, player_id: p.player_id, claim_code: p.player.claim_code, banned: !!p.player.banned } : {}) }));
+  void 0;
   };
   const stats = () => ({
     total_raised_cents: db.payments.reduce((s, p) => s + p.amount_cents, 0), goal_cents: db.settings.goal_cents, prize_text: db.settings.prize_text,
@@ -83,27 +86,31 @@
     switch (action) {
       case 'register': {
         if (b.role !== 'student' && b.role !== 'teacher') fail('BAD_ROLE');
+        let initials = b.initials ? String(b.initials).toUpperCase() : '';
+        if (initials) {
+          if (!/^[A-Z]{2,3}$/.test(initials)) fail('BAD_INITIALS');
+          if (BLOCKED.includes(initials) || db.blocked.includes(initials)) fail('BLOCKED_INITIALS');
+        } else initials = randomInitials();
         const id = uuid();
-        db.players[id] = { id, initials: randomInitials(), role: b.role, claim_code: String(Math.floor(Math.random() * 10000)).padStart(4, '0'), credits: 0, banned: false };
+        db.players[id] = { id, initials, suffix: nextSuffix(initials), role: b.role, claim_code: String(Math.floor(Math.random() * 10000)).padStart(4, '0'), credits: 0, banned: false };
         save(db);
         return me(db.players[id]);
       }
       case 'update': {
         if (!player) fail('PLAYER_NOT_FOUND');
-        if (b.initials != null) {
+        if (b.initials != null && String(b.initials).toUpperCase() !== player.initials) {
           const initials = String(b.initials).toUpperCase();
-          if (!/^[A-Z]{3}$/.test(initials)) fail('BAD_INITIALS');
+          if (!/^[A-Z]{2,3}$/.test(initials)) fail('BAD_INITIALS');
           if (BLOCKED.includes(initials) || db.blocked.includes(initials)) fail('BLOCKED_INITIALS');
-          if (Object.values(db.players).some((p) => p.initials === initials && p.id !== player.id)) fail('TAKEN');
-          player.initials = initials;
+          player.initials = initials; player.suffix = nextSuffix(initials, player.id);
         }
         if (b.role != null) { if (b.role !== 'student' && b.role !== 'teacher') fail('BAD_ROLE'); player.role = b.role; }
         save(db);
         return me(player);
       }
       case 'signin': {
-        const initials = String(b.initials || '').toUpperCase();
-        const p = Object.values(db.players).find((x) => x.initials === initials && x.claim_code === String(b.code));
+        const [initials, sfx] = String(b.initials || '').toUpperCase().split('#');
+        const p = Object.values(db.players).sort((x, y) => (x.suffix || 1) - (y.suffix || 1)).find((x) => x.initials === initials && x.claim_code === String(b.code) && (!sfx || (x.suffix || 1) === Number(sfx)));
         if (!p) { db.fails[initials] = (db.fails[initials] || 0) + 1; save(db); if (db.fails[initials] >= 5) fail('LOCKED'); fail('BAD_SIGNIN'); }
         db.fails[initials] = 0; save(db);
         return me(p);
@@ -134,7 +141,7 @@
         if (open) return { play_id: open.id, phase: open.phase, speed_ms: open.speed_ms, credits: player.credits, resumed: true };
         if (player.credits <= 0) fail('NO_CREDITS');
         player.credits -= 1;
-        const play = { id: uuid(), player_id: player.id, started_at: new Date().toISOString(), score: null, phase: Math.random(), speed_ms: 650, voided: false };
+        const play = { id: uuid(), player_id: player.id, started_at: new Date().toISOString(), score: null, phase: Math.random(), speed_ms: 560 + Math.floor(Math.random() * 141), voided: false };
         db.plays.push(play); save(db);
         return { play_id: play.id, phase: play.phase, speed_ms: play.speed_ms, credits: player.credits, resumed: false };
       }
@@ -163,20 +170,21 @@
               stats: stats(), week: wk, weeks: [weekStart()],
               board: [...board('student', wk, true), ...board('teacher', wk, true)].map((r) => ({ ...r, finished_at: r.achieved_at })),
               past_winners: [],
-              payments: db.payments.slice().reverse().slice(0, 50).map((p) => ({ ...p, initials: (db.players[p.player_id] || {}).initials || '???', role: (db.players[p.player_id] || {}).role })),
+              payments: db.payments.slice().reverse().slice(0, 50).map((p) => ({ ...p, initials: db.players[p.player_id] ? disp(db.players[p.player_id]) : '???', role: (db.players[p.player_id] || {}).role })),
               by_day: Object.values(byDay).sort((a, c) => c.day.localeCompare(a.day)),
               players_by_role: roles,
               blocked_by_committee: db.blocked,
-              banned: Object.values(db.players).filter((p) => p.banned).map((p) => ({ player_id: p.id, initials: p.initials, claim_code: p.claim_code })),
+              banned: Object.values(db.players).filter((p) => p.banned).map((p) => ({ player_id: p.id, initials: disp(p), claim_code: p.claim_code })),
             };
           }
           case 'player': {
-            const p = Object.values(db.players).find((x) => x.initials === String(b.initials).toUpperCase()); if (!p) fail('PLAYER_NOT_FOUND');
-            return { player: { ...p, created_at: p.created_at || new Date().toISOString(), last_seen_at: new Date().toISOString() },
+            const [ini, sfx] = String(b.initials).toUpperCase().split('#');
+            const p = Object.values(db.players).sort((x, y) => (x.suffix || 1) - (y.suffix || 1)).find((x) => x.initials === ini && (!sfx || (x.suffix || 1) === Number(sfx))); if (!p) fail('PLAYER_NOT_FOUND');
+            return { player: { ...p, initials: disp(p), created_at: p.created_at || new Date().toISOString(), last_seen_at: new Date().toISOString() }, others: Object.values(db.players).filter((x) => x.initials === ini && x.id !== p.id).map(disp),
               plays: db.plays.filter((x) => x.player_id === p.id).map((x) => ({ play_id: x.id, started_at: x.started_at, finished_at: x.finished_at, score: x.score, week_start: x.week_start, voided: x.voided })),
               payments: db.payments.filter((x) => x.player_id === p.id) };
           }
-          case 'reset_name': { const p = db.players[b.player_id]; if (!p) fail('PLAYER_NOT_FOUND'); p.initials = randomInitials(); save(db); return { ok: true, initials: p.initials }; }
+          case 'reset_name': { const p = db.players[b.player_id]; if (!p) fail('PLAYER_NOT_FOUND'); p.initials = randomInitials(); p.suffix = 1; save(db); return { ok: true, initials: p.initials }; }
           case 'void': { const pl = db.plays.find((x) => x.id === b.play_id); if (!pl) fail('PLAY_NOT_FOUND'); pl.voided = b.voided !== false; save(db); return { ok: true }; }
           case 'ban': { const p = db.players[b.player_id]; if (!p) fail('PLAYER_NOT_FOUND'); p.banned = b.banned !== false; save(db); return { ok: true }; }
           case 'block': { const i = String(b.initials).toUpperCase(); if (b.block !== false) { if (!db.blocked.includes(i)) db.blocked.push(i); } else db.blocked = db.blocked.filter((x) => x !== i); save(db); return { ok: true }; }
