@@ -1,18 +1,19 @@
 # PresLink Arcade
 
-A phone-first web app for the PresLink charity at Presentation Brothers College, Cork.
+A web app for phones and iPads for the PresLink charity at Presentation Brothers College, Cork.
 Scan a QR code, tap **Play · €2**, pay with Apple Pay, Google Pay or a card, and
-**stop the light in the green**. One tap, score out of 1,000. Highest score of the week
-wins, with separate boards for students and teachers. Every payment goes to PresLink.
+**stop the light on the mark**: three lights a play, the score is the average, out of 1,000.
+Highest score of the week wins, with separate boards for students and teachers. Every payment goes to PresLink.
 
-There is no sign-up. On the first tap a small sheet asks for two or three letters (your initials)
-and Student or Teacher, then goes straight to payment. If someone already has those letters you still
-get them, shown with a small tag (JAK, JAK#2, JAK#3), so nobody is ever refused. Players can change
-their letters and board on the **You** tab, and a four-digit claim code proves a winning score is
-theirs (and signs them in on another phone).
+There is no sign-up. On the first tap a small sheet asks for two or three letters (your initials),
+then goes straight to payment. After the first play the result screen asks **Student or Teacher**
+(anyone else picks either). If someone already has those letters you still get them, shown with a
+small tag (JAK, JAK#2, JAK#3), so nobody is ever refused. Players can change their letters and board
+on the **You** tab, and a four-digit code proves a winning score is theirs (and signs them in on any device).
 
-The look is PresLink's own: cream background, navy, teal, coral and gold tiles, pill buttons,
-a floating tab bar (Play, Board, About, You) and very little text.
+The look is the school's: white, purple and black, with the yellow of the Presentation Brothers cross as
+the only accent. No boxes or borders, a logo and the running total raised at the top of every screen,
+a tab bar (Play, Board, About, You), a Prize page with a photo, and very little text.
 
 ```
   Phone (QR)  ──▶  Netlify (static site: site/)
@@ -67,6 +68,10 @@ The free plays switch off by themselves the moment a Stripe key exists. Details 
 | `supabase/migrations/0001_init.sql` | Database tables and functions |
 | `supabase/migrations/0002_names_signin_admin.sql` | Unique names, name blocklist, sign back in, bans, goal and prize settings, committee functions |
 | `supabase/migrations/0003_auto_names_admin_v2.sql` | Random names on first tap, name and board changes, richer committee overview, player lookup, name reset |
+| `supabase/migrations/0004_demo_credits.sql` | Free plays while no Stripe key is set |
+| `supabase/migrations/0005_initials_suffix_harder.sql` | Chosen initials with #2 tags, sign in with JAK#2, steeper scoring |
+| `supabase/migrations/0006_three_rounds.sql` | Three lights a play with a random mark each, slower sweep, score checked light by light |
+| `site/assets/` | Logo (`logo.svg`, `cross.svg`), icons, and the photo slots `photo-*.svg` to replace with real photos |
 | `supabase/functions/api/index.ts` | Register, checkout, confirm payment, start play, submit score |
 | `supabase/functions/stripe-webhook/index.ts` | Receives Stripe's payment confirmation |
 | `docs/admin.sql` | Extra SQL for the committee (most day-to-day admin is in the app's Committee screen) |
@@ -78,11 +83,11 @@ Do these in order. Steps 1 and 2 are a one-off technical setup; 3 to 6 are the l
 
 ### 1. Supabase (database + functions): already done
 
-The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all three migrations applied,
+The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all six migrations applied,
 both functions deployed, and `site/config.js` points at it. The committee code was set at deployment
 and handed over privately; change it any time from the Committee screen.
 
-If you ever need to redo this on a fresh project: Dashboard → **SQL Editor** → run the three files in
+If you ever need to redo this on a fresh project: Dashboard → **SQL Editor** → run the six files in
 `supabase/migrations/` in order, deploy the two functions with `--no-verify-jwt` (CLI below), set the
 committee code with `select public.admin_set_code(null, 'YourCode');`, and put the project URL and
 publishable key in `site/config.js`.
@@ -127,7 +132,7 @@ and registered details. A student cannot be the account holder.
 
 1. Open the site on a phone. Tap **Play · €2**. Stripe's test page opens.
 2. Pay with card number `4242 4242 4242 4242`, any future expiry, any CVC, any postcode.
-3. You land back in the coin cabinet, see the coin go in and a token come out, and the game starts. Check the leaderboard after.
+3. You land back in the coin cabinet, see the coin go in and a token come out, and the game starts: three lights, then the result and the Student/Teacher question. Check the leaderboard after.
 4. In Supabase → **Table Editor** you will see the player, the payment and the play.
 5. In Stripe → **Developers → Webhooks** the endpoint should show a successful delivery.
 
@@ -145,8 +150,10 @@ and registered details. A student cannot be the account holder.
 
 1. On the site, open the **You** tab → **Committee sign-in** (or go straight to `/#admin`) and enter the committee code.
 2. **Past winners** lists last week's winners for students and teachers with their claim codes.
-3. Announce the initials. The winner opens their **You** tab and shows their letters and claim code; they must match.
-4. Set **This week's prize** in the same panel. It appears at the top of the leaderboard.
+3. Announce the initials. The winner opens their **You** tab and shows their letters and code; they must match.
+4. Set **This week's prize** in the same panel. It appears on the home screen, the leaderboard and the Prize page.
+   To change the prize photo, replace `site/assets/photo-prize.svg` (any image file; keep the name or update
+   `index.html`).
 
 ## The Committee screen
 
@@ -168,18 +175,22 @@ hash in the database and locks for 15 minutes after 8 wrong tries. From there th
   the real initials always work. Offensive letters are refused; the built-in list is in
   `0002_names_signin_admin.sql` (table `blocked_initials`), the committee can add more, and can reset a
   player's name to a random one.
-- The game: the light's speed is different every play and the score curve is steep near the centre, so
-  900 is very reachable, 980 is rare and 1,000 is practically impossible.
-- Student or teacher is a toggle on the home screen (and on the You tab).
-- Every player has a four-digit **claim code** on the **You** tab. It proves a winning score is theirs and
-  lets them **sign back in** on another phone or after clearing their browser (home screen → "Played
+- The game: a play is three lights. Each light sweeps the bar at its own random speed (about a second per
+  pass) and has its own mark; you tap when the light is on the mark. The score for a light falls off steeply
+  with distance (30 ms late is about 900), and the play's score is the average of the three, so one lucky
+  tap is not enough: scores above 900 need three good taps in a row, and 1,000 is practically impossible.
+- Student or Teacher is asked once, after the first play, and can be changed on the You tab.
+- Every player has a four-digit **code** on the **You** tab. It proves a winning score is theirs and
+  lets them **sign back in** on another device or after clearing their browser (You tab → "Played
   before?"). Five wrong codes lock that name for 15 minutes. A lost code can be looked up by the committee.
 
 ## Editing the content
 
-All the words are in `site/index.html`. The "What is PresLink?" section and the three project cards were
-written from the school's newsletters and the Presentation Brothers' website; the committee should check
-them and add photos (drop images into `site/assets/` and reference them from the cards). Prices live in
+All the words are in `site/index.html`. The About page was written from the school's newsletters and the
+Presentation Brothers' website; the committee should check it. The photos are placeholders: replace
+`site/assets/photo-school.svg`, `photo-classrooms.svg`, `photo-bikes.svg`, `photo-babies.svg` and
+`photo-prize.svg` with real images (JPG or PNG is fine; update the file names in `index.html` if they
+change). Prices live in
 three places that must agree: the bundle buttons in `index.html`, `BUNDLES` in
 `supabase/functions/api/index.ts` and `BUNDLES` in `supabase/functions/stripe-webhook/index.ts`.
 
@@ -196,9 +207,10 @@ The advisor reports two things on purpose:
 ## How the game is kept honest
 
 - A play can only start when the server holds a paid credit, and the server hands out a one-time play.
-- The server recomputes the score from the tap time and the light's start position and rejects anything
-  that does not match, as well as scores that arrive before enough real time has passed.
-- Every play is logged with its tap time. The committee reviews the top scores before announcing and can
+- The server recomputes the score of each of the three lights from its tap time, start position and mark,
+  and rejects anything that does not match, as well as plays whose taps add up to more time than has really
+  passed.
+- Every play is logged with its three tap times. The committee reviews the top scores before announcing and can
   void a play. The terms say so.
 - A refresh mid-game never costs a credit: the same play resumes.
 - Nobody can read the players or payments tables from the browser; the only public reads are the

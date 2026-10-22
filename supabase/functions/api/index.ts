@@ -231,15 +231,15 @@ async function submit(req: Request, body: Body) {
   const playerId = requireUuid(body.player_id, "BAD_PLAYER");
   const playId = requireUuid(body.play_id, "BAD_PLAY");
   const score = Number(body.score);
-  const tapMs = Number(body.tap_ms);
+  const taps = Array.isArray(body.taps) ? body.taps.map((t) => Number(t)) : [];
   if (!Number.isInteger(score) || score < 0 || score > 1000) throw new HttpError(400, "BAD_SCORE");
-  if (!Number.isInteger(tapMs) || tapMs < 0 || tapMs > 600000) throw new HttpError(400, "BAD_TAP");
+  if (taps.length !== 3 || taps.some((t) => !Number.isInteger(t) || t < 0 || t > 600000)) throw new HttpError(400, "BAD_TAP");
   const ua = req.headers.get("user-agent") ?? "";
-  return await rpc("submit_score", {
+  return await rpc("submit_play", {
     p_player_id: playerId,
     p_play_id: playId,
     p_score: score,
-    p_tap_ms: tapMs,
+    p_taps: taps,
     p_client: { ua: ua.slice(0, 200) },
   });
 }

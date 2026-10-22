@@ -25,21 +25,22 @@
     }
     fail('NO_NAMES_LEFT');
   }
-  function expectedScore(tapMs, phase, speedMs) {
+  function roundScore(tapMs, phase, target, speedMs) {
     let x = tapMs / speedMs + phase; x = x - 2 * Math.floor(x / 2);
     const pos = x < 1 ? x : 2 - x;
-    return Math.round(1000 * Math.pow(Math.max(0, 1 - 2 * Math.abs(pos - 0.5)), 1.6));
+    return Math.round(1000 * Math.pow(Math.max(0, 1 - Math.abs(pos - target) / 0.5), 1.6));
   }
+  const newRounds = () => Array.from({ length: 3 }, () => ({ phase: Math.random(), target: 0.15 + Math.random() * 0.7 }));
 
   function seed() {
     const db = { players: {}, plays: [], payments: [], sessions: {}, settings: { goal_cents: 200000, prize_text: '€20 voucher and the PresLink trophy' }, blocked: [], fails: {} };
-    const demo = [['BRO', 'student', 983], ['TOM', 'student', 967], ['ZAC', 'student', 942], ['EVA', 'student', 921], ['OSC', 'student', 880], ['MRS', 'teacher', 958], ['SIR', 'teacher', 903]];
+    const demo = [['BRO', 'student', 911], ['TOM', 'student', 884], ['ZAC', 'student', 862], ['EVA', 'student', 835], ['OSC', 'student', 790], ['MRS', 'teacher', 897], ['SIR', 'teacher', 846]];
     demo.forEach(([initials, role, score], i) => {
       const id = uuid();
       db.players[id] = { id, initials, role, claim_code: String(1000 + i * 731).slice(-4), credits: 0, banned: false, created_at: new Date().toISOString() };
       db.payments.push({ stripe_session_id: 'cs_test_seed' + i, player_id: id, bundle: 'single', credits: 1, amount_cents: 200, created_at: new Date().toISOString(), email: '' });
       const at = new Date(Date.now() - (i + 1) * 3600e3).toISOString();
-      db.plays.push({ id: uuid(), player_id: id, started_at: at, finished_at: at, score, tap_ms: 500, phase: 0, speed_ms: 650, week_start: weekStart(), voided: false });
+      db.plays.push({ id: uuid(), player_id: id, started_at: at, finished_at: at, score, taps: [900, 900, 900], rounds: newRounds(), speed_ms: 950, week_start: weekStart(), voided: false });
     });
     return db;
   }
@@ -53,7 +54,7 @@
   const me = (p) => {
     const open = db.plays.find((x) => x.player_id === p.id && x.score == null && !x.voided);
     const best = db.plays.filter((x) => x.player_id === p.id && x.score != null && !x.voided && x.week_start === weekStart()).reduce((m, x) => Math.max(m, x.score), null);
-    return { id: p.id, tag: tag(p.id), initials: p.initials, suffix: p.suffix || 1, display: disp(p), role: p.role, claim_code: p.claim_code, credits: p.credits, banned: !!p.banned, best_this_week: best, open_play: open ? { play_id: open.id, phase: open.phase, speed_ms: open.speed_ms } : null };
+    return { id: p.id, tag: tag(p.id), initials: p.initials, suffix: p.suffix || 1, display: disp(p), role: p.role, claim_code: p.claim_code, credits: p.credits, banned: !!p.banned, best_this_week: best, open_play: open ? { play_id: open.id, speed_ms: open.speed_ms, rounds: open.rounds } : null };
   };
   const board = (role, week, withIds) => {
     week = week || null;
@@ -70,7 +71,6 @@
       .sort((a, b) => b.score - a.score || a.finished_at.localeCompare(b.finished_at))
       .map((p, i) => ({ rank: i + 1, tag: tag(p.player_id), initials: disp(p.player), role: p.player.role, score: p.score, achieved_at: p.finished_at, plays: p.plays,
         ...(withIds ? { play_id: p.id, player_id: p.player_id, claim_code: p.player.claim_code, banned: !!p.player.banned } : {}) }));
-  void 0;
   };
   const stats = () => ({
     total_raised_cents: db.payments.reduce((s, p) => s + p.amount_cents, 0), goal_cents: db.settings.goal_cents, prize_text: db.settings.prize_text,
@@ -137,25 +137,28 @@
       case 'start': {
         if (!player) fail('PLAYER_NOT_FOUND');
         if (player.banned) fail('BANNED');
-        const open = db.plays.find((x) => x.player_id === player.id && x.score == null && !x.voided);
-        if (open) return { play_id: open.id, phase: open.phase, speed_ms: open.speed_ms, credits: player.credits, resumed: true };
+        const open = db.plays.find((x) => x.player_id === player.id && x.score == null && !x.voided && x.rounds);
+        if (open) return { play_id: open.id, speed_ms: open.speed_ms, rounds: open.rounds, credits: player.credits, resumed: true };
         if (player.credits <= 0) fail('NO_CREDITS');
         player.credits -= 1;
-        const play = { id: uuid(), player_id: player.id, started_at: new Date().toISOString(), score: null, phase: Math.random(), speed_ms: 560 + Math.floor(Math.random() * 141), voided: false };
+        const play = { id: uuid(), player_id: player.id, started_at: new Date().toISOString(), score: null, rounds: newRounds(), speed_ms: 850 + Math.floor(Math.random() * 201), voided: false };
         db.plays.push(play); save(db);
-        return { play_id: play.id, phase: play.phase, speed_ms: play.speed_ms, credits: player.credits, resumed: false };
+        return { play_id: play.id, speed_ms: play.speed_ms, rounds: play.rounds, credits: player.credits, resumed: false };
       }
       case 'submit': {
         if (!player) fail('PLAYER_NOT_FOUND');
         const play = db.plays.find((x) => x.id === b.play_id && x.player_id === player.id);
         if (!play) fail('PLAY_NOT_FOUND');
         if (play.score != null) fail('ALREADY_SCORED');
-        const exp = expectedScore(b.tap_ms, play.phase, play.speed_ms);
+        const taps = Array.isArray(b.taps) ? b.taps.map(Number) : [];
+        if (taps.length !== 3 || taps.some((t) => !Number.isInteger(t) || t < 150 || t > 120000)) fail('BAD_TAP');
+        const rounds = taps.map((t, i) => roundScore(t, play.rounds[i].phase, play.rounds[i].target, play.speed_ms));
+        const exp = Math.round((rounds[0] + rounds[1] + rounds[2]) / 3);
         if (Math.abs(exp - b.score) > 5) fail('SCORE_MISMATCH');
-        play.score = exp; play.tap_ms = b.tap_ms; play.finished_at = new Date().toISOString(); play.week_start = weekStart();
+        play.score = exp; play.taps = taps; play.finished_at = new Date().toISOString(); play.week_start = weekStart();
         save(db);
         const row = board(player.role).find((r) => r.tag === tag(player.id));
-        return { score: exp, best_this_week: me(player).best_this_week, rank: row ? row.rank : null, credits: player.credits, week_start: play.week_start };
+        return { score: exp, rounds, best_this_week: me(player).best_this_week, rank: row ? row.rank : null, credits: player.credits, week_start: play.week_start };
       }
       case 'admin': {
         adminCheck(b.code);
