@@ -3,13 +3,16 @@
 A web app for phones and iPads for the PresLink charity at Presentation Brothers College, Cork.
 Scan a QR code, tap **Play · €2**, pay with Apple Pay, Google Pay or a card, and
 **stop the light on the mark**: three lights a play, the score is the average, out of 1,000.
-Highest score of the week wins, with separate boards for students and teachers. Every payment goes to PresLink.
+One campaign, three boards (Everyone, Students, Teachers) and prizes at the end, plus two spot prizes
+(best single light, most plays). Every payment goes to PresLink.
 
 There is no sign-up. On the first tap a small sheet asks for two or three letters (your initials),
-then goes straight to payment. After the first play the result screen asks **Student or Teacher**
-(anyone else picks either). If someone already has those letters you still get them, shown with a
-small tag (JAK, JAK#2, JAK#3), so nobody is ever refused. Players can change their letters and board
-on the **You** tab, and a four-digit code proves a winning score is theirs (and signs them in on any device).
+then goes straight to payment. After the first play a sheet shows the player's **name and four-digit
+code** with Save image and Copy, because those two things collect a prize; the code is also on the
+**You** tab on that device and signs them in anywhere. Everyone is on the Everyone board. People at
+Presentation Brothers College can optionally give their school email to join the Students board
+(@pbccork.ie) or the Teachers board (@pbc-cork.ie); it is a format check, nothing is sent. If someone
+already has the same letters you still get them, shown with a small tag (JAK, JAK#2), so nobody is ever refused.
 
 The look follows the conventions of native apps (grouped white cards on a soft grey canvas, large titles,
 segmented controls, avatars, a progress ring) in PresLink's colours: green for actions, orange for the
@@ -73,6 +76,7 @@ The free plays switch off by themselves the moment a Stripe key exists. Details 
 | `supabase/migrations/0004_demo_credits.sql` | Free plays while no Stripe key is set |
 | `supabase/migrations/0005_initials_suffix_harder.sql` | Chosen initials with #2 tags, sign in with JAK#2, steeper scoring |
 | `supabase/migrations/0006_three_rounds.sql` | Three lights a play with a random mark each, slower sweep, score checked light by light |
+| `supabase/migrations/0007_campaign.sql` | One campaign instead of weeks: Everyone board, school email for Students/Teachers, spot prizes, end date and five prize texts |
 | `site/assets/` | Logo (`logo.svg`, `cross.svg`), icons, and the photo slots `photo-*.svg` to replace with real photos |
 | `supabase/functions/api/index.ts` | Register, checkout, confirm payment, start play, submit score |
 | `supabase/functions/stripe-webhook/index.ts` | Receives Stripe's payment confirmation |
@@ -85,12 +89,12 @@ Do these in order. Steps 1 and 2 are a one-off technical setup; 3 to 6 are the l
 
 ### 1. Supabase (database + functions): already done
 
-The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all six migrations applied,
+The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all seven migrations applied,
 both functions deployed, and `site/config.js` points at it. The committee code was set at deployment
 and handed over privately; change it any time from the Committee screen.
 
-If you ever need to redo this on a fresh project: Dashboard → **SQL Editor** → run the six files in
-`supabase/migrations/` in order, deploy the two functions with `--no-verify-jwt` (CLI below), set the
+If you ever need to redo this on a fresh project: Dashboard → **SQL Editor** → run the seven files in
+`supabase/migrations/` in order (the first line of `0007` must be run on its own, before the rest of that file), deploy the two functions with `--no-verify-jwt` (CLI below), set the
 committee code with `select public.admin_set_code(null, 'YourCode');`, and put the project URL and
 publishable key in `site/config.js`.
 ```bash
@@ -148,24 +152,23 @@ and registered details. A student cannot be the account holder.
 4. Open `/qr.html` on the live site, print the poster or download the PNG.
 5. Make one real €2 payment yourself to be sure, then announce it.
 
-### 6. Every Monday
+### 6. Prizes at the end
 
-1. On the site, open the **You** tab → **Committee sign-in** (or go straight to `/#admin`) and enter the committee code.
-2. **Past winners** lists last week's winners for students and teachers with their claim codes.
-3. Announce the initials. The winner opens their **You** tab and shows their letters and code; they must match.
-4. Set **This week's prize** in the same panel. It appears on the home screen, the leaderboard and the Prize page.
-   To change the prize photo, replace `site/assets/photo-prize.svg` (any image file; keep the name or update
-   `index.html`).
+1. In the Committee screen (`/#admin`), set the **end date** and the five **prize** texts (Everyone, Students,
+   Teachers, Best light, Most plays). They appear on the Prizes page. To change the prize photo, replace
+   `site/assets/photo-prize.svg` (any image file; keep the name or update `index.html`).
+2. At the end, the **Boards** section shows the top of each board with codes, and the two spot-prize holders.
+3. Announce the letters. A winner shows their **You** tab (or the saved code image): letters and code must match.
 
 ## The Committee screen
 
 Reachable from the **You** tab or at `/#admin`. It needs the committee code, which is stored only as a
 hash in the database and locks for 15 minutes after 8 wrong tries. From there the committee can:
 
-- see money raised, coins inserted, plays, players (students and teachers), money per day, and set the
-  fundraising **goal** and the weekly **prize**;
-- see the board for **any week** with claim codes and times, and **void** a score, **ban** a player or give
-  a player a **new random name**;
+- see money raised, coins inserted, plays, players by board, money per day, and set the fundraising **goal**,
+  the **end date** and the five **prizes**;
+- see the Everyone, Students and Teachers boards with codes, best light and times, the spot-prize holders, and
+  **void** a score, **ban** a player or give a player a **new random name**;
 - **find any player** by their letters: claim code, credits, every play (void or restore) and payments;
 - see past winners with claim codes, recent payments with receipt emails, and **download a CSV**;
 - **block** extra three-letter names on top of the built-in list of offensive ones;
@@ -181,18 +184,21 @@ hash in the database and locks for 15 minutes after 8 wrong tries. From there th
   pass) and has its own mark; you tap when the light is on the mark. The score for a light falls off steeply
   with distance (30 ms late is about 900), and the play's score is the average of the three, so one lucky
   tap is not enough: scores above 900 need three good taps in a row, and 1,000 is practically impossible.
-- Student or Teacher is asked once, after the first play, and can be changed on the You tab.
-- Every player has a four-digit **code** on the **You** tab. It proves a winning score is theirs and
-  lets them **sign back in** on another device or after clearing their browser (You tab → "Played
-  before?"). Five wrong codes lock that name for 15 minutes. A lost code can be looked up by the committee.
+- Everyone starts on the Everyone board. The result screen and the You tab offer "At Presentation Brothers
+  College?": a school email ending @pbccork.ie puts the player on the Students board, @pbc-cork.ie on the
+  Teachers board. The address is stored for the committee to check; nothing is emailed.
+- Every player has a four-digit **code**, shown once after the first play (Save image / Copy) and always on
+  the **You** tab. It proves a winning score is theirs and lets them **sign back in** on another device
+  (You tab → "Played before?"). Five wrong codes lock that name for 15 minutes. A lost code can be looked up
+  by the committee.
 
 ## Editing the content
 
 All the words are in `site/index.html`. The About page was written from the school's newsletters and the
-Presentation Brothers' website; the committee should check it. The photos are placeholders: replace
-`site/assets/photo-school.svg`, `photo-classrooms.svg`, `photo-bikes.svg`, `photo-babies.svg` and
-`photo-prize.svg` with real images (JPG or PNG is fine; update the file names in `index.html` if they
-change). Prices live in
+Presentation Brothers' website; the committee should check it. Three photos are real (`photo-classrooms.jpg`,
+`photo-bikes.jpg`, `photo-babies.jpg`); `photo-school.svg` (the committee) and `photo-prize.svg` are
+placeholders to replace with real images (JPG or PNG; update the file names in `index.html` if they change).
+Prices live in
 three places that must agree: the bundle buttons in `index.html`, `BUNDLES` in
 `supabase/functions/api/index.ts` and `BUNDLES` in `supabase/functions/stripe-webhook/index.ts`.
 

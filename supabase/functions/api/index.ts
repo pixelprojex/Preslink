@@ -2,8 +2,11 @@
 //
 // Dependency-free on purpose: Postgres is reached through PostgREST RPC with the
 // service-role key, Stripe through its REST API. Every action is a POST with a
-// JSON body: { action: "register" | "update" | "signin" | "me" | "checkout" | "confirm" | "start" | "submit" | "admin", ... }.
-// "register" needs no name: the database assigns a random three-letter one.
+// JSON body: { action: "register" | "update" | "school" | "signin" | "me" | "checkout" | "confirm" | "start" | "submit" | "admin", ... }.
+// "register" needs no name: the database assigns a random three-letter one. New players start on the
+// Everyone board (role "everyone"); "school" moves a player onto the Students or Teachers board by
+// checking the shape of a school email address (students @pbccork.ie, teachers @pbc-cork.ie; nothing is sent).
+// One campaign, no weeks: boards and spot prizes run until the committee's end date.
 // Admin calls carry the committee code; the database verifies it (SHA-256 hash in settings) and
 // locks the admin scope after repeated failures.
 //
@@ -124,22 +127,39 @@ function requireUuid(v: unknown, code: string): string {
 // ---------------------------------------------------------------------------
 type Body = Record<string, unknown>;
 
+const ROLES = new Set(["student", "teacher", "everyone"]);
+// Students end with @pbccork.ie, teachers with @pbc-cork.ie. The database applies the same rule
+// (set_school raises BAD_SCHOOL_EMAIL); checking here first saves a round trip.
+const SCHOOL_EMAIL = /^[a-z0-9._%+'-]+@(pbccork\.ie|pbc-cork\.ie)$/;
+
 async function register(body: Body) {
-  const role = String(body.role ?? "student");
-  if (role !== "student" && role !== "teacher") throw new HttpError(400, "BAD_ROLE");
+  const role = String(body.role ?? "everyone");
+  if (!ROLES.has(role)) throw new HttpError(400, "BAD_ROLE");
   const initials = body.initials == null ? null : String(body.initials).toUpperCase().trim();
   if (initials !== null && !/^[A-Z]{2,3}$/.test(initials)) throw new HttpError(400, "BAD_INITIALS");
   return await rpc("register_player", { p_role: role, p_initials: initials });
 }
 
+// Role "everyone" is always allowed; "student"/"teacher" need a matching school email on file
+// (the database raises NEEDS_SCHOOL_EMAIL otherwise).
 async function update(body: Body) {
   const playerId = requireUuid(body.player_id, "BAD_PLAYER");
   const initials = body.initials == null ? null : String(body.initials).toUpperCase().trim();
   const role = body.role == null ? null : String(body.role);
   if (initials !== null && !/^[A-Z]{2,3}$/.test(initials)) throw new HttpError(400, "BAD_INITIALS");
-  if (role !== null && role !== "student" && role !== "teacher") throw new HttpError(400, "BAD_ROLE");
+  if (role !== null && !ROLES.has(role)) throw new HttpError(400, "BAD_ROLE");
   if (initials === null && role === null) throw new HttpError(400, "NOTHING_TO_UPDATE");
   return await rpc("update_player", { p_id: playerId, p_initials: initials, p_role: role });
+}
+
+// Joins the Students or Teachers board. Format check only: no mail is sent.
+async function school(body: Body) {
+  const playerId = requireUuid(body.player_id, "BAD_PLAYER");
+  if (typeof body.email !== "string") throw new HttpError(400, "BAD_SCHOOL_EMAIL");
+  const email = body.email.trim().toLowerCase();
+  if (email.length < 6 || email.length > 120 || email.split("@").length !== 2) throw new HttpError(400, "BAD_SCHOOL_EMAIL");
+  if (!SCHOOL_EMAIL.test(email)) throw new HttpError(400, "BAD_SCHOOL_EMAIL");
+  return await rpc("set_school", { p_id: playerId, p_email: email });
 }
 
 async function me(body: Body) {
@@ -253,6 +273,20 @@ async function signin(body: Body) {
 }
 
 const ADMIN_OPS = new Set(["overview", "void", "ban", "block", "set_code", "settings", "player", "reset_name"]);
+const PRIZE_KEYS = new Set(["students", "teachers", "everyone", "best_light", "most_plays"]);
+
+// body.prizes: null (leave alone) or an object whose keys are the five prize slots; each value is
+// stored as settings.prize_<key>, cut to 200 characters.
+function parsePrizes(v: unknown): Record<string, string> | null {
+  if (v == null) return null;
+  if (typeof v !== "object" || Array.isArray(v)) throw new HttpError(400, "BAD_PRIZES");
+  const out: Record<string, string> = {};
+  for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+    if (!PRIZE_KEYS.has(k) || typeof val !== "string") throw new HttpError(400, "BAD_PRIZES");
+    out[k] = val.trim().slice(0, 200);
+  }
+  return out;
+}
 
 async function admin(body: Body) {
   const code = String(body.code ?? "");
@@ -262,6 +296,7 @@ async function admin(body: Body) {
 
   switch (op) {
     case "overview": {
+      // No week means the whole campaign (all-time); a date narrows to that week's plays.
       const week = body.week == null ? null : String(body.week);
       if (week !== null && !/^\d{4}-\d{2}-\d{2}$/.test(week)) throw new HttpError(400, "BAD_WEEK");
       return await rpc("admin_overview", { p_code: code, p_week: week });
@@ -301,7 +336,11 @@ async function admin(body: Body) {
       const goal = body.goal_cents == null ? null : Number(body.goal_cents);
       if (goal !== null && (!Number.isInteger(goal) || goal < 0 || goal > 100000000)) throw new HttpError(400, "BAD_GOAL");
       const prize = body.prize_text == null ? null : String(body.prize_text).slice(0, 200);
-      await rpc("admin_set_settings", { p_code: code, p_goal_cents: goal, p_prize_text: prize });
+      // ends_on: null leaves the date alone, "" clears it, otherwise YYYY-MM-DD (the database parses it).
+      const endsOn = body.ends_on == null ? null : String(body.ends_on).trim();
+      if (endsOn !== null && endsOn !== "" && !/^\d{4}-\d{2}-\d{2}$/.test(endsOn)) throw new HttpError(400, "BAD_DATE");
+      const prizes = parsePrizes(body.prizes);
+      await rpc("admin_set_settings", { p_code: code, p_goal_cents: goal, p_prize_text: prize, p_ends_on: endsOn, p_prizes: prizes });
       return { ok: true };
     }
   }
@@ -323,6 +362,7 @@ export async function handler(req: Request): Promise<Response> {
     switch (body.action) {
       case "register": return json(await register(body));
       case "update": return json(await update(body));
+      case "school": return json(await school(body));
       case "signin": return json(await signin(body));
       case "admin": return json(await admin(body));
       case "me": return json(await me(body));

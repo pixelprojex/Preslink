@@ -5,25 +5,28 @@
   const CONFIG = window.PRESLINK_CONFIG || {};
   const DEMO = !CONFIG.SUPABASE_URL;
   const STORAGE_KEY = 'preslink.player';
-  const ROLE_SET_KEY = 'preslink.roleSet';
+  const SCHOOL_ASKED_KEY = 'preslink.schoolAsked';
+  const CODE_SHOWN_KEY = 'preslink.codeShown';
   const PENDING_KEY = 'preslink.pendingScore';
   const ADMIN_KEY = 'preslink.adminCode';
   const SWEEP_GUARD_MS = 150;
   const ROUNDS = 3;
   const BUNDLES = { single: { amount: 2, credits: 1 }, triple: { amount: 5, credits: 3 }, seven: { amount: 10, credits: 7 } };
+  const SCHOOL = /^[a-z0-9._%+'-]+@(pbccork\.ie|pbc-cork\.ie)$/;
+  const BOARD_NAMES = { everyone: 'Everyone', student: 'Students', teacher: 'Teachers' };
 
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-  const cap = (s) => (s ? s[0].toUpperCase() + s.slice(1) : '');
   const euro = (cents) => '€' + Math.round((cents || 0) / 100).toLocaleString('en-IE');
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const vibrate = (p) => { try { if (navigator.vibrate) navigator.vibrate(p); } catch (_) { /* ignore */ } };
   const reduceMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   // "JAK#2" -> JAK with a small #2
   const nameHtml = (display) => { const [l, n] = String(display || '').split('#'); return esc(l) + (n ? `<span class="sfx">#${esc(n)}</span>` : ''); };
-  // A coloured circle with the letters, like an avatar; the tint comes from the letters so it is stable.
+  // A coloured circle with the letters; the tint comes from the letters so it is stable.
   const avatarHtml = (display, big) => { const l = String(display || '').split('#')[0]; let h = 0; for (const c of l) h = (h * 31 + c.charCodeAt(0)) % 5; return `<span class="avatar c${h + 1}${big ? ' big' : ''}">${esc(l)}</span>`; };
+  const boardName = (role) => BOARD_NAMES[role] || 'Everyone';
 
   const MESSAGES = {
     NETWORK: 'No connection. Check your signal and try again.',
@@ -31,7 +34,9 @@
     BAD_INITIALS: 'Two or three letters, A to Z.',
     BLOCKED_INITIALS: 'Those letters are not allowed. Try others.',
     TAKEN: 'Those letters are taken. Try others.',
-    BAD_ROLE: 'Choose Student or Teacher.',
+    BAD_ROLE: 'Choose a board.',
+    BAD_SCHOOL_EMAIL: 'Use your school email: @pbccork.ie for students, @pbc-cork.ie for teachers.',
+    NEEDS_SCHOOL_EMAIL: 'Add your school email first.',
     BAD_SIGNIN: 'That name and code do not match.',
     LOCKED: 'Too many tries. Wait 15 minutes.',
     BANNED: 'This player has been removed by the committee.',
@@ -47,6 +52,7 @@
     BAD_ADMIN: 'Wrong committee code.',
     ADMIN_NOT_SET: 'No committee code has been set yet.',
     CODE_TOO_SHORT: 'Use at least 6 characters.',
+    BAD_DATE: 'Use a date like 2026-12-12.',
     SERVER_ERROR: 'Something went wrong on our side. Please try again.',
   };
   const msg = (e) => MESSAGES[e && e.code] || MESSAGES.SERVER_ERROR;
@@ -66,25 +72,26 @@
   };
 
   let player = store.get(STORAGE_KEY);
-  let roleSet = !!store.get(ROLE_SET_KEY);
   let credits = 0;
   let openPlay = null;
-  let bestThisWeek = null;
+  let best = null;
+  let bestLight = null;
   let stats = null;
-  let boardRole = 'student';
+  let boardRole = 'everyone';
   let prevScreen = 'home';
 
   const savePlayer = () => store.set(STORAGE_KEY, player);
-  const clearPlayer = () => { player = null; credits = 0; openPlay = null; bestThisWeek = null; roleSet = false; store.del(STORAGE_KEY); store.del(ROLE_SET_KEY); };
+  const clearPlayer = () => { player = null; credits = 0; openPlay = null; best = null; bestLight = null; store.del(STORAGE_KEY); store.del(SCHOOL_ASKED_KEY); store.del(CODE_SHOWN_KEY); };
   function adoptPlayer(p) {
-    player = { id: p.id, tag: p.tag, initials: p.initials, suffix: p.suffix || 1, display: p.display || p.initials, role: p.role, claim_code: p.claim_code };
+    player = { id: p.id, tag: p.tag, initials: p.initials, suffix: p.suffix || 1, display: p.display || p.initials, role: p.role || 'everyone', claim_code: p.claim_code, school_email: p.school_email || null };
     credits = p.credits || 0;
     openPlay = p.open_play || null;
-    bestThisWeek = p.best_this_week == null ? null : p.best_this_week;
+    best = p.best != null ? p.best : (p.best_this_week == null ? null : p.best_this_week);
+    bestLight = p.best_light == null ? null : p.best_light;
     savePlayer();
     renderHome();
   }
-  function markRoleSet() { roleSet = true; store.set(ROLE_SET_KEY, true); }
+  const isSchool = () => !!player && (player.role === 'student' || player.role === 'teacher');
 
   // ---------------------------------------------------------------------------
   // Backend
@@ -156,7 +163,7 @@
     $$('.sheet').forEach((s) => { s.hidden = true; });
     $('#sheet-backdrop').hidden = true;
   }
-  $('#sheet-backdrop').addEventListener('click', closeSheets);
+  $('#sheet-backdrop').addEventListener('click', () => { if ($('#sheet-code').hidden) closeSheets(); });
   document.addEventListener('click', (e) => {
     const s = e.target.closest('[data-sheet]');
     if (s) { e.preventDefault(); openSheet(s.dataset.sheet); return; }
@@ -183,7 +190,7 @@
     const canvas = $('#confetti');
     const ctx = canvas.getContext('2d');
     let parts = [], raf = 0;
-    const colors = ['#f26a1b', '#f6c21f', '#1f9d5a', '#ffffff', '#ffe08a'];
+    const colors = ['#1f9d5a', '#f6c21f', '#5b3a9a', '#ffffff', '#ffe08a'];
     function tick() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       parts = parts.filter((p) => p.life > 0);
@@ -236,7 +243,8 @@
     if (name === 'cabinet' && !cabinetBusy) { go('home'); return; }
     if (name === 'play') startGame();
     if (name === 'board') loadBoard();
-    if (name === 'prize' || name === 'about') refreshStats();
+    if (name === 'prize') loadPrizes();
+    if (name === 'about') refreshStats();
     if (name === 'you') openYou();
     if (name === 'signin') setTimeout(() => $('#signin-name').focus(), 60);
     if (name === 'admin') renderAdminEntry();
@@ -294,7 +302,7 @@
       plus.className = 'raised-plus';
       plus.textContent = '+' + fmt(target - shownRaised);
       wrap.appendChild(plus);
-      setTimeout(() => plus.remove(), 1400);
+      setTimeout(() => plus.remove(), 2000);
       wrap.classList.remove('up'); void wrap.offsetWidth; wrap.classList.add('up');
       setTimeout(() => wrap.classList.remove('up'), 2000);
       countUp(el, shownRaised, target, 1400, fmt);
@@ -304,27 +312,25 @@
     shownRaised = target;
   }
 
+  const endsText = () => {
+    const d = stats && stats.ends_on ? new Date(stats.ends_on + 'T12:00:00') : null;
+    return d && !isNaN(d) ? 'Ends ' + d.toLocaleDateString('en-IE', { day: 'numeric', month: 'long' }) : '';
+  };
   async function refreshStats() {
     try { stats = await rpc('stats'); } catch (_) { return; }
     showRaised(Number(stats.total_raised_cents || 0));
     showRing(Number(stats.total_raised_cents || 0), Number(stats.goal_cents || 0));
-    const prize = (stats.prize_text || '').trim() || 'Set by the committee';
-    $('#home-prize').textContent = prize;
-    $('#board-prize-text').textContent = prize;
-    $('#prize-text').textContent = prize;
-    renderWeekChip();
-  }
-  function weekLeftText() {
-    if (!stats || !stats.week_end) return 'Ends Sunday';
-    const end = new Date(stats.week_end + 'T23:59:59');
-    const left = end - Date.now();
-    if (left <= 0) return 'Ends Sunday';
-    const d = Math.floor(left / 86400000), h = Math.floor((left % 86400000) / 3600000), m = Math.floor((left % 3600000) / 60000);
-    return d > 0 ? `${d}d ${h}h left` : h > 0 ? `${h}h ${m}m left` : `${m}m left`;
-  }
-  function renderWeekChip() {
-    $('#board-week').textContent = weekLeftText();
-    $('#prize-week').textContent = weekLeftText();
+    const ends = endsText();
+    $('#home-prize-when').textContent = ends || 'At the end';
+    $('#board-sub').textContent = ends ? `Prizes at the end · ${ends.replace('Ends', 'ends')}` : 'Prizes at the end';
+    $('#prize-sub').textContent = ends ? `Awarded at the end · ${ends.replace('Ends', 'ends')}` : 'Awarded at the end of the campaign';
+    const pz = stats.prizes || {};
+    const put = (id, v, fallback) => { $(id).textContent = (v || '').trim() || fallback; };
+    put('#prize-everyone', pz.everyone, 'To be announced');
+    put('#prize-students', pz.students, 'To be announced');
+    put('#prize-teachers', pz.teachers, 'To be announced');
+    put('#prize-best-light', pz.best_light, 'Closest to 1,000 with one light');
+    put('#prize-most-plays', pz.most_plays, 'The biggest supporter');
   }
 
   async function refreshMe() {
@@ -377,7 +383,7 @@
     $('#cab-title').textContent = result.demo ? 'Demo play' : 'Thank you';
     $('#cab-text').textContent = result.demo
       ? 'No payment was taken: payments are not switched on yet.'
-      : `Your €${b ? b.amount : 2} is on its way to schools in Ghana and Nigeria.`;
+      : `Your €${b ? b.amount : 2} goes to Presentation Brothers schools in Ghana and Nigeria.`;
     cabinetBusy = true;
     await splashDone;
     go('cabinet');
@@ -447,7 +453,6 @@
   function setMarker(pos) { marker.style.transform = `translateX(${pos * game.trackW}px)`; }
   function setPin(target) {
     pin.style.left = (target * 100) + '%';
-    // the swatch shows the colour of the bar at the mark, which is what you line the light up with
     swatch.style.background = `color-mix(in srgb, #ffe08a ${Math.round((1 - target) * 100)}%, #f26a1b)`;
   }
   function measure() { game.trackW = track.clientWidth; }
@@ -473,7 +478,6 @@
     $('#tap-hint').textContent = 'Tap when the light reaches the mark';
     $('#tap-hint').classList.remove('live');
     $('#result-note').hidden = true;
-    $('#role-ask').hidden = true;
     marker.classList.remove('hit', 'miss');
     game.round = 0; game.taps = []; game.scores = [];
     renderDots();
@@ -613,7 +617,8 @@
       game.pending = null;
       store.del(PENDING_KEY);
       credits = r.credits;
-      bestThisWeek = r.best_this_week;
+      best = r.best != null ? r.best : r.best_this_week;
+      if (r.best_light != null) bestLight = Math.max(bestLight || 0, r.best_light);
     } catch (ex) {
       if (['ALREADY_SCORED', 'PLAY_NOT_FOUND', 'PLAY_VOID', 'SCORE_MISMATCH', 'BAD_TAP'].includes(ex.code)) {
         game.pending = null;
@@ -626,9 +631,7 @@
     showResult(score, r, note);
   }
 
-  let lastResult = null;
   function showResult(score, r, note) {
-    lastResult = r;
     updatePlayCredits();
     $('#game').classList.add('done');
     $('#game').hidden = true;
@@ -636,12 +639,10 @@
     $('#result-title').textContent = titleFor(score);
     $('#result-score').textContent = score;
     $('#result-rounds').innerHTML = game.scores.map((s) => `<span class="${s >= 850 ? 'top' : ''}">${s}</span>`).join('');
-    renderResultStats(r);
-    // First play: ask which board, then show the rank.
-    const ask = !!player && !roleSet && !!r;
-    $('#role-ask').hidden = !ask;
-    $('#result-stats').hidden = ask;
-    $$('#role-choice button').forEach((b) => b.classList.remove('on'));
+    $('#result-best').textContent = r && best != null ? best : '–';
+    const rank = r ? (r.rank_all != null ? r.rank_all : r.rank) : null;
+    $('#result-rank').textContent = rank ? '#' + rank : '–';
+    $('#result-school').hidden = !player || isSchool() || !!store.get(SCHOOL_ASKED_KEY) || !r;
     const n = $('#result-note');
     n.textContent = note || '';
     n.hidden = !note;
@@ -659,33 +660,10 @@
       $('#result-topup').hidden = false;
     }
     $('#result').hidden = false;
-    if (r && r.rank === 1 && !ask) toast('You are top of the board');
+    if (r && rank === 1) toast('You are top of the board');
+    // First scored play: make sure the code that collects a prize is kept.
+    if (r && player && !store.get(CODE_SHOWN_KEY)) showCodeSheet();
   }
-  function renderResultStats(r) {
-    $('#result-best').textContent = r && r.best_this_week != null ? r.best_this_week : '–';
-    $('#result-rank').textContent = r && r.rank ? '#' + r.rank : '–';
-  }
-  $('#role-choice').addEventListener('click', async (e) => {
-    const b = e.target.closest('button[data-role]');
-    if (!b || !player) return;
-    $$('#role-choice button').forEach((x) => x.classList.toggle('on', x === b));
-    const role = b.dataset.role;
-    try {
-      if (role !== player.role) adoptPlayer(await api('update', { player_id: player.id, role }));
-      markRoleSet();
-      // the rank on the chosen board
-      let rank = null;
-      try {
-        const rows = await rpc('leaderboard', { p_role: role });
-        const me = rows.find((x) => x.tag === player.tag);
-        rank = me ? me.rank : null;
-      } catch (_) { /* leave blank */ }
-      renderResultStats({ best_this_week: bestThisWeek, rank });
-      $('#role-ask').hidden = true;
-      $('#result-stats').hidden = false;
-      if (rank === 1) toast('You are top of the board');
-    } catch (ex) { toast(msg(ex), true); }
-  });
 
   $('#result-share').addEventListener('click', async () => {
     const text = `I scored ${game.lastScore} in the PresLink Arcade. Can you beat me? Every play funds schools in Ghana and Nigeria.`;
@@ -698,43 +676,143 @@
   });
 
   // ---------------------------------------------------------------------------
-  // Leaderboard
+  // The code: shown once after the first play, saved as an image, copied, and always on the You tab
+  // ---------------------------------------------------------------------------
+  function showCodeSheet() {
+    $('#code-name').innerHTML = nameHtml(player.display);
+    $('#code-digits').textContent = player.claim_code;
+    openSheet('code');
+  }
+  $('#code-done').addEventListener('click', () => { store.set(CODE_SHOWN_KEY, true); closeSheets(); });
+  $('#code-copy').addEventListener('click', () => copyCode());
+  $('#you-copy').addEventListener('click', () => copyCode());
+  $('#code-save').addEventListener('click', () => saveCodeImage());
+  $('#you-save').addEventListener('click', () => saveCodeImage());
+  async function copyCode() {
+    if (!player) return;
+    try { await navigator.clipboard.writeText(`PresLink Arcade: ${player.display} · code ${player.claim_code}`); toast('Copied'); }
+    catch (_) { toast(`${player.display} · ${player.claim_code}`); }
+  }
+  // Draws a card with the name and code and hands it to the share sheet (Save Image on iPad and iPhone)
+  // or downloads it.
+  async function saveCodeImage() {
+    if (!player) return;
+    const W = 1080, H = 1080;
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#5b3a9a'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#ffffff';
+    const r = 44, x = 80, y = 120, w = W - 160, h = H - 240;
+    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); ctx.fill();
+    await new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => { ctx.drawImage(img, W / 2 - 70, 190, 140, 140); resolve(); };
+      img.onerror = resolve;
+      img.src = 'assets/cross.svg?v=9';
+    });
+    const font = (size, weight) => `${weight} ${size}px -apple-system, BlinkMacSystemFont, Inter, Helvetica, Arial, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#5b3a9a'; ctx.font = font(44, 700); ctx.fillText('PresLink Arcade', W / 2, 400);
+    ctx.fillStyle = '#8e8e93'; ctx.font = font(30, 600); ctx.fillText('YOUR NAME', W / 2, 500);
+    ctx.fillStyle = '#1c1c1e'; ctx.font = font(120, 800); ctx.fillText(player.display, W / 2, 620);
+    ctx.fillStyle = '#8e8e93'; ctx.font = font(30, 600); ctx.fillText('YOUR CODE', W / 2, 720);
+    ctx.fillStyle = '#1f9d5a'; ctx.font = font(150, 800); ctx.fillText(player.claim_code.split('').join(' '), W / 2, 860);
+    ctx.fillStyle = '#48484a'; ctx.font = font(30, 500); ctx.fillText('Show these to the committee to collect a prize.', W / 2, 920);
+    const blob = await new Promise((resolve) => c.toBlob(resolve, 'image/png'));
+    const file = new File([blob], `preslink-${player.display.replace('#', '-')}.png`, { type: 'image/png' });
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'PresLink Arcade code' }); return; }
+    } catch (_) { return; /* cancelled */ }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = file.name;
+    a.click();
+    toast('Saved');
+  }
+
+  // ---------------------------------------------------------------------------
+  // School: optional. A school email puts you on the Students or Teachers board.
+  // ---------------------------------------------------------------------------
+  function openSchool() {
+    showError('school-error', '');
+    $('#school-email').value = player && player.school_email ? player.school_email : '';
+    openSheet('school');
+    setTimeout(() => $('#school-email').focus(), 80);
+  }
+  $('#result-school').addEventListener('click', openSchool);
+  $('#you-school').addEventListener('click', openSchool);
+  $('#school-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!player) return;
+    const email = $('#school-email').value.trim().toLowerCase();
+    if (!SCHOOL.test(email)) { showError('school-error', MESSAGES.BAD_SCHOOL_EMAIL); return; }
+    const btn = $('#school-submit');
+    btn.disabled = true;
+    try {
+      adoptPlayer(await api('school', { player_id: player.id, email }));
+      store.set(SCHOOL_ASKED_KEY, true);
+      closeSheets();
+      $('#result-school').hidden = true;
+      renderYou();
+      toast(`You are on the ${boardName(player.role)} board`);
+    } catch (ex) {
+      showError('school-error', msg(ex));
+    } finally { btn.disabled = false; }
+  });
+  $('#sheet-school [data-close]').addEventListener('click', () => { store.set(SCHOOL_ASKED_KEY, true); $('#result-school').hidden = true; });
+
+  // ---------------------------------------------------------------------------
+  // Leaderboard and prizes
   // ---------------------------------------------------------------------------
   $$('[data-screen="board"] .tab').forEach((t) => t.addEventListener('click', () => { boardRole = t.dataset.role; boardTouched = true; loadBoard(); }));
   function fmtWhen(iso) {
     const d = new Date(iso);
-    return d.toLocaleDateString('en-IE', { weekday: 'short' }) + ' ' + d.toLocaleTimeString('en-IE', { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleDateString('en-IE', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('en-IE', { hour: '2-digit', minute: '2-digit' });
   }
   let boardTouched = false;
+  let spot = null;
+  async function loadSpot() {
+    try { spot = await rpc('spot_prizes'); } catch (_) { spot = null; }
+    const l = spot && spot.best_light, p = spot && spot.most_plays;
+    $('#spot-light').innerHTML = l ? `${nameHtml(l.initials)} · ${l.score}` : '–';
+    $('#spot-plays').innerHTML = p ? `${nameHtml(p.initials)} · ${p.plays}` : '–';
+    $('#lead-light').innerHTML = l ? `${nameHtml(l.initials)} · ${l.score}` : '';
+    $('#lead-plays').innerHTML = p ? `${nameHtml(p.initials)} · ${p.plays} ${Number(p.plays) === 1 ? 'play' : 'plays'}` : '';
+  }
   async function loadBoard() {
-    if (!boardTouched) boardRole = player ? player.role : 'student';
+    if (!boardTouched) boardRole = isSchool() ? player.role : 'everyone';
     $$('[data-screen="board"] .tab').forEach((x) => { x.classList.toggle('active', x.dataset.role === boardRole); x.setAttribute('aria-selected', x.dataset.role === boardRole); });
     const list = $('#board-list');
     list.innerHTML = '';
-    let rows = [], winners = [];
+    let rows = [];
     try {
-      [rows, winners] = await Promise.all([rpc('leaderboard', { p_role: boardRole }), rpc('past_winners')]);
+      [rows] = await Promise.all([rpc('leaderboard', { p_role: boardRole === 'everyone' ? null : boardRole }), loadSpot(), refreshStats()]);
     } catch (ex) { toast(msg(ex), true); return; }
-    refreshStats();
     $('#board-empty').hidden = rows.length > 0;
+    const lightTag = spot && spot.best_light ? spot.best_light.tag : null;
+    const playsTag = spot && spot.most_plays ? spot.most_plays.tag : null;
     rows.slice(0, 50).forEach((r) => {
       const li = document.createElement('li');
       const me = player && r.tag === player.tag;
       li.className = (me ? 'me ' : '') + (r.rank <= 3 ? 'r' + r.rank : '');
+      const badges = (r.tag === lightTag ? '<span class="badge">Best light</span>' : '') + (r.tag === playsTag ? '<span class="badge">Most plays</span>' : '');
       li.innerHTML = `<span class="rank">${r.rank}</span>${avatarHtml(r.initials)}
-        <span class="name">${nameHtml(r.initials)}<span class="meta">${r.plays} ${Number(r.plays) === 1 ? 'play' : 'plays'} · ${fmtWhen(r.achieved_at)}${me ? ' · you' : ''}</span></span>
+        <span class="name"><span>${nameHtml(r.initials)}${badges}</span><span class="meta">${r.plays} ${Number(r.plays) === 1 ? 'play' : 'plays'} · ${fmtWhen(r.achieved_at)}${me ? ' · you' : ''}</span></span>
         <span class="pts">${r.score}</span>`;
       list.appendChild(li);
     });
-    const w = $('#winners');
-    w.innerHTML = '';
-    $('#winners-empty').hidden = winners.length > 0;
-    winners.forEach((r) => {
-      const li = document.createElement('li');
-      const d = new Date(r.week_start + 'T12:00:00');
-      li.innerHTML = `<span>${d.toLocaleDateString('en-IE', { day: 'numeric', month: 'short' })} · ${cap(r.role)}s</span><span class="name">${nameHtml(r.initials)}</span><span class="pts">${r.score}</span>`;
-      w.appendChild(li);
-    });
+  }
+  async function loadPrizes() {
+    refreshStats();
+    loadSpot();
+    for (const role of ['everyone', 'student', 'teacher']) {
+      try {
+        const rows = await rpc('leaderboard', { p_role: role === 'everyone' ? null : role });
+        const top = rows[0];
+        $('#lead-' + role).innerHTML = top ? `${nameHtml(top.initials)} · ${top.score}` : '';
+      } catch (_) { /* leave blank */ }
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -769,8 +847,8 @@
     const btn = $('#name-submit');
     btn.disabled = true;
     try {
-      adoptPlayer(await api('register', { role: 'student', initials }));
-      roleSet = false; store.del(ROLE_SET_KEY);
+      adoptPlayer(await api('register', { role: 'everyone', initials }));
+      store.del(SCHOOL_ASKED_KEY); store.del(CODE_SHOWN_KEY);
       closeSheets();
       buy(pendingBundle || 'single');
     } catch (ex) {
@@ -789,22 +867,15 @@
     if (!player) return;
     $('#you-name').innerHTML = nameHtml(player.display || player.initials);
     $('#you-avatar').outerHTML = avatarHtml(player.display || player.initials, true).replace('<span ', '<span id="you-avatar" ');
-    $$('#you-role button').forEach((b) => b.classList.toggle('on', roleSet && b.dataset.role === player.role));
-    $$('#you-role button').forEach((b) => b.setAttribute('aria-pressed', roleSet && b.dataset.role === player.role ? 'true' : 'false'));
+    const b = $('#you-board');
+    b.textContent = isSchool() ? `${boardName(player.role)} board · ${player.school_email || 'school'}` : 'Everyone board';
+    b.classList.toggle('school', isSchool());
+    $('#you-school').hidden = isSchool();
     $('#you-code').textContent = player.claim_code;
     $('#you-credits').textContent = credits;
-    $('#you-best').textContent = bestThisWeek == null ? '–' : bestThisWeek;
+    $('#you-best').textContent = best == null ? '–' : best;
+    $('#you-light').textContent = bestLight == null ? '–' : bestLight;
   }
-  $('#you-role').addEventListener('click', async (e) => {
-    const b = e.target.closest('button[data-role]');
-    if (!b || !player) return;
-    const role = b.dataset.role;
-    try {
-      if (role !== player.role) adoptPlayer(await api('update', { player_id: player.id, role }));
-      markRoleSet();
-      renderYou();
-    } catch (ex) { toast(msg(ex), true); }
-  });
   $('#you-edit').addEventListener('click', () => {
     const f = $('#edit-form');
     f.hidden = !f.hidden;
@@ -849,7 +920,7 @@
     showError('signin-error', '');
     try {
       adoptPlayer(await api('signin', { initials, code }));
-      markRoleSet();
+      store.set(CODE_SHOWN_KEY, true);
       toast(`Welcome back, ${player.display}`);
       go('you');
     } catch (ex) {
@@ -860,8 +931,7 @@
   // ---------------------------------------------------------------------------
   // Committee
   // ---------------------------------------------------------------------------
-  let adminRole = 'student';
-  let adminWeek = null;
+  let adminRole = 'everyone';
   let adminData = null;
   const adminCode = () => session.get(ADMIN_KEY) || '';
 
@@ -870,7 +940,7 @@
     $('#admin-login').hidden = !!code;
     $('#admin-panel').hidden = !code;
     $('#admin-logout').hidden = !code;
-    $('#admin-sub').textContent = code ? 'Money, boards, players and settings.' : 'Committee code required.';
+    $('#admin-sub').textContent = code ? 'Money, boards, players and prizes.' : 'Committee code required.';
     if (DEMO) $('#admin-code').placeholder = 'Demo code: PRESLINK';
     if (code) loadAdmin();
     else setTimeout(() => $('#admin-code').focus(), 60);
@@ -890,7 +960,7 @@
   $('#admin-logout').addEventListener('click', () => { session.del(ADMIN_KEY); adminData = null; renderAdminEntry(); });
 
   async function loadAdmin() {
-    try { adminData = await adminCall('overview', adminWeek ? { week: adminWeek } : {}); }
+    try { adminData = await adminCall('overview'); }
     catch (ex) {
       if (['BAD_ADMIN', 'LOCKED', 'ADMIN_NOT_SET'].includes(ex.code)) { session.del(ADMIN_KEY); renderAdminEntry(); showError('admin-error', msg(ex)); return; }
       toast(msg(ex), true); return;
@@ -898,6 +968,7 @@
     renderAdmin();
   }
   const fmtDate = (iso, withTime) => new Date(iso).toLocaleString('en-IE', withTime ? { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' } : { day: 'numeric', month: 'short' });
+  const PRIZE_FIELDS = { everyone: '#adm-prize-everyone', students: '#adm-prize-students', teachers: '#adm-prize-teachers', best_light: '#adm-prize-best-light', most_plays: '#adm-prize-most-plays' };
   function renderAdmin() {
     const d = adminData;
     if (!d) return;
@@ -907,35 +978,29 @@
     $('#adm-plays').textContent = s.plays || 0;
     $('#adm-players').textContent = s.players || 0;
     const roles = d.players_by_role || {};
-    $('#adm-roles').textContent = `${roles.student || 0} on the Students board · ${roles.teacher || 0} on the Teachers board`;
-    if (document.activeElement !== $('#adm-goal')) $('#adm-goal').value = Math.round((s.goal_cents || 0) / 100);
-    if (document.activeElement !== $('#adm-prize')) $('#adm-prize').value = s.prize_text || '';
+    $('#adm-roles').textContent = `${roles.student || 0} students · ${roles.teacher || 0} teachers · ${roles.everyone || 0} others`;
+    const setIf = (sel, v) => { const el = $(sel); if (document.activeElement !== el) el.value = v; };
+    setIf('#adm-goal', Math.round((s.goal_cents || 0) / 100));
+    setIf('#adm-ends', s.ends_on || '');
+    const pz = s.prizes || {};
+    Object.entries(PRIZE_FIELDS).forEach(([k, sel]) => setIf(sel, pz[k] || ''));
     const goal = Number(s.goal_cents || 0);
     $('#adm-progress').value = goal > 0 ? Math.round((Number(s.total_raised_cents || 0) / goal) * 100) + '%' : '–';
 
-    const sel = $('#adm-week');
-    const weeks = d.weeks || [d.week];
-    sel.innerHTML = weeks.map((w) => `<option value="${esc(w)}"${w === d.week ? ' selected' : ''}>${w === s.week_start ? 'This week' : 'Week of ' + fmtDate(w + 'T12:00:00')}</option>`).join('');
     $$('#admin-tabs .tab').forEach((x) => x.classList.toggle('active', x.dataset.role === adminRole));
-
     const tb = $('#adm-board tbody');
     tb.innerHTML = '';
-    (d.board || []).filter((r) => r.role === adminRole).forEach((r) => {
+    const rows = (d.board || []).filter((r) => adminRole === 'everyone' || r.role === adminRole)
+      .sort((a, b) => b.score - a.score || String(a.finished_at).localeCompare(String(b.finished_at)));
+    rows.forEach((r, i) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${r.rank}</td><td><b>${esc(r.initials)}</b>${r.banned ? ' <span class="muted">(banned)</span>' : ''}</td><td>${esc(r.claim_code)}</td><td><b>${r.score}</b></td><td>${r.plays}</td><td>${esc(fmtDate(r.finished_at, true))}</td>
+      tr.innerHTML = `<td>${adminRole === 'everyone' ? (r.rank_all || i + 1) : (r.rank || i + 1)}</td><td><b>${esc(r.initials)}</b>${r.banned ? ' <span class="muted">(banned)</span>' : ''}</td><td>${esc(boardName(r.role))}</td><td>${esc(r.claim_code)}</td><td><b>${r.score}</b></td><td>${r.best_light == null ? '' : r.best_light}</td><td>${r.plays}</td><td>${esc(fmtDate(r.finished_at, true))}</td>
         <td><button class="mini" data-void="${esc(r.play_id)}">Void</button> <button class="mini ${r.banned ? 'undo' : ''}" data-ban="${esc(r.player_id)}" data-banned="${r.banned ? '1' : ''}">${r.banned ? 'Unban' : 'Ban'}</button> <button class="mini alt" data-reset="${esc(r.player_id)}">New name</button></td>`;
       tb.appendChild(tr);
     });
-    if (!tb.children.length) tb.innerHTML = '<tr><td colspan="7" class="muted">No scores for this week.</td></tr>';
-
-    const tw = $('#adm-winners tbody');
-    tw.innerHTML = '';
-    (d.past_winners || []).forEach((r) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${esc(fmtDate(r.week_start + 'T12:00:00'))}</td><td>${cap(r.role)}s</td><td><b>${esc(r.initials)}</b></td><td>${esc(r.claim_code)}</td><td>${r.score}</td>`;
-      tw.appendChild(tr);
-    });
-    if (!tw.children.length) tw.innerHTML = '<tr><td colspan="5" class="muted">None yet.</td></tr>';
+    if (!tb.children.length) tb.innerHTML = '<tr><td colspan="9" class="muted">No scores yet.</td></tr>';
+    const sp = d.spot || {};
+    $('#adm-spot').textContent = `Best light: ${sp.best_light ? `${sp.best_light.initials} (${sp.best_light.score}, code ${sp.best_light.claim_code || '–'})` : 'nobody yet'} · Most plays: ${sp.most_plays ? `${sp.most_plays.initials} (${sp.most_plays.plays})` : 'nobody yet'}`;
 
     const td = $('#adm-days tbody');
     td.innerHTML = '';
@@ -944,7 +1009,7 @@
       tr.innerHTML = `<td>${esc(fmtDate(x.day + 'T12:00:00'))}</td><td>${x.payments}</td><td>${(x.amount_cents / 100).toFixed(2)}</td>`;
       td.appendChild(tr);
     });
-    if (!td.children.length) td.innerHTML = '<tr><td colspan="3" class="muted">No payments in the last three weeks.</td></tr>';
+    if (!td.children.length) td.innerHTML = '<tr><td colspan="3" class="muted">No payments yet.</td></tr>';
 
     const tp = $('#adm-payments tbody');
     tp.innerHTML = '';
@@ -969,7 +1034,6 @@
     });
     if (!ul.children.length) ul.innerHTML = '<li class="muted">Nobody is banned.</li>';
   }
-  $('#adm-week').addEventListener('change', (e) => { adminWeek = e.target.value; loadAdmin(); });
   $$('#admin-tabs .tab').forEach((t) => t.addEventListener('click', () => { adminRole = t.dataset.role; renderAdmin(); }));
   $('#admin-panel').addEventListener('click', async (e) => {
     const v = e.target.closest('[data-void]');
@@ -1001,8 +1065,10 @@
   $('#admin-settings').addEventListener('submit', async (e) => {
     e.preventDefault();
     const goal = Math.round(Number($('#adm-goal').value || 0) * 100);
+    const prizes = {};
+    Object.entries(PRIZE_FIELDS).forEach(([k, sel]) => { prizes[k] = $(sel).value.trim(); });
     try {
-      await adminCall('settings', { goal_cents: goal, prize_text: $('#adm-prize').value });
+      await adminCall('settings', { goal_cents: goal, ends_on: $('#adm-ends').value || '', prizes });
       toast('Saved');
       loadAdmin();
       refreshStats();
@@ -1016,9 +1082,9 @@
     try {
       const res = await adminCall('player', { initials });
       const p = res.player;
-      box.innerHTML = `<dl><dt>Name</dt><dd>${esc(p.initials)}${p.banned ? ' (banned)' : ''}${(res.others || []).length ? ` <span class="muted">(also: ${res.others.map(esc).join(', ')})</span>` : ''}</dd><dt>Board</dt><dd>${cap(p.role)}s</dd><dt>Code</dt><dd>${esc(p.claim_code)}</dd><dt>Plays left</dt><dd>${p.credits}</dd><dt>First seen</dt><dd>${esc(fmtDate(p.created_at, true))}</dd><dt>Last seen</dt><dd>${esc(fmtDate(p.last_seen_at, true))}</dd></dl>
-        <div class="table-wrap"><table class="table"><thead><tr><th>Play</th><th>Score</th><th>Week</th><th></th></tr></thead><tbody>${(res.plays || []).map((x) => `<tr><td>${esc(fmtDate(x.started_at, true))}</td><td>${x.score == null ? '<span class="muted">open</span>' : '<b>' + x.score + '</b>'}${x.voided ? ' <span class="muted">(void)</span>' : ''}</td><td>${esc(x.week_start || '')}</td><td>${x.score == null ? '' : x.voided ? `<button class="mini undo" data-unvoid="${esc(x.play_id)}">Restore</button>` : `<button class="mini" data-void="${esc(x.play_id)}">Void</button>`}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">No plays.</td></tr>'}</tbody></table></div>
-        <p class="small muted" style="margin:10px 0 0">${(res.payments || []).length} payment(s) · €${((res.payments || []).reduce((s, x) => s + x.amount_cents, 0) / 100).toFixed(2)}</p>`;
+      box.innerHTML = `<dl><dt>Name</dt><dd>${esc(p.initials)}${p.banned ? ' (banned)' : ''}${(res.others || []).length ? ` <span class="muted">(also: ${res.others.map(esc).join(', ')})</span>` : ''}</dd><dt>Board</dt><dd>${esc(boardName(p.role))}${p.school_email ? ` · ${esc(p.school_email)}` : ''}</dd><dt>Code</dt><dd>${esc(p.claim_code)}</dd><dt>Plays left</dt><dd>${p.credits}</dd><dt>First seen</dt><dd>${esc(fmtDate(p.created_at, true))}</dd><dt>Last seen</dt><dd>${esc(fmtDate(p.last_seen_at, true))}</dd></dl>
+        <div class="table-wrap"><table class="table"><thead><tr><th>Play</th><th>Score</th><th></th></tr></thead><tbody>${(res.plays || []).map((x) => `<tr><td>${esc(fmtDate(x.started_at, true))}</td><td>${x.score == null ? '<span class="muted">open</span>' : '<b>' + x.score + '</b>'}${x.voided ? ' <span class="muted">(void)</span>' : ''}</td><td>${x.score == null ? '' : x.voided ? `<button class="mini undo" data-unvoid="${esc(x.play_id)}">Restore</button>` : `<button class="mini" data-void="${esc(x.play_id)}">Void</button>`}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">No plays.</td></tr>'}</tbody></table></div>
+        <p class="note">${(res.payments || []).length} payment(s) · €${((res.payments || []).reduce((s, x) => s + x.amount_cents, 0) / 100).toFixed(2)}</p>`;
       box.hidden = false;
     } catch (ex) { box.hidden = true; toast(msg(ex), true); }
   });

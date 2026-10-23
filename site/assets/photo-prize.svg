@@ -4,6 +4,6 @@
   <g transform="translate(400 215)" fill="none" stroke="#b9b3a6" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
     <rect x="-38" y="-24" width="76" height="56" rx="10"/><circle cx="0" cy="6" r="14"/><path d="M-14-24l6-12h16l6 12"/>
   </g>
-  <text x="400" y="300" text-anchor="middle" font-family="-apple-system, Inter, Helvetica, Arial, sans-serif" font-size="22" font-weight="600" fill="#8a8578">This week's prize</text>
+  <text x="400" y="300" text-anchor="middle" font-family="-apple-system, Inter, Helvetica, Arial, sans-serif" font-size="22" font-weight="600" fill="#8a8578">The prizes</text>
   <text x="400" y="330" text-anchor="middle" font-family="-apple-system, Inter, Helvetica, Arial, sans-serif" font-size="15" fill="#b1ab9e">Photo coming soon</text>
 </svg>
