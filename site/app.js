@@ -1000,7 +1000,9 @@
     });
     if (!tb.children.length) tb.innerHTML = '<tr><td colspan="9" class="muted">No scores yet.</td></tr>';
     const sp = d.spot || {};
-    $('#adm-spot').textContent = `Best light: ${sp.best_light ? `${sp.best_light.initials} (${sp.best_light.score}, code ${sp.best_light.claim_code || '–'})` : 'nobody yet'} · Most plays: ${sp.most_plays ? `${sp.most_plays.initials} (${sp.most_plays.plays})` : 'nobody yet'}`;
+    // spot_prizes is a public read and carries no codes; the committee board rows do.
+    const codeFor = (initials) => { const row = (d.board || []).find((r) => r.initials === initials); return row ? row.claim_code : '–'; };
+    $('#adm-spot').textContent = `Best light: ${sp.best_light ? `${sp.best_light.initials} (${sp.best_light.score}, code ${codeFor(sp.best_light.initials)})` : 'nobody yet'} · Most plays: ${sp.most_plays ? `${sp.most_plays.initials} (${sp.most_plays.plays} plays, code ${codeFor(sp.most_plays.initials)})` : 'nobody yet'}`;
 
     const td = $('#adm-days tbody');
     td.innerHTML = '';
