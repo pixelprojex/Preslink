@@ -87,26 +87,46 @@
 
     /* b. Headline */
     .hero { text-align: center; }
+    .kicker {
+      margin: 0 0 3mm;
+      display: inline-block;
+      padding: 2mm 6mm;
+      border-radius: 99mm;
+      background: var(--green);
+      color: #fff;
+      font-weight: 800;
+      font-size: 5.2mm;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
     .hero h1 {
       margin: 0;
       font-weight: 800;
-      font-size: 20.5mm;
-      line-height: 0.98;
+      font-size: 19mm;
+      line-height: 1;
       letter-spacing: -0.035em;
     }
     .hero h1 span { color: var(--green); }
     .lede {
       margin: 5mm 0 0;
-      color: var(--muted);
+      color: var(--ink);
       font-weight: 600;
-      font-size: 5.4mm;
-      line-height: 1.2;
+      font-size: 6.2mm;
+      line-height: 1.25;
       letter-spacing: -0.01em;
+    }
+    .scan-label {
+      margin: 0 0 3mm;
+      font-weight: 800;
+      font-size: 6mm;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
     }
 
     /* c. QR */
     .scan { display: flex; flex-direction: column; align-items: center; }
-    .qr { width: 180mm; height: 180mm; }
+    .qr { width: 160mm; height: 160mm; }
     .qr svg { width: 100%; height: 100%; display: block; }
     .url {
       margin: 5mm 0 0;
@@ -121,8 +141,8 @@
     /* d. Photo cards */
     .stories {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 6mm;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8mm;
     }
     .stories figure { margin: 0; min-width: 0; }
     .stories img {
@@ -130,14 +150,14 @@
       aspect-ratio: 4 / 3;
       object-fit: cover;
       display: block;
-      border-radius: 3.5mm;
+      border-radius: 5mm;
       background: #f2f2f4;
     }
-    .stories figcaption { margin-top: 2.8mm; }
+    .stories figcaption { margin-top: 3.4mm; }
     .stories b {
       display: block;
       font-weight: 700;
-      font-size: 3.9mm;
+      font-size: 5.2mm;
       line-height: 1.2;
       letter-spacing: -0.015em;
     }
@@ -146,7 +166,7 @@
       margin-top: 1.2mm;
       color: var(--muted);
       font-weight: 400;
-      font-size: 3.2mm;
+      font-size: 4mm;
       line-height: 1.38;
     }
 
@@ -160,7 +180,7 @@
       border-top: 0.3mm solid var(--rule);
       color: var(--muted);
       font-weight: 600;
-      font-size: 3.4mm;
+      font-size: 4mm;
       line-height: 1.3;
     }
     .foot p { margin: 0; }
@@ -234,11 +254,13 @@
         </header>
 
         <section class="hero">
-          <h1>Stop the light.<br><span>Fund a school.</span></h1>
-          <p class="lede">€2 a play · three lights · prizes at the end</p>
+          <p class="kicker">A €2 arcade game</p>
+          <h1>Play. Win prizes.<br><span>Fund a school.</span></h1>
+          <p class="lede">Stop the light on the mark. Three lights a go, prizes at the end.</p>
         </section>
 
         <section class="scan">
+          <p class="scan-label">Scan to play</p>
           <div class="qr" id="qr" role="img" aria-label="QR code for PresLink Arcade"></div>
           <p class="url" id="url"></p>
         </section>
@@ -255,10 +277,6 @@
           <figure>
             <img src="assets/photo-babies.jpg" alt="Mother of Mercy Babies Home">
             <figcaption><b>Mother of Mercy Babies Home</b><span>Support for the babies home run by the Presentation Brothers in Sirigu, Ghana.</span></figcaption>
-          </figure>
-          <figure>
-            <img src="assets/photo-school.svg" alt="Run by students">
-            <figcaption><b>Run by students</b><span>A committee of PBC students and teachers runs the campaign.</span></figcaption>
           </figure>
         </section>
 

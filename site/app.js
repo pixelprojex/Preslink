@@ -174,6 +174,15 @@
     if (e.target.closest('[data-close]')) closeSheets();
   });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheets(); });
+  // Accordion rows: a title until tapped.
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.acc > .cell');
+    if (!btn) return;
+    const acc = btn.parentElement;
+    const open = !acc.classList.contains('open');
+    acc.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
   function showError(id, text) { const el = $('#' + id); el.textContent = text || ''; el.hidden = !text; }
 
   // Count a number up smoothly (used for the money raised and the score).
@@ -338,8 +347,8 @@
     put('#prize-everyone', pz.everyone, 'To be announced');
     put('#prize-students', pz.students, 'To be announced');
     put('#prize-teachers', pz.teachers, 'To be announced');
-    put('#prize-best-light', pz.best_light, 'Closest to 1,000 with one light');
-    put('#prize-most-plays', pz.most_plays, 'The biggest supporter');
+    put('#prize-best-light', pz.best_light, 'Closest to 1,000 with one light.');
+    put('#prize-most-plays', pz.most_plays, 'The biggest supporter.');
   }
 
   async function refreshMe() {
@@ -827,8 +836,8 @@
     const l = spot && spot.best_light, p = spot && spot.most_plays;
     $('#spot-light').innerHTML = l ? `${nameHtml(l.initials)} · ${l.score}` : '–';
     $('#spot-plays').innerHTML = p ? `${nameHtml(p.initials)} · ${p.plays}` : '–';
-    $('#lead-light').innerHTML = l ? `${nameHtml(l.initials)} · ${l.score}` : '';
-    $('#lead-plays').innerHTML = p ? `${nameHtml(p.initials)} · ${p.plays} ${Number(p.plays) === 1 ? 'play' : 'plays'}` : '';
+    $('#lead-light').innerHTML = l ? `Leading: ${nameHtml(l.initials)} · ${l.score}` : '';
+    $('#lead-plays').innerHTML = p ? `Leading: ${nameHtml(p.initials)} · ${p.plays} ${Number(p.plays) === 1 ? 'play' : 'plays'}` : '';
   }
   async function loadBoard() {
     if (!boardTouched) boardRole = isSchool() ? player.role : 'everyone';
@@ -862,7 +871,7 @@
       try {
         const rows = await rpc('leaderboard', { p_role: role === 'everyone' ? null : role });
         const top = rows[0];
-        $('#lead-' + role).innerHTML = top ? `${nameHtml(top.initials)} · ${top.score}` : '';
+        $('#lead-' + role).innerHTML = top ? `Leading: ${nameHtml(top.initials)} · ${top.score}` : '';
       } catch (_) { /* leave blank */ }
     }
   }

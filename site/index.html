@@ -165,59 +165,36 @@
   <!-- ================= PRIZES ================= -->
   <section class="screen" data-screen="prize" hidden>
     <div class="title"><h1>Prizes</h1><p class="subtitle" id="prize-sub">Awarded at the end of the campaign</p></div>
-    <div class="card photo-card">
-      <img class="photo" src="assets/photo-prize.svg" alt="The prizes">
-    </div>
+    <div class="card photo-card"><img class="photo" src="assets/photo-prize.svg" alt="The prizes"></div>
     <h2 class="section">Top of each board</h2>
     <div class="card">
-      <div class="cell prize-cell"><span>Everyone<small id="prize-everyone">To be announced</small></span><strong class="lead" id="lead-everyone"></strong></div>
-      <div class="cell prize-cell"><span>Students<small id="prize-students">To be announced</small></span><strong class="lead" id="lead-student"></strong></div>
-      <div class="cell prize-cell"><span>Teachers<small id="prize-teachers">To be announced</small></span><strong class="lead" id="lead-teacher"></strong></div>
+      <div class="acc"><button class="cell" type="button" aria-expanded="false">Everyone <span class="chev">›</span></button><div class="acc-body"><p id="prize-everyone">To be announced</p><span class="lead" id="lead-everyone"></span></div></div>
+      <div class="acc"><button class="cell" type="button" aria-expanded="false">Students <span class="chev">›</span></button><div class="acc-body"><p id="prize-students">To be announced</p><span class="lead" id="lead-student"></span></div></div>
+      <div class="acc"><button class="cell" type="button" aria-expanded="false">Teachers <span class="chev">›</span></button><div class="acc-body"><p id="prize-teachers">To be announced</p><span class="lead" id="lead-teacher"></span></div></div>
     </div>
     <h2 class="section">Spot prizes</h2>
     <div class="card">
-      <div class="cell prize-cell"><span>Best light<small id="prize-best-light">Closest to 1,000 with one light</small></span><strong class="lead" id="lead-light"></strong></div>
-      <div class="cell prize-cell"><span>Most plays<small id="prize-most-plays">The biggest supporter</small></span><strong class="lead" id="lead-plays"></strong></div>
+      <div class="acc"><button class="cell" type="button" aria-expanded="false">Best light <span class="chev">›</span></button><div class="acc-body"><p id="prize-best-light">Closest to 1,000 with one light.</p><span class="lead" id="lead-light"></span></div></div>
+      <div class="acc"><button class="cell" type="button" aria-expanded="false">Most plays <span class="chev">›</span></button><div class="acc-body"><p id="prize-most-plays">The biggest supporter.</p><span class="lead" id="lead-plays"></span></div></div>
     </div>
-    <h2 class="section">To collect</h2>
-    <div class="card">
-      <ol class="steps">
-        <li>Keep your name and code (You tab).</li>
-        <li>Winners are announced at the end.</li>
-        <li>Show your name and code to collect.</li>
-      </ol>
+    <div class="card" style="margin-top:28px">
+      <div class="acc"><button class="cell" type="button" aria-expanded="false">How to collect <span class="chev">›</span></button><div class="acc-body"><p>Keep your name and code (You tab). Winners are announced at the end. Show your name and code to collect.</p></div></div>
     </div>
     <button class="btn btn-primary btn-xl page-cta js-play" type="button">Play · €2</button>
   </section>
 
   <!-- ================= ABOUT ================= -->
   <section class="screen" data-screen="about" hidden>
-    <div class="title"><h1>PresLink</h1><p class="subtitle">The student-run charity of Presentation Brothers College, Cork, funding Presentation Brothers schools in Ghana and Nigeria since 2005.</p></div>
-    <h2 class="section">How to play</h2>
+    <div class="title"><h1>PresLink</h1><p class="subtitle">The student-run charity of Presentation Brothers College, Cork.</p></div>
     <div class="card">
-      <ol class="steps">
-        <li>Tap when the light is on the mark.</li>
-        <li>Three lights a play. Each scores out of 1,000.</li>
-        <li>Your score is the average of the three.</li>
-        <li>Top of a board at the end wins a prize.</li>
-      </ol>
+      <div class="acc"><button class="cell" type="button" aria-expanded="false">How to play <span class="chev">›</span></button><div class="acc-body"><p>Tap when the light is on the mark. Three lights a play, each out of 1,000. Your score is the average. Top of a board at the end wins a prize.</p></div></div>
     </div>
     <h2 class="section">Where the money goes</h2>
-    <div class="card story">
-      <img class="photo" src="assets/photo-classrooms.jpg" alt="Children in a new classroom in Ghana">
-      <div class="story-body"><h2>Classrooms in Ghana</h2><p>A three-classroom block in Sokabisi, Bolgatanga, funded by PresLink.</p></div>
-    </div>
-    <div class="card story">
-      <img class="photo" src="assets/photo-bikes.jpg" alt="Students with their bicycles outside school">
-      <div class="story-body"><h2>Bikes to school</h2><p>Bicycles so that students can get to class and stay in education.</p></div>
-    </div>
-    <div class="card story">
-      <img class="photo" src="assets/photo-babies.jpg" alt="Mother of Mercy Babies Home">
-      <div class="story-body"><h2>Mother of Mercy Babies Home</h2><p>Support for the babies home run by the Presentation Brothers in Sirigu, Ghana.</p></div>
-    </div>
-    <div class="card story school">
-      <img class="photo" src="assets/photo-school.svg" alt="The PresLink committee">
-      <div class="story-body"><h2><img src="assets/crest.svg?v=10" alt="">Run by students</h2><p>A committee of Presentation Brothers College students and teachers runs the campaign. Every cent raised here, after card fees, goes to PresLink.</p></div>
+    <div class="card">
+      <div class="acc"><button class="cell" type="button" aria-expanded="false">Classrooms in Ghana <span class="chev">›</span></button><div class="acc-body"><img class="photo" src="assets/photo-classrooms.jpg" alt="Children in a new classroom in Ghana" loading="lazy"><p>A three-classroom block in Sokabisi, Bolgatanga, funded by PresLink.</p></div></div>
+      <div class="acc"><button class="cell" type="button" aria-expanded="false">Bikes to school <span class="chev">›</span></button><div class="acc-body"><img class="photo" src="assets/photo-bikes.jpg" alt="Students with their bicycles outside school" loading="lazy"><p>Bicycles so that students can get to class and stay in education.</p></div></div>
+      <div class="acc"><button class="cell" type="button" aria-expanded="false">Mother of Mercy Babies Home <span class="chev">›</span></button><div class="acc-body"><img class="photo" src="assets/photo-babies.jpg" alt="Mother of Mercy Babies Home" loading="lazy"><p>Support for the babies home run by the Presentation Brothers in Sirigu, Ghana.</p></div></div>
+      <div class="acc school"><button class="cell" type="button" aria-expanded="false"><span class="school-id"><img src="assets/crest.svg?v=10" alt="">Run by students</span> <span class="chev">›</span></button><div class="acc-body"><p>A committee of Presentation Brothers College students and teachers runs the campaign. Every cent raised here, after card fees, goes to PresLink.</p></div></div>
     </div>
     <button class="btn btn-primary btn-xl page-cta js-play" type="button">Play · €2</button>
   </section>
@@ -444,7 +421,7 @@
   <div class="sheet-body">
     <p class="small muted">Last updated 23 October 2026</p>
     <h3>1. Who runs this</h3>
-    <p>PresLink Arcade is run by the PresLink student committee of Presentation Brothers College, Cork (“the Committee”), with staff mentors. Questions: <span class="placeholder">[committee contact email]</span>.</p>
+    <p>PresLink Arcade is run by the PresLink student committee of Presentation Brothers College, Cork (“the Committee”), with staff mentors. Questions go to the PresLink committee.</p>
     <h3>2. What it is</h3>
     <p>A game of skill. Each play costs €2, or €5 for 3 plays and €10 for 7. All payments, less Stripe's card-processing fees, go to PresLink for the Presentation Brothers' schools and projects in Ghana and Nigeria.</p>
     <h3>3. Who can play</h3>
@@ -452,7 +429,7 @@
     <h3>4. Your letters, code and boards</h3>
     <p>You play under two or three letters of your choice. If someone already has them you are shown with a number, for example JAK#2. Offensive names are blocked or removed. Your four-digit code proves a score is yours and signs you in on another device. Keep it private. Everyone is on the Everyone board. Students and teachers of Presentation Brothers College may also join the Students or Teachers board by giving their school email address, which the Committee may check.</p>
     <h3>5. Prizes</h3>
-    <p>Prizes are awarded once, at the end of the campaign, for the highest score on the Everyone, Students and Teachers boards, and spot prizes for the best single light and the most plays. Equal scores: the earlier one wins. Winners are announced by the Committee <span class="placeholder">[where and when]</span> and collect by showing their letters and code. Prizes are set by the Committee and have no cash alternative.</p>
+    <p>Prizes are awarded once, at the end of the campaign, for the highest score on the Everyone, Students and Teachers boards, and spot prizes for the best single light and the most plays. Equal scores: the earlier one wins. Winners are announced by the Committee at the end of the campaign and collect by showing their letters and code. Prizes are set by the Committee and have no cash alternative.</p>
     <h3>6. Fair play</h3>
     <p>A play is three lights; the score is the average of the three. Scores are checked by our server. Plays may be voided and players removed for cheating or tampering. The Committee's decision is final.</p>
     <h3>7. Payments and refunds</h3>
