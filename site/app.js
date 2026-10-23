@@ -857,10 +857,12 @@
       const li = document.createElement('li');
       const me = player && r.tag === player.tag;
       li.className = (me ? 'me ' : '') + (r.rank <= 3 ? 'r' + r.rank : '');
-      const badges = [r.tag === lightTag ? 'Best light' : '', r.tag === playsTag ? 'Most plays' : ''].filter(Boolean).map((t) => `<span class="badge">${t}</span>`).join('');
+      const badges = [r.tag === lightTag ? ['i-flash', 'Best light'] : null, r.tag === playsTag ? ['i-repeat', 'Most plays'] : null].filter(Boolean)
+        .map(([i, t]) => `<span class="badge" title="${t}" aria-label="${t}"><svg><use href="#${i}"/></svg></span>`).join('');
       li.innerHTML = `<span class="rank">${r.rank}</span>${avatarHtml(r.initials)}
-        <span class="name"><span class="badges">${badges}</span><span class="meta">${r.plays} ${Number(r.plays) === 1 ? 'play' : 'plays'} · ${fmtWhen(r.achieved_at)}${me ? ' · you' : ''}</span></span>
+        <span class="name"><span class="badges">${badges}${me ? '<span class="youtag">You</span>' : ''}</span><span class="meta">${r.plays} ${Number(r.plays) === 1 ? 'play' : 'plays'} · ${fmtWhen(r.achieved_at)}${r.tag === lightTag ? ' · best light' : ''}${r.tag === playsTag ? ' · most plays' : ''}</span></span>
         <span class="pts">${r.score}</span>`;
+      li.addEventListener('click', () => li.classList.toggle('open'));
       list.appendChild(li);
     });
   }
