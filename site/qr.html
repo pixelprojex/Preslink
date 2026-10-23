@@ -3,67 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PresLink Arcade QR poster</title>
-  <link rel="icon" href="assets/favicon.svg?v=7" type="image/svg+xml">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800&display=swap" rel="stylesheet">
+  <meta name="robots" content="noindex">
+  <title>PresLink Arcade poster</title>
+  <script>location.replace('poster.html' + location.search + location.hash);</script>
+  <meta http-equiv="refresh" content="0; url=poster.html">
   <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif; background: #f3f3f5; color: #1c1c1e; display: grid; place-items: center; min-height: 100vh; padding: 24px; }
-    .poster { background: #fff; border-radius: 28px; padding: 44px 36px; text-align: center; width: min(100%, 560px); }
-    .mark { width: 72px; height: 72px; margin: 0 auto 18px; display: block; }
-    h1 { font-weight: 800; font-size: 40px; margin: 0 0 4px; letter-spacing: -.02em; }
-    h1 span { color: #1f9d5a; }
-    .sub { font-weight: 700; font-size: 18px; margin: 0 0 26px; color: #3a3a3c; }
-    #qr { display: inline-block; padding: 18px; border-radius: 20px; background: #f3f3f5; }
-    #qr img, #qr canvas { display: block; }
-    .url { font-weight: 800; font-size: 20px; margin: 22px 0 6px; word-break: break-all; color: #1f9d5a; }
-    .steps { margin: 18px auto 0; text-align: left; max-width: 380px; font-size: 16px; line-height: 1.5; padding-left: 22px; font-weight: 500; }
-    .toolbar { margin-top: 26px; display: flex; gap: 10px; justify-content: center; }
-    button { font: inherit; font-weight: 700; padding: 12px 20px; border-radius: 14px; border: 0; background: #1f9d5a; color: #fff; cursor: pointer; }
-    button.alt { background: #e9e9ee; color: #1c1c1e; }
-    .note { color: #8e8e93; font-size: 13px; margin-top: 16px; text-align: center; }
-    @media print {
-      body { background: #fff; padding: 0; min-height: auto; display: block; }
-      .poster { width: 100%; border-radius: 0; padding: 24px 0; }
-      .toolbar, .note { display: none; }
-    }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; font-family: Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; color: #1c1c1e; background: #ededf0; }
+    a { color: #1f9d5a; font-weight: 700; }
   </style>
 </head>
 <body>
-  <div class="poster">
-    <img class="mark" src="assets/cross.svg?v=7" alt="">
-    <h1>PresLink <span>Arcade</span></h1>
-    <p class="sub">Stop the light. Fund a school. €2 a play.</p>
-    <div id="qr"></div>
-    <p class="url" id="url"></p>
-    <ol class="steps">
-      <li>Scan the code with your camera.</li>
-      <li>Type your initials.</li>
-      <li>Stop the light on the mark, three times.</li>
-    </ol>
-    <p class="sub" style="margin-top:18px">Best score of the week wins the prize.</p>
-    <div class="toolbar">
-      <button type="button" onclick="window.print()">Print poster</button>
-      <button type="button" class="alt" id="download">Download PNG</button>
-    </div>
-  </div>
-  <p class="note">This page encodes the address it is opened from, so it is always correct for the live site.</p>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script>
-    (function () {
-      var url = location.origin + '/';
-      document.getElementById('url').textContent = url.replace(/^https?:\/\//, '');
-      new QRCode(document.getElementById('qr'), { text: url, width: 280, height: 280, correctLevel: QRCode.CorrectLevel.M });
-      document.getElementById('download').addEventListener('click', function () {
-        var canvas = document.querySelector('#qr canvas');
-        if (!canvas) return;
-        var a = document.createElement('a');
-        a.download = 'preslink-arcade-qr.png';
-        a.href = canvas.toDataURL('image/png');
-        a.click();
-      });
-    })();
-  </script>
+  <p>The poster moved: <a id="go" href="poster.html">open the A3 poster</a>.</p>
+  <script>document.getElementById('go').href = 'poster.html' + location.search + location.hash;</script>
 </body>
 </html>

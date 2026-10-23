@@ -25,7 +25,7 @@
   // "JAK#2" -> JAK with a small #2
   const nameHtml = (display) => { const [l, n] = String(display || '').split('#'); return esc(l) + (n ? `<span class="sfx">#${esc(n)}</span>` : ''); };
   // A coloured circle with the letters; the tint comes from the letters so it is stable.
-  const avatarHtml = (display, big) => { const l = String(display || '').split('#')[0]; let h = 0; for (const c of l) h = (h * 31 + c.charCodeAt(0)) % 5; return `<span class="avatar c${h + 1}${big ? ' big' : ''}">${esc(l)}</span>`; };
+  const avatarHtml = (display, big) => { const l = String(display || '').split('#')[0]; let h = 0; for (const c of l) h = (h * 31 + c.charCodeAt(0)) % 5; return `<span class="avatar c${h + 1}${big ? ' big' : ''}">${nameHtml(display)}</span>`; };
   const boardName = (role) => BOARD_NAMES[role] || 'Everyone';
 
   const MESSAGES = {
@@ -34,8 +34,12 @@
     BAD_INITIALS: 'Two or three letters, A to Z.',
     BLOCKED_INITIALS: 'Those letters are not allowed. Try others.',
     TAKEN: 'Those letters are taken. Try others.',
-    BAD_ROLE: 'Choose a board.',
-    BAD_SCHOOL_EMAIL: 'Use your school email: @pbccork.ie for students, @pbc-cork.ie for teachers.',
+    BAD_ROLE: 'To join a school board, add your school email on the You tab.',
+    BAD_SESSION: 'This payment link is not valid any more. Nothing was charged.',
+    UNKNOWN_SESSION: 'This payment link is not valid any more. Nothing was charged.',
+    BAD_GOAL: 'Enter a whole number of euro.',
+    NO_PLAYER: 'No player with those letters.',
+    BAD_SCHOOL_EMAIL: 'That is not a school email we recognise.',
     NEEDS_SCHOOL_EMAIL: 'Add your school email first.',
     BAD_SIGNIN: 'That name and code do not match.',
     LOCKED: 'Too many tries. Wait 15 minutes.',
@@ -81,7 +85,7 @@
   let prevScreen = 'home';
 
   const savePlayer = () => store.set(STORAGE_KEY, player);
-  const clearPlayer = () => { player = null; credits = 0; openPlay = null; best = null; bestLight = null; store.del(STORAGE_KEY); store.del(SCHOOL_ASKED_KEY); store.del(CODE_SHOWN_KEY); };
+  const clearPlayer = () => { player = null; credits = 0; openPlay = null; best = null; bestLight = null; store.del(STORAGE_KEY); store.del(SCHOOL_ASKED_KEY); store.del(CODE_SHOWN_KEY); store.del('preslink.prevBest'); store.del('preslink.prevRank'); };
   function adoptPlayer(p) {
     player = { id: p.id, tag: p.tag, initials: p.initials, suffix: p.suffix || 1, display: p.display || p.initials, role: p.role || 'everyone', claim_code: p.claim_code, school_email: p.school_email || null };
     credits = p.credits || 0;
@@ -241,7 +245,11 @@
     if (name !== 'play' && game.state !== 'idle' && game.state !== 'done') abandonGame();
     if (name === 'home') { renderHome(); refreshStats(); refreshMe(); }
     if (name === 'cabinet' && !cabinetBusy) { go('home'); return; }
-    if (name === 'play') startGame();
+    if (name === 'play') {
+      // Only an explicit tap starts a play; arriving here by Back/Forward shows the last result or goes home.
+      if (wantGame) { wantGame = false; startGame(); }
+      else if (game.state !== 'done' || $('#result').hidden) { go('home'); return; }
+    }
     if (name === 'board') loadBoard();
     if (name === 'prize') loadPrizes();
     if (name === 'about') refreshStats();
@@ -275,8 +283,10 @@
     btn.classList.toggle('ready', canPlay);
   }
   $('#home-play').addEventListener('click', playOrBuy);
+  let wantGame = false;
+  function startPlay() { wantGame = true; if (location.hash === '#play') { wantGame = false; game.state = 'idle'; startGame(); } else go('play'); }
   function playOrBuy() {
-    if (player && (credits > 0 || openPlay)) go('play');
+    if (player && (credits > 0 || openPlay)) startPlay();
     else buy('single');
   }
 
@@ -321,7 +331,6 @@
     showRaised(Number(stats.total_raised_cents || 0));
     showRing(Number(stats.total_raised_cents || 0), Number(stats.goal_cents || 0));
     const ends = endsText();
-    $('#home-prize-when').textContent = ends || 'At the end';
     $('#board-sub').textContent = ends ? `Prizes at the end · ${ends.replace('Ends', 'ends')}` : 'Prizes at the end';
     $('#prize-sub').textContent = ends ? `Awarded at the end · ${ends.replace('Ends', 'ends')}` : 'Awarded at the end of the campaign';
     const pz = stats.prizes || {};
@@ -391,26 +400,27 @@
     await wait(300);
     await coinDrop(n);
     await wait(1200);
-    if (current === 'cabinet') go('play');
+    if (current === 'cabinet') startPlay();
     cabinetBusy = false;
   }
-  $('#cab-play').addEventListener('click', () => go('play'));
+  $('#cab-play').addEventListener('click', () => startPlay());
 
   // A coin goes into the slot at the top, a play token pops out of the tray at the bottom.
   async function coinDrop(n) {
-    const coin = $('#coin'), slot = $('.slot'), token = $('#token'), val = $('#cab-credits');
+    const coin = $('#coin'), slot = $('#cab-slot'), panel = $('#cab-panel'), token = $('#token'), val = $('#cab-credits');
     const target = credits;
     const from = Math.max(0, target - n);
     val.textContent = from;
     $('#cab-hint').textContent = '';
     coin.classList.remove('drop'); void coin.offsetWidth; coin.classList.add('drop');
-    await wait(1000);
+    await wait(1250);
     slot.classList.add('glow');
+    panel.classList.remove('hit'); void panel.offsetWidth; panel.classList.add('hit');
     vibrate(30);
-    await wait(450);
+    await wait(500);
     slot.classList.remove('glow');
     coin.classList.remove('drop');
-    const step = n > 3 ? 380 : 650;
+    const step = n > 3 ? 420 : 750;
     for (let i = 0; i < n; i++) {
       token.textContent = String(from + i + 1);
       token.classList.remove('out'); void token.offsetWidth; token.classList.add('out');
@@ -419,8 +429,7 @@
       val.classList.remove('bump'); void val.offsetWidth; val.classList.add('bump');
       vibrate(15);
     }
-    await wait(420);
-    token.classList.remove('out');
+    await wait(500);
     $('#cab-hint').textContent = n === 1 ? '1 play ready' : `${n} plays ready`;
   }
 
@@ -435,7 +444,8 @@
     x = x - 2 * Math.floor(x / 2);
     return x < 1 ? x : 2 - x;
   }
-  const roundScore = (pos, target) => Math.round(1000 * Math.pow(Math.max(0, 1 - Math.abs(pos - target) / 0.5), 1.6));
+  // Steep on purpose: 20 ms off at a one-second sweep is about 880, and 1,000 needs an error under a tenth of a millisecond.
+  const roundScore = (pos, target) => Math.round(1000 * Math.pow(Math.max(0, 1 - Math.abs(pos - target) / 0.5), 3));
   function titleFor(s) {
     if (s >= 950) return 'Outstanding';
     if (s >= 900) return 'Superb';
@@ -475,7 +485,7 @@
     $('.score').classList.remove('pop');
     $('#verdict').textContent = '';
     $('#verdict').classList.remove('miss');
-    $('#tap-hint').textContent = 'Tap when the light reaches the mark';
+    $('#tap-hint').textContent = 'Tap when the light is on the mark';
     $('#tap-hint').classList.remove('live');
     $('#result-note').hidden = true;
     marker.classList.remove('hit', 'miss');
@@ -494,12 +504,25 @@
     resetGameUI();
     updatePlayCredits();
     $('#tabbar').hidden = true;
+    const g = $('#game');
+    g.classList.remove('enter'); void g.offsetWidth; g.classList.add('enter');
     game.state = 'loading';
+    // The play is fetched while the countdown runs, so the light starts the moment "Go" shows.
+    const fetching = api('start', { player_id: player.id });
+    fetching.catch(() => {});
+    const m = $('#game-msg');
+    for (const n of ['3', '2', '1']) {
+      if (game.state !== 'loading') return;
+      m.textContent = n;
+      m.classList.remove('count'); void m.offsetWidth; m.classList.add('count');
+      await wait(650);
+    }
     let res;
     try {
-      res = await api('start', { player_id: player.id });
+      res = await fetching;
     } catch (ex) {
       game.state = 'idle';
+      m.classList.remove('count');
       toast(ex.code === 'NO_CREDITS' ? MESSAGES.NO_CREDITS : msg(ex), ex.code !== 'NO_CREDITS');
       go('home');
       return;
@@ -513,18 +536,17 @@
     game.state = 'countdown';
     setPin(res.rounds[0].target);
     renderDots();
-    const m = $('#game-msg');
-    m.textContent = 'Ready';
-    await wait(1100);
-    if (game.state !== 'countdown') return;
+    m.classList.remove('count');
     m.textContent = 'Go';
     m.classList.add('go');
     $('#tap-hint').classList.add('live');
     beginRound(0);
+    setTimeout(() => { if (game.state === 'sweeping' && game.round === 0) { m.classList.remove('go'); m.textContent = 'Light 1 of 3'; } }, 700);
   }
   function beginRound(i) {
     game.round = i;
     const r = game.play.rounds[i];
+    if (i > 0) { const m = $('#game-msg'); m.classList.remove('go', 'count'); m.textContent = `Light ${i + 1} of 3`; }
     setPin(r.target);
     marker.classList.remove('hit', 'miss');
     measure();
@@ -568,6 +590,12 @@
     const g = $('#game');
     g.classList.remove('flash'); void g.offsetWidth; g.classList.add('flash');
     marker.classList.add(s >= 850 ? 'hit' : 'miss');
+    const pop = document.createElement('span');
+    pop.className = 'light-pop' + (s >= 900 ? ' top' : '');
+    pop.textContent = '+' + s;
+    pop.style.left = marker.style.transform.replace(/[^0-9.]/g, '') + 'px';
+    track.appendChild(pop);
+    setTimeout(() => pop.remove(), 1200);
     vibrate(s >= 950 ? [20, 30, 20] : 25);
     renderDots();
     const el = $('#score-value');
@@ -636,12 +664,23 @@
     $('#game').classList.add('done');
     $('#game').hidden = true;
     $('#tabbar').hidden = false; // the game is over: let people move around again
-    $('#result-title').textContent = titleFor(score);
-    $('#result-score').textContent = score;
-    $('#result-rounds').innerHTML = game.scores.map((s) => `<span class="${s >= 850 ? 'top' : ''}">${s}</span>`).join('');
-    $('#result-best').textContent = r && best != null ? best : '–';
+    const kicker = $('#result-title');
+    const prevBest = store.get('preslink.prevBest');
+    const prevRank = store.get('preslink.prevRank');
     const rank = r ? (r.rank_all != null ? r.rank_all : r.rank) : null;
+    const newBest = !!r && prevBest != null && score > prevBest;
+    const movedUp = !!r && prevRank != null && rank != null && rank < prevRank;
+    kicker.className = 'result-kicker' + (newBest ? ' best' : movedUp ? ' up' : '');
+    kicker.textContent = newBest ? 'New best' : movedUp ? `Up ${prevRank - rank} ${prevRank - rank === 1 ? 'place' : 'places'}` : titleFor(score);
+    if (r) { store.set('preslink.prevBest', best); if (rank != null) store.set('preslink.prevRank', rank); }
+    $('#result-score').textContent = score;
+    $('#result-rounds').innerHTML = '<span class="lbl">3 lights</span>' + game.scores.map((s) => `<span class="${s >= 850 ? 'top' : ''}">${s}</span>`).join('');
+    $('#result-best').textContent = r && best != null ? best : '–';
+    $('#result-best-sub').textContent = r && r.best_light != null ? `best light ${r.best_light}` : '';
     $('#result-rank').textContent = rank ? '#' + rank : '–';
+    $('#result-rank-sub').textContent = '';
+    $('#result-rank-sub').className = '';
+    if (r && rank) showGap(rank);
     $('#result-school').hidden = !player || isSchool() || !!store.get(SCHOOL_ASKED_KEY) || !r;
     const n = $('#result-note');
     n.textContent = note || '';
@@ -665,6 +704,17 @@
     if (r && player && !store.get(CODE_SHOWN_KEY)) showCodeSheet();
   }
 
+  // How far to the next place: the nudge that makes "one more go" worth it.
+  async function showGap(rank) {
+    const el = $('#result-rank-sub');
+    try {
+      const rows = await rpc('leaderboard', { p_role: null });
+      if (rank === 1) { el.textContent = 'Top of the board'; el.className = 'good'; return; }
+      const above = rows.find((x) => x.rank === rank - 1);
+      if (above) { el.textContent = `${above.score - best + 1} to #${rank - 1}`; el.className = ''; }
+    } catch (_) { /* leave blank */ }
+  }
+
   $('#result-share').addEventListener('click', async () => {
     const text = `I scored ${game.lastScore} in the PresLink Arcade. Can you beat me? Every play funds schools in Ghana and Nigeria.`;
     const url = location.origin + location.pathname;
@@ -684,7 +734,6 @@
     openSheet('code');
   }
   $('#code-done').addEventListener('click', () => { store.set(CODE_SHOWN_KEY, true); closeSheets(); });
-  $('#code-copy').addEventListener('click', () => copyCode());
   $('#you-copy').addEventListener('click', () => copyCode());
   $('#code-save').addEventListener('click', () => saveCodeImage());
   $('#you-save').addEventListener('click', () => saveCodeImage());
@@ -709,7 +758,7 @@
       const img = new Image();
       img.onload = () => { ctx.drawImage(img, W / 2 - 70, 190, 140, 140); resolve(); };
       img.onerror = resolve;
-      img.src = 'assets/cross.svg?v=9';
+      img.src = 'assets/cross.svg?v=10';
     });
     const font = (size, weight) => `${weight} ${size}px -apple-system, BlinkMacSystemFont, Inter, Helvetica, Arial, sans-serif`;
     ctx.textAlign = 'center';
@@ -760,7 +809,7 @@
       showError('school-error', msg(ex));
     } finally { btn.disabled = false; }
   });
-  $('#sheet-school [data-close]').addEventListener('click', () => { store.set(SCHOOL_ASKED_KEY, true); $('#result-school').hidden = true; });
+  $$('#sheet-school [data-close]').forEach((b) => b.addEventListener('click', () => { store.set(SCHOOL_ASKED_KEY, true); $('#result-school').hidden = true; }));
 
   // ---------------------------------------------------------------------------
   // Leaderboard and prizes
@@ -771,6 +820,7 @@
     return d.toLocaleDateString('en-IE', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('en-IE', { hour: '2-digit', minute: '2-digit' });
   }
   let boardTouched = false;
+  let boardSeq = 0;
   let spot = null;
   async function loadSpot() {
     try { spot = await rpc('spot_prizes'); } catch (_) { spot = null; }
@@ -784,11 +834,13 @@
     if (!boardTouched) boardRole = isSchool() ? player.role : 'everyone';
     $$('[data-screen="board"] .tab').forEach((x) => { x.classList.toggle('active', x.dataset.role === boardRole); x.setAttribute('aria-selected', x.dataset.role === boardRole); });
     const list = $('#board-list');
-    list.innerHTML = '';
+    const seq = ++boardSeq;
     let rows = [];
     try {
       [rows] = await Promise.all([rpc('leaderboard', { p_role: boardRole === 'everyone' ? null : boardRole }), loadSpot(), refreshStats()]);
     } catch (ex) { toast(msg(ex), true); return; }
+    if (seq !== boardSeq) return; // a newer tab tap is in flight
+    list.innerHTML = '';
     $('#board-empty').hidden = rows.length > 0;
     const lightTag = spot && spot.best_light ? spot.best_light.tag : null;
     const playsTag = spot && spot.most_plays ? spot.most_plays.tag : null;
@@ -796,9 +848,9 @@
       const li = document.createElement('li');
       const me = player && r.tag === player.tag;
       li.className = (me ? 'me ' : '') + (r.rank <= 3 ? 'r' + r.rank : '');
-      const badges = (r.tag === lightTag ? '<span class="badge">Best light</span>' : '') + (r.tag === playsTag ? '<span class="badge">Most plays</span>' : '');
+      const badges = [r.tag === lightTag ? 'Best light' : '', r.tag === playsTag ? 'Most plays' : ''].filter(Boolean).map((t) => `<span class="badge">${t}</span>`).join('');
       li.innerHTML = `<span class="rank">${r.rank}</span>${avatarHtml(r.initials)}
-        <span class="name"><span>${nameHtml(r.initials)}${badges}</span><span class="meta">${r.plays} ${Number(r.plays) === 1 ? 'play' : 'plays'} · ${fmtWhen(r.achieved_at)}${me ? ' · you' : ''}</span></span>
+        <span class="name"><span class="badges">${badges}</span><span class="meta">${r.plays} ${Number(r.plays) === 1 ? 'play' : 'plays'} · ${fmtWhen(r.achieved_at)}${me ? ' · you' : ''}</span></span>
         <span class="pts">${r.score}</span>`;
       list.appendChild(li);
     });
@@ -848,7 +900,7 @@
     btn.disabled = true;
     try {
       adoptPlayer(await api('register', { role: 'everyone', initials }));
-      store.del(SCHOOL_ASKED_KEY); store.del(CODE_SHOWN_KEY);
+      store.del(SCHOOL_ASKED_KEY); store.del(CODE_SHOWN_KEY); store.del('preslink.prevBest'); store.del('preslink.prevRank');
       closeSheets();
       buy(pendingBundle || 'single');
     } catch (ex) {
@@ -919,6 +971,7 @@
     btn.disabled = true;
     showError('signin-error', '');
     try {
+      store.del(SCHOOL_ASKED_KEY); store.del('preslink.prevBest'); store.del('preslink.prevRank');
       adoptPlayer(await api('signin', { initials, code }));
       store.set(CODE_SHOWN_KEY, true);
       toast(`Welcome back, ${player.display}`);
@@ -978,7 +1031,7 @@
     $('#adm-plays').textContent = s.plays || 0;
     $('#adm-players').textContent = s.players || 0;
     const roles = d.players_by_role || {};
-    $('#adm-roles').textContent = `${roles.student || 0} students · ${roles.teacher || 0} teachers · ${roles.everyone || 0} others`;
+    $('#adm-roles').textContent = `${roles.student || 0} students · ${roles.teacher || 0} teachers · ${roles.everyone || 0} with no school email`;
     const setIf = (sel, v) => { const el = $(sel); if (document.activeElement !== el) el.value = v; };
     setIf('#adm-goal', Math.round((s.goal_cents || 0) / 100));
     setIf('#adm-ends', s.ends_on || '');
@@ -994,7 +1047,7 @@
       .sort((a, b) => b.score - a.score || String(a.finished_at).localeCompare(String(b.finished_at)));
     rows.forEach((r, i) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${adminRole === 'everyone' ? (r.rank_all || i + 1) : (r.rank || i + 1)}</td><td><b>${esc(r.initials)}</b>${r.banned ? ' <span class="muted">(banned)</span>' : ''}</td><td>${esc(boardName(r.role))}</td><td>${esc(r.claim_code)}</td><td><b>${r.score}</b></td><td>${r.best_light == null ? '' : r.best_light}</td><td>${r.plays}</td><td>${esc(fmtDate(r.finished_at, true))}</td>
+      tr.innerHTML = `<td>${adminRole === 'everyone' ? (r.rank_all == null ? '–' : r.rank_all) : (r.rank == null ? '–' : r.rank)}</td><td><b>${esc(r.initials)}</b>${r.banned ? ' <span class="muted">(banned)</span>' : ''}</td><td>${esc(boardName(r.role))}</td><td>${esc(r.claim_code)}</td><td><b>${r.score}</b></td><td>${r.best_light == null ? '' : r.best_light}</td><td>${r.plays}</td><td>${esc(fmtDate(r.finished_at, true))}</td>
         <td><button class="mini" data-void="${esc(r.play_id)}">Void</button> <button class="mini ${r.banned ? 'undo' : ''}" data-ban="${esc(r.player_id)}" data-banned="${r.banned ? '1' : ''}">${r.banned ? 'Unban' : 'Ban'}</button> <button class="mini alt" data-reset="${esc(r.player_id)}">New name</button></td>`;
       tb.appendChild(tr);
     });
@@ -1061,12 +1114,14 @@
       } else return;
       toast('Done');
       loadAdmin();
-      if (!$('#adm-player').hidden) $('#admin-find').requestSubmit();
-    } catch (ex) { toast(msg(ex), true); }
+      if (!$('#adm-player').hidden) findPlayer();
+    } catch (ex) { toast(ex.code === 'PLAYER_NOT_FOUND' ? MESSAGES.NO_PLAYER : msg(ex), true); }
   });
   $('#admin-settings').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const goal = Math.round(Number($('#adm-goal').value || 0) * 100);
+    const goalEuro = Number(String($('#adm-goal').value || '0').replace(/[^\d.]/g, ''));
+    if (!Number.isFinite(goalEuro) || goalEuro < 0 || goalEuro > 1000000) { toast(MESSAGES.BAD_GOAL, true); return; }
+    const goal = Math.round(goalEuro * 100);
     const prizes = {};
     Object.entries(PRIZE_FIELDS).forEach(([k, sel]) => { prizes[k] = $(sel).value.trim(); });
     try {
@@ -1076,8 +1131,8 @@
       refreshStats();
     } catch (ex) { toast(msg(ex), true); }
   });
-  $('#admin-find').addEventListener('submit', async (e) => {
-    e.preventDefault();
+  $('#admin-find').addEventListener('submit', (e) => { e.preventDefault(); findPlayer(); });
+  async function findPlayer() {
     const initials = $('#adm-find-initials').value.toUpperCase().replace(/\s/g, '');
     if (!/^[A-Z]{2,3}(#\d{1,3})?$/.test(initials)) { toast('Type a name like JAK or JAK#2.', true); return; }
     const box = $('#adm-player');
@@ -1088,12 +1143,12 @@
         <div class="table-wrap"><table class="table"><thead><tr><th>Play</th><th>Score</th><th></th></tr></thead><tbody>${(res.plays || []).map((x) => `<tr><td>${esc(fmtDate(x.started_at, true))}</td><td>${x.score == null ? '<span class="muted">open</span>' : '<b>' + x.score + '</b>'}${x.voided ? ' <span class="muted">(void)</span>' : ''}</td><td>${x.score == null ? '' : x.voided ? `<button class="mini undo" data-unvoid="${esc(x.play_id)}">Restore</button>` : `<button class="mini" data-void="${esc(x.play_id)}">Void</button>`}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">No plays.</td></tr>'}</tbody></table></div>
         <p class="note">${(res.payments || []).length} payment(s) · €${((res.payments || []).reduce((s, x) => s + x.amount_cents, 0) / 100).toFixed(2)}</p>`;
       box.hidden = false;
-    } catch (ex) { box.hidden = true; toast(msg(ex), true); }
-  });
+    } catch (ex) { box.hidden = true; toast(ex.code === 'PLAYER_NOT_FOUND' ? MESSAGES.NO_PLAYER : msg(ex), true); }
+  }
   $('#adm-player').addEventListener('click', async (e) => {
     const uv = e.target.closest('[data-unvoid]');
     if (!uv) return;
-    try { await adminCall('void', { play_id: uv.dataset.unvoid, voided: false }); toast('Restored'); $('#admin-find').requestSubmit(); loadAdmin(); }
+    try { await adminCall('void', { play_id: uv.dataset.unvoid, voided: false }); toast('Restored'); findPlayer(); loadAdmin(); }
     catch (ex) { toast(msg(ex), true); }
   });
   $('#admin-block').addEventListener('submit', async (e) => {
@@ -1138,7 +1193,8 @@
     const el = $('#splash');
     if (!el) { resolve(); return; }
     const finish = () => { el.classList.add('gone'); resolve(); };
-    if (reduceMotion()) { finish(); return; }
+    const returning = /session_id=|cancelled=/.test(location.search);
+    if (reduceMotion() || returning) { finish(); return; }
     setTimeout(finish, 3300);
     el.addEventListener('click', finish);
   });
@@ -1151,7 +1207,8 @@
 
     const pending = store.get(PENDING_KEY);
     if (pending && player && pending.player_id === player.id && Array.isArray(pending.taps)) {
-      api('submit', pending).then(() => store.del(PENDING_KEY), (ex) => { if (ex.code !== 'NETWORK' && ex.code !== 'SERVER_ERROR') store.del(PENDING_KEY); });
+      api('submit', pending).then(() => store.del(PENDING_KEY), (ex) => { if (ex.code !== 'NETWORK' && ex.code !== 'SERVER_ERROR') store.del(PENDING_KEY); })
+        .finally(() => { refreshMe(); refreshStats(); });
     } else if (pending) store.del(PENDING_KEY);
     if (DEMO) toast('Demo: payments and scores are simulated on this device.', false, 4000);
 

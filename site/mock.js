@@ -28,7 +28,7 @@
   function roundScore(tapMs, phase, target, speedMs) {
     let x = tapMs / speedMs + phase; x = x - 2 * Math.floor(x / 2);
     const pos = x < 1 ? x : 2 - x;
-    return Math.round(1000 * Math.pow(Math.max(0, 1 - Math.abs(pos - target) / 0.5), 1.6));
+    return Math.round(1000 * Math.pow(Math.max(0, 1 - Math.abs(pos - target) / 0.5), 3));
   }
   const newRounds = () => Array.from({ length: 3 }, () => ({ phase: Math.random(), target: 0.15 + Math.random() * 0.7 }));
 
@@ -71,12 +71,12 @@
     let light = null;
     db.plays.filter((x) => x.score != null && !x.voided && db.players[x.player_id] && !db.players[x.player_id].banned).forEach((x) => {
       const s = playLight(x);
-      if (!light || s > light.score || (s === light.score && x.finished_at < light.achieved_at)) light = { tag: tag(x.player_id), initials: disp(db.players[x.player_id]), role: db.players[x.player_id].role || 'everyone', score: s, achieved_at: x.finished_at, claim_code: db.players[x.player_id].claim_code };
+      if (!light || s > light.score || (s === light.score && x.finished_at < light.achieved_at)) light = { tag: tag(x.player_id), initials: disp(db.players[x.player_id]), role: db.players[x.player_id].role || 'everyone', score: s, achieved_at: x.finished_at };
     });
     let most = null;
     Object.values(db.players).filter((p) => !p.banned).forEach((p) => {
       const n = scoredPlays(p.id).length;
-      if (n && (!most || n > most.plays)) most = { tag: tag(p.id), initials: disp(p), role: p.role || 'everyone', plays: n, claim_code: p.claim_code };
+      if (n && (!most || n > most.plays)) most = { tag: tag(p.id), initials: disp(p), role: p.role || 'everyone', plays: n };
     });
     return { best_light: light, most_plays: most };
   };

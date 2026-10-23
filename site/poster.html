@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>PresLink Arcade poster</title>
+  <meta name="description" content="Print-ready A3 poster with a QR code for PresLink Arcade.">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #1c1c1e;
+      --muted: #6e6e73;
+      --green: #1f9d5a;
+      --yellow: #f6c21f;
+      --purple: #5b3a9a;
+      --rule: #e3e3e8;
+      --paper: #ffffff;
+      --bg: #ededf0;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    /* ---------- Screen stage ---------- */
+    .stage {
+      padding: 40px 16px 64px;
+      display: flex;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .frame { flex: none; }
+
+    /* ---------- The A3 sheet ---------- */
+    .sheet {
+      width: 297mm;
+      height: 420mm;
+      padding: 18mm;
+      background: var(--paper);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transform-origin: top left;
+      overflow: hidden;
+      flex: none;
+    }
+
+    /* a. Header */
+    .top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 26mm;
+    }
+    .brand { display: flex; align-items: center; gap: 5mm; }
+    .mark { width: 22mm; height: 22mm; display: block; }
+    .wordmark {
+      font-weight: 800;
+      font-size: 11.5mm;
+      letter-spacing: -0.025em;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .wordmark span { color: var(--green); }
+    .school { display: flex; align-items: center; gap: 5mm; }
+    .school-name {
+      color: var(--purple);
+      font-weight: 600;
+      font-size: 4.3mm;
+      letter-spacing: 0.005em;
+      line-height: 1;
+      padding-bottom: 1.8mm;
+      border-bottom: 0.45mm solid var(--purple);
+      white-space: nowrap;
+    }
+    .crest { height: 26mm; width: auto; display: block; }
+
+    /* b. Headline */
+    .hero { text-align: center; }
+    .hero h1 {
+      margin: 0;
+      font-weight: 800;
+      font-size: 20.5mm;
+      line-height: 0.98;
+      letter-spacing: -0.035em;
+    }
+    .hero h1 span { color: var(--green); }
+    .lede {
+      margin: 5mm 0 0;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 5.4mm;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+    }
+
+    /* c. QR */
+    .scan { display: flex; flex-direction: column; align-items: center; }
+    .qr { width: 180mm; height: 180mm; }
+    .qr svg { width: 100%; height: 100%; display: block; }
+    .url {
+      margin: 5mm 0 0;
+      font-weight: 800;
+      font-size: 9.5mm;
+      line-height: 1.1;
+      letter-spacing: -0.025em;
+      word-break: break-all;
+      text-align: center;
+    }
+
+    /* d. Photo cards */
+    .stories {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6mm;
+    }
+    .stories figure { margin: 0; min-width: 0; }
+    .stories img {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      display: block;
+      border-radius: 3.5mm;
+      background: #f2f2f4;
+    }
+    .stories figcaption { margin-top: 2.8mm; }
+    .stories b {
+      display: block;
+      font-weight: 700;
+      font-size: 3.9mm;
+      line-height: 1.2;
+      letter-spacing: -0.015em;
+    }
+    .stories span {
+      display: block;
+      margin-top: 1.2mm;
+      color: var(--muted);
+      font-weight: 400;
+      font-size: 3.2mm;
+      line-height: 1.38;
+    }
+
+    /* e. Footer */
+    .foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12mm;
+      padding-top: 4.5mm;
+      border-top: 0.3mm solid var(--rule);
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 3.4mm;
+      line-height: 1.3;
+    }
+    .foot p { margin: 0; }
+    .foot p:last-child { white-space: nowrap; }
+
+    /* ---------- Screen-only controls ---------- */
+    .tools {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tools button {
+      font: inherit;
+      font-weight: 700;
+      font-size: 14px;
+      line-height: 1;
+      padding: 12px 18px;
+      border: 0;
+      border-radius: 999px;
+      background: var(--ink);
+      color: #fff;
+      cursor: pointer;
+    }
+    .tools button:hover { background: #000; }
+    .tools .hint {
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1;
+      color: var(--muted);
+      background: #fff;
+      border: 1px solid var(--rule);
+      border-radius: 999px;
+      padding: 11px 14px;
+    }
+
+    /* ---------- Print ---------- */
+    @page { size: A3; margin: 0; }
+    @media print {
+      html, body { background: #fff; width: 297mm; height: 420mm; overflow: hidden; }
+      .stage { padding: 0; display: block; overflow: visible; }
+      .frame { width: auto !important; height: auto !important; }
+      .sheet { transform: none !important; margin: 0; page-break-after: avoid; break-after: avoid; }
+      .tools { display: none !important; }
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <div class="tools">
+    <span class="hint">Set paper size to A3</span>
+    <button type="button" id="print">Print / Save as PDF</button>
+  </div>
+
+  <div class="stage">
+    <div class="frame">
+      <div class="sheet">
+
+        <header class="top">
+          <div class="brand">
+            <img class="mark" src="assets/cross.svg" alt="">
+            <div class="wordmark">PresLink <span>Arcade</span></div>
+          </div>
+          <div class="school">
+            <div class="school-name">Presentation Brothers College</div>
+            <img class="crest" src="assets/crest.jpg" alt="Presentation Brothers College crest">
+          </div>
+        </header>
+
+        <section class="hero">
+          <h1>Stop the light.<br><span>Fund a school.</span></h1>
+          <p class="lede">€2 a play · three lights · prizes at the end</p>
+        </section>
+
+        <section class="scan">
+          <div class="qr" id="qr" role="img" aria-label="QR code for PresLink Arcade"></div>
+          <p class="url" id="url"></p>
+        </section>
+
+        <section class="stories">
+          <figure>
+            <img src="assets/photo-classrooms.jpg" alt="Classrooms in Ghana">
+            <figcaption><b>Classrooms in Ghana</b><span>A three-classroom block in Sokabisi, Bolgatanga, funded by PresLink.</span></figcaption>
+          </figure>
+          <figure>
+            <img src="assets/photo-bikes.jpg" alt="Bikes to school">
+            <figcaption><b>Bikes to school</b><span>Bicycles so that students can get to class and stay in education.</span></figcaption>
+          </figure>
+          <figure>
+            <img src="assets/photo-babies.jpg" alt="Mother of Mercy Babies Home">
+            <figcaption><b>Mother of Mercy Babies Home</b><span>Support for the babies home run by the Presentation Brothers in Sirigu, Ghana.</span></figcaption>
+          </figure>
+          <figure>
+            <img src="assets/photo-school.svg" alt="Run by students">
+            <figcaption><b>Run by students</b><span>A committee of PBC students and teachers runs the campaign.</span></figcaption>
+          </figure>
+        </section>
+
+        <footer class="foot">
+          <p>Every cent after card fees goes to Presentation Brothers schools in Ghana and Nigeria.</p>
+          <p>PresLink · student-run since 2005</p>
+        </footer>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="vendor/qrcode.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      // ---- The address the poster points at ----
+      var params = new URLSearchParams(location.search);
+      var url = (params.get('url') || '').trim() || (location.origin + '/');
+      document.getElementById('url').textContent = url.replace(/^https?:\/\//i, '').replace(/\/$/, '');
+
+      // ---- QR code as inline SVG ----
+      // Error correction H (30 %) so the centre tile and rounded shapes stay well
+      // inside the tolerance. Modules are rounded squares, the three finder
+      // patterns are drawn as rounded shapes, and a white tile with the PresLink
+      // cross sits in the middle.
+      var INK = '#1c1c1e';
+      var qr = qrcode(0, 'H');
+      qr.addData(url);
+      qr.make();
+
+      var n = qr.getModuleCount();
+      var quiet = 1;                 // one module of quiet zone inside the SVG; page white space adds the rest
+      var size = n + quiet * 2;
+      var f = function (v) { return (Math.round(v * 1000) / 1000).toString(); };
+
+      // Centre tile: about 18 % of the width, snapped to whole modules and centred on
+      // the grid so the cleared block is a clean square (7 x 7 for a 37-module code).
+      var k = Math.round(size * 0.18);
+      if ((k % 2) !== (n % 2)) k += 1;
+      var first = (n - k) / 2;            // first module row/column under the tile
+      var tile = k;
+      var tx = first + quiet;
+
+      var inFinder = function (r, c) {
+        return (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7);
+      };
+      var underTile = function (r, c) {
+        return r >= first && r < first + k && c >= first && c < first + k;
+      };
+
+      var out = [];
+      out.push('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + ' ' + size + '" shape-rendering="geometricPrecision">');
+      out.push('<rect width="' + size + '" height="' + size + '" fill="#fff"/>');
+      out.push('<g fill="' + INK + '">');
+
+      // Data, timing and alignment modules as rounded squares (rx = 30 % of a module).
+      for (var r = 0; r < n; r++) {
+        for (var c = 0; c < n; c++) {
+          if (!qr.isDark(r, c) || inFinder(r, c)) continue;
+          if (underTile(r, c)) continue;
+          out.push('<rect x="' + (c + quiet) + '" y="' + (r + quiet) + '" width="1" height="1" rx="0.3"/>');
+        }
+      }
+
+      // Finder patterns: outer rounded square, white ring, inner rounded square.
+      var finder = function (x, y) {
+        out.push('<rect x="' + x + '" y="' + y + '" width="7" height="7" rx="2.1" fill="' + INK + '"/>');
+        out.push('<rect x="' + (x + 1) + '" y="' + (y + 1) + '" width="5" height="5" rx="1.5" fill="#fff"/>');
+        out.push('<rect x="' + (x + 2) + '" y="' + (y + 2) + '" width="3" height="3" rx="0.95" fill="' + INK + '"/>');
+      };
+      finder(quiet, quiet);
+      finder(quiet + n - 7, quiet);
+      finder(quiet, quiet + n - 7);
+      out.push('</g>');
+
+      // Centre tile with the cross (same artwork as assets/cross.svg, inlined so it prints reliably).
+      out.push('<rect x="' + f(tx) + '" y="' + f(tx) + '" width="' + f(tile) + '" height="' + f(tile) + '" rx="' + f(tile * 0.18) + '" fill="#fff"/>');
+      var cw = tile * 0.82;
+      var cx = tx + (tile - cw) / 2;
+      out.push('<g transform="translate(' + f(cx) + ' ' + f(cx) + ') scale(' + f(cw / 100) + ')">' +
+        '<path fill="#F6C21F" stroke="#F6C21F" stroke-width="3" stroke-linejoin="round" d="M45 50h10l12-43H33zM50 45v10l43 12V33zM55 50H45L33 93h34zM50 55V45L7 33v34z"/>' +
+        '<g fill="#F26A1B" fill-opacity=".85"><circle cx="50" cy="41" r="8.5"/><circle cx="59" cy="50" r="8.5"/><circle cx="50" cy="59" r="8.5"/><circle cx="41" cy="50" r="8.5"/></g>' +
+        '</g>');
+      out.push('</svg>');
+
+      document.getElementById('qr').innerHTML = out.join('');
+
+      // ---- Screen: scale the sheet down when the window is narrower than A3 ----
+      var sheet = document.querySelector('.sheet');
+      var frame = document.querySelector('.frame');
+      function fit() {
+        var w = sheet.offsetWidth, h = sheet.offsetHeight;
+        var avail = document.documentElement.clientWidth - 32;
+        var k = Math.min(1, avail / w);
+        sheet.style.transform = k < 1 ? 'scale(' + k + ')' : '';
+        frame.style.width = Math.round(w * k) + 'px';
+        frame.style.height = Math.round(h * k) + 'px';
+      }
+      fit();
+      window.addEventListener('resize', fit);
+      window.addEventListener('beforeprint', function () { sheet.style.transform = ''; frame.style.width = ''; frame.style.height = ''; });
+      window.addEventListener('afterprint', fit);
+
+      document.getElementById('print').addEventListener('click', function () { window.print(); });
+    })();
+  </script>
+</body>
+</html>

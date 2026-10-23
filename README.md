@@ -1,6 +1,6 @@
 # PresLink Arcade
 
-A web app for phones and iPads for the PresLink charity at Presentation Brothers College, Cork.
+A web app, opened from a QR code on any device with a browser, for the PresLink charity at Presentation Brothers College, Cork.
 Scan a QR code, tap **Play · €2**, pay with Apple Pay, Google Pay or a card, and
 **stop the light on the mark**: three lights a play, the score is the average, out of 1,000.
 One campaign, three boards (Everyone, Students, Teachers) and prizes at the end, plus two spot prizes
@@ -21,7 +21,7 @@ total raised sit at the top of every screen; there is a tab bar (Play, Board, Ab
 with a photo, and very little text.
 
 ```
-  Phone (QR)  ──▶  Netlify (static site: site/)
+  Device (QR) ──▶  Netlify (static site: site/)
                        │
                        ├──▶ Supabase Edge Function "api"  ──▶ Postgres (players, payments, plays)
                        │          │
@@ -32,7 +32,7 @@ with a photo, and very little text.
 
 - **Netlify** hosts the site straight from GitHub. No build step. Push to the branch, it deploys.
 - **Supabase** holds the data and runs the two server functions. The browser can only read the
-  leaderboard, past winners and the "raised so far" total. Everything that changes data goes through
+  leaderboard, the spot prizes and the "raised so far" total. Everything that changes data goes through
   the functions.
 - **Stripe Checkout** takes the money. The app never sees card numbers. Apple Pay, Google Pay and
   cards (including Revolut) all work.
@@ -47,7 +47,7 @@ Stripe key the site gives free plays and says so on screen.
    **Preslink** repository. Choose the branch **claude/trusting-goodall-qzegrn**. In
    **Publish directory** type `site`. Leave **Build command** empty. Click **Deploy**.
 3. Wait about a minute. Netlify shows a link like `https://something.netlify.app`. Open it on
-   your phone. That is the site. To print the QR poster, open the same link with `/qr.html` on the end.
+   your device. That is the site. To print the A3 poster, open the same link with `/poster.html` on the end.
 
 Optional: in Netlify, **Site configuration → Site details → Change site name** lets you pick a
 nicer address, for example `preslink-arcade`.
@@ -77,6 +77,9 @@ The free plays switch off by themselves the moment a Stripe key exists. Details 
 | `supabase/migrations/0005_initials_suffix_harder.sql` | Chosen initials with #2 tags, sign in with JAK#2, steeper scoring |
 | `supabase/migrations/0006_three_rounds.sql` | Three lights a play with a random mark each, slower sweep, score checked light by light |
 | `supabase/migrations/0007_campaign.sql` | One campaign instead of weeks: Everyone board, school email for Students/Teachers, spot prizes, end date and five prize texts |
+| `supabase/migrations/0008_harder_scoring.sql` | Steeper score curve so 1,000 is practically unreachable and scores spread below 900 |
+| `supabase/migrations/0009_admin_school_email.sql` | Committee lookup shows a player's school email and best light |
+| `site/poster.html` | Print-ready A3 poster with a large QR code (vendored encoder in `site/vendor/`) |
 | `site/assets/` | Logo (`logo.svg`, `cross.svg`), icons, and the photo slots `photo-*.svg` to replace with real photos |
 | `supabase/functions/api/index.ts` | Register, checkout, confirm payment, start play, submit score |
 | `supabase/functions/stripe-webhook/index.ts` | Receives Stripe's payment confirmation |
@@ -89,11 +92,11 @@ Do these in order. Steps 1 and 2 are a one-off technical setup; 3 to 6 are the l
 
 ### 1. Supabase (database + functions): already done
 
-The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all seven migrations applied,
+The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all nine migrations applied,
 both functions deployed, and `site/config.js` points at it. The committee code was set at deployment
 and handed over privately; change it any time from the Committee screen.
 
-If you ever need to redo this on a fresh project: Dashboard → **SQL Editor** → run the seven files in
+If you ever need to redo this on a fresh project: Dashboard → **SQL Editor** → run the nine files in
 `supabase/migrations/` in order (the first line of `0007` must be run on its own, before the rest of that file), deploy the two functions with `--no-verify-jwt` (CLI below), set the
 committee code with `select public.admin_set_code(null, 'YourCode');`, and put the project URL and
 publishable key in `site/config.js`.
@@ -136,9 +139,9 @@ and registered details. A student cannot be the account holder.
 
 ### 4. Test it end to end (still in Stripe test mode)
 
-1. Open the site on a phone. Tap **Play · €2**. Stripe's test page opens.
+1. Open the site on your device. Tap **Play · €2**. Stripe's test page opens.
 2. Pay with card number `4242 4242 4242 4242`, any future expiry, any CVC, any postcode.
-3. You land back in the coin cabinet, see the coin go in and a token come out, and the game starts: three lights, then the result and the Student/Teacher question. Check the leaderboard after.
+3. You land back in the coin cabinet, see the coin go in and a token come out, and the game starts: three lights, then the result, the Keep this sheet with your name and four-digit code, and the At Presentation Brothers College? card (a school email joins a school board). Check the leaderboard after.
 4. In Supabase → **Table Editor** you will see the player, the payment and the play.
 5. In Stripe → **Developers → Webhooks** the endpoint should show a successful delivery.
 
@@ -149,7 +152,7 @@ and registered details. A student cannot be the account holder.
    (`sk_live_...`, a new webhook endpoint and its `whsec_...`). Replace the two secrets in Supabase.
 3. Fill the yellow placeholders in the terms in `site/index.html` (committee contact, where winners are
    announced). Have the school check the terms and the legal position of a paid game with a prize.
-4. Open `/qr.html` on the live site, print the poster or download the PNG.
+4. Open `/poster.html` on the live site and print it (A3) or save it as a PDF.
 5. Make one real €2 payment yourself to be sure, then announce it.
 
 ### 6. Prizes at the end
@@ -169,8 +172,8 @@ hash in the database and locks for 15 minutes after 8 wrong tries. From there th
   the **end date** and the five **prizes**;
 - see the Everyone, Students and Teachers boards with codes, best light and times, the spot-prize holders, and
   **void** a score, **ban** a player or give a player a **new random name**;
-- **find any player** by their letters: claim code, credits, every play (void or restore) and payments;
-- see past winners with claim codes, recent payments with receipt emails, and **download a CSV**;
+- **find any player** by their letters: code, school email, credits, every play (void or restore) and payments;
+- see recent payments with receipt emails, and **download a CSV**;
 - **block** extra three-letter names on top of the built-in list of offensive ones;
 - change the committee code.
 
@@ -182,8 +185,10 @@ hash in the database and locks for 15 minutes after 8 wrong tries. From there th
   player's name to a random one.
 - The game: a play is three lights. Each light sweeps the bar at its own random speed (about a second per
   pass) and has its own mark; you tap when the light is on the mark. The score for a light falls off steeply
-  with distance (30 ms late is about 900), and the play's score is the average of the three, so one lucky
-  tap is not enough: scores above 900 need three good taps in a row, and 1,000 is practically impossible.
+  with distance (10 ms off is about 940, 20 ms about 880, 30 ms about 820, 50 ms about 715), and the play's
+  score is the average of the three, so one lucky tap is not enough: scores above 900 need three taps within
+  about 15 ms, and a single-light 1,000 needs an error under a tenth of a millisecond, which integer-millisecond
+  taps practically never hit.
 - Everyone starts on the Everyone board. The result screen and the You tab offer "At Presentation Brothers
   College?": a school email ending @pbccork.ie puts the player on the Students board, @pbc-cork.ie on the
   Teachers board. The address is stored for the committee to check; nothing is emailed.
@@ -208,9 +213,9 @@ The advisor reports two things on purpose:
 
 - **RLS enabled, no policies** on every table. Correct: nobody reads tables directly. The browser only calls
   three read functions and the Edge Functions use the service role.
-- **`leaderboard`, `past_winners` and `stats` are SECURITY DEFINER and callable by `anon`.** Also correct:
-  they are the public read-outs (letters, scores, totals). They never return claim codes, emails or
-  player ids.
+- **`leaderboard`, `spot_prizes` and `stats` are SECURITY DEFINER and callable by `anon`.** Also correct:
+  they are the public read-outs (letters, scores, totals). They never return codes, emails or
+  player ids. `past_winners` is left over from the weekly version and is no longer called.
 
 ## How the game is kept honest
 
@@ -222,9 +227,9 @@ The advisor reports two things on purpose:
   void a play. The terms say so.
 - A refresh mid-game never costs a credit: the same play resumes.
 - Nobody can read the players or payments tables from the browser; the only public reads are the
-  leaderboard, past winners and the total.
+  leaderboard, the spot prizes and the total.
 - The game runs in a browser, so a determined person with developer tools could still try to script a
-  perfect tap. Announcing winners after a human check, and the claim code, is the practical safeguard.
+  perfect tap. Announcing winners after a human check, and the four-digit code, is the practical safeguard.
 
 ## Running it locally
 
@@ -238,7 +243,7 @@ talk to the real backend.
 
 ## Legal note
 
-This is a paid game of skill with a weekly prize, open to people who are mostly under 18. Before launch the
+This is a paid game of skill with prizes awarded once at the end of the campaign (three boards plus two spot prizes), open to people who are mostly under 18. Before launch the
 school should confirm it is comfortable with that under the Gambling Regulation Act 2024 and Stripe's terms
 for contests, and decide the parental-consent wording in the terms. The terms are drafted; they are not legal
 advice.

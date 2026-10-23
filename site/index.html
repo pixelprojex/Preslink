@@ -6,13 +6,13 @@
   <meta name="theme-color" content="#5b3a9a">
   <title>PresLink Arcade</title>
   <meta name="description" content="Stop the light on the mark. Every play funds Presentation Brothers schools in Ghana and Nigeria. Prizes at the end of the campaign.">
-  <link rel="icon" href="assets/favicon.svg?v=9" type="image/svg+xml">
-  <link rel="icon" href="assets/favicon-32.png?v=9" type="image/png" sizes="32x32">
-  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=9">
+  <link rel="icon" href="assets/favicon.svg?v=10" type="image/svg+xml">
+  <link rel="icon" href="assets/favicon-32.png?v=10" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=10">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=9">
+  <link rel="stylesheet" href="styles.css?v=10">
 </head>
 <body>
 <div class="splash" id="splash" aria-hidden="true">
@@ -27,6 +27,7 @@
   </div>
   <div class="splash-word" aria-label="PresLink"><span>P</span><span>r</span><span>e</span><span>s</span><span>L</span><span>i</span><span>n</span><span>k</span></div>
   <div class="splash-sub">Arcade</div>
+  <div class="splash-credit"><img src="assets/crest.svg?v=10" alt="">Presentation Brothers College</div>
 </div>
 <canvas id="confetti" aria-hidden="true"></canvas>
 
@@ -41,7 +42,7 @@
 
 <main class="shell">
   <header class="appbar">
-    <a class="brand" href="#home" aria-label="PresLink Arcade home"><img src="assets/cross.svg?v=9" alt=""><span>PresLink</span></a>
+    <a class="brand" href="#home" aria-label="PresLink Arcade home"><img src="assets/cross.svg?v=10" alt=""><span>PresLink</span></a>
     <div class="raised" id="raised" aria-live="polite">
       <svg class="ring" viewBox="0 0 36 36" aria-hidden="true"><circle class="ring-bg" cx="18" cy="18" r="15.5"/><circle class="ring-fg" id="ring-fg" cx="18" cy="18" r="15.5" stroke-dasharray="0 97.4"/></svg>
       <span class="raised-t"><span class="raised-n" id="raised-n">€0</span><span class="raised-l">raised</span></span>
@@ -50,33 +51,38 @@
 
   <!-- ================= HOME ================= -->
   <section class="screen" data-screen="home">
-    <div class="title"><h1>Arcade</h1><p class="subtitle">Stop the light on the mark. Every play funds a school.</p></div>
+    <div class="title"><h1>Arcade</h1><p class="subtitle">Stop the light. Fund schools in Ghana and Nigeria.</p></div>
     <div class="card hero-card">
       <div class="demo-track" aria-hidden="true"><span class="demo-pin"></span><span class="demo-marker"></span></div>
       <button class="btn btn-primary btn-xl" id="home-play" type="button">Play · €2</button>
-      <p class="bundles"><button class="link" type="button" data-bundle="triple">3 plays · €5</button><span>·</span><button class="link" type="button" data-bundle="seven">7 plays · €10</button></p>
+      <div class="bundles">
+        <button class="pill" type="button" data-bundle="triple">3 plays · €5<small>Save €1</small></button>
+        <button class="pill" type="button" data-bundle="seven">7 plays · €10<small>Save €4</small></button>
+      </div>
     </div>
-    <h2 class="section">Prizes</h2>
-    <button class="card prize-card" type="button" data-go="prize">
-      <img src="assets/photo-prize.svg" alt="">
-      <span><small id="home-prize-when">At the end</small><strong>Students · Teachers · Everyone</strong></span>
+    <button class="prize-cta" type="button" data-go="prize" style="margin-top:12px">
+      <span class="ico"><svg><use href="#i-trophy"/></svg></span>
+      <strong>Prizes</strong>
       <span class="chev">›</span>
     </button>
-    <h2 class="section school">PresLink</h2>
-    <div class="card">
+    <div class="card" style="margin-top:12px">
+      <button class="cell" type="button" data-sheet="how">How to play <span class="chev">›</span></button>
       <button class="cell" type="button" data-go="about">Where the money goes <span class="chev">›</span></button>
-      <button class="cell" type="button" data-sheet="terms">Terms <span class="chev">›</span></button>
     </div>
-    <footer class="footer"><span>Payments by Stripe</span></footer>
+    <footer class="footer">
+      <span class="school-id"><img src="assets/crest.svg?v=10" alt="">Presentation Brothers College</span>
+      <span class="row-links"><button class="link" type="button" data-sheet="terms">Terms</button><span>·</span><span>Payments by Stripe</span></span>
+    </footer>
   </section>
 
   <!-- ================= CABINET (after a payment) ================= -->
   <section class="screen" data-screen="cabinet" hidden>
     <div class="cabinet" aria-hidden="true">
-      <div class="cab-top"><div class="coin" id="coin">€</div><div class="slot"></div></div>
-      <div class="cab-credits"><strong id="cab-credits">0</strong><span>plays</span></div>
-      <span class="cab-hint" id="cab-hint"></span>
-      <div class="cab-tray"><div class="tray"></div><div class="token" id="token">1</div></div>
+      <div class="cab-panel" id="cab-panel">
+        <div class="cab-slot-wrap"><div class="cab-coin" id="coin">€</div><div class="cab-slot" id="cab-slot"></div></div>
+        <div class="cab-led"><strong id="cab-credits">0</strong><span>plays</span></div>
+      </div>
+      <div class="cab-tray-wrap"><div class="cab-tray"></div><div class="cab-token" id="token">1</div><span class="cab-hint" id="cab-hint"></span></div>
     </div>
     <div class="cab-text">
       <h2 id="cab-title">Thank you</h2>
@@ -104,31 +110,35 @@
         <div class="score" aria-live="polite"><span id="score-value">0</span></div>
         <div class="verdict" id="verdict"></div>
       </div>
-      <p class="tap-hint" id="tap-hint">Tap when the light reaches the mark</p>
+      <p class="tap-hint" id="tap-hint">Tap when the light is on the mark</p>
     </div>
 
     <div class="result" id="result" hidden>
       <div class="result-head">
         <p class="result-kicker" id="result-title">Score</p>
-        <div class="result-score" id="result-score">0</div>
+        <div class="result-score"><span id="result-score">0</span><small>/ 1000</small></div>
         <div class="result-rounds" id="result-rounds"></div>
       </div>
       <div class="stat-row" id="result-stats">
-        <div class="stat"><span>Your best</span><strong id="result-best">–</strong></div>
-        <div class="stat"><span>Rank</span><strong id="result-rank">–</strong></div>
+        <div class="stat"><span>Your best</span><strong id="result-best">–</strong><small id="result-best-sub"></small></div>
+        <div class="stat"><span>Rank</span><strong id="result-rank">–</strong><small id="result-rank-sub"></small></div>
       </div>
       <p class="result-note" id="result-note" hidden></p>
       <button class="card school-ask" type="button" id="result-school" hidden>
-        <span><strong>At Presentation Brothers College?</strong><small>Join the Students or Teachers board</small></span>
+        <img src="assets/crest.svg?v=10" alt="">
+        <span><strong>At Presentation Brothers College?</strong><small>Join your school board</small></span>
         <span class="chev">›</span>
       </button>
       <button class="btn btn-primary btn-xl" type="button" id="result-again">Play again</button>
-      <p class="bundles" id="result-topup" hidden><button class="link" type="button" data-bundle="triple">3 plays · €5</button><span>·</span><button class="link" type="button" data-bundle="seven">7 plays · €10</button></p>
+      <div class="bundles" id="result-topup" hidden style="margin-bottom:10px">
+        <button class="pill" type="button" data-bundle="triple">3 plays · €5<small>Save €1</small></button>
+        <button class="pill" type="button" data-bundle="seven">7 plays · €10<small>Save €4</small></button>
+      </div>
       <div class="grid-2">
         <button class="btn" type="button" data-go="board">Leaderboard</button>
         <button class="btn" type="button" id="result-share">Share</button>
       </div>
-      <p class="charity-line" id="result-charity">Your play funds Presentation Brothers schools in Ghana and Nigeria.</p>
+      <p class="charity-line" id="result-charity">Every play funds schools in Ghana and Nigeria.</p>
     </div>
   </section>
 
@@ -172,8 +182,8 @@
     <h2 class="section">To collect</h2>
     <div class="card">
       <ol class="steps">
-        <li>Keep your name and code. They are on your You tab.</li>
-        <li>Winners are announced by the PresLink committee.</li>
+        <li>Keep your name and code (You tab).</li>
+        <li>Winners are announced at the end.</li>
         <li>Show your name and code to collect.</li>
       </ol>
     </div>
@@ -183,6 +193,16 @@
   <!-- ================= ABOUT ================= -->
   <section class="screen" data-screen="about" hidden>
     <div class="title"><h1>PresLink</h1><p class="subtitle">The student-run charity of Presentation Brothers College, Cork, funding Presentation Brothers schools in Ghana and Nigeria since 2005.</p></div>
+    <h2 class="section">How to play</h2>
+    <div class="card">
+      <ol class="steps">
+        <li>Tap when the light is on the mark.</li>
+        <li>Three lights a play. Each scores out of 1,000.</li>
+        <li>Your score is the average of the three.</li>
+        <li>Top of a board at the end wins a prize.</li>
+      </ol>
+    </div>
+    <h2 class="section">Where the money goes</h2>
     <div class="card story">
       <img class="photo" src="assets/photo-classrooms.jpg" alt="Children in a new classroom in Ghana">
       <div class="story-body"><h2>Classrooms in Ghana</h2><p>A three-classroom block in Sokabisi, Bolgatanga, funded by PresLink.</p></div>
@@ -195,9 +215,9 @@
       <img class="photo" src="assets/photo-babies.jpg" alt="Mother of Mercy Babies Home">
       <div class="story-body"><h2>Mother of Mercy Babies Home</h2><p>Support for the babies home run by the Presentation Brothers in Sirigu, Ghana.</p></div>
     </div>
-    <div class="card story">
+    <div class="card story school">
       <img class="photo" src="assets/photo-school.svg" alt="The PresLink committee">
-      <div class="story-body"><h2>Run by students</h2><p>A committee of PBC students and teachers runs the campaign. Every cent raised here, after card fees, goes to PresLink.</p></div>
+      <div class="story-body"><h2><img src="assets/crest.svg?v=10" alt="">Run by students</h2><p>A committee of Presentation Brothers College students and teachers runs the campaign. Every cent raised here, after card fees, goes to PresLink.</p></div>
     </div>
     <button class="btn btn-primary btn-xl page-cta js-play" type="button">Play · €2</button>
   </section>
@@ -239,7 +259,7 @@
         <div class="grid-2"><button class="btn" type="button" id="edit-cancel">Cancel</button><button class="btn btn-primary" type="submit" id="edit-save">Save</button></div>
       </form>
       <div class="card">
-        <button class="cell" type="button" id="you-school">At Presentation Brothers College? <span class="chev">›</span></button>
+        <button class="cell" type="button" id="you-school"><span class="school-id"><img src="assets/crest.svg?v=10" alt="">At Presentation Brothers College?</span> <span class="chev">›</span></button>
         <button class="cell" type="button" id="you-edit">Change my letters <span class="chev">›</span></button>
         <button class="cell" type="button" data-go="signin">Sign in as someone else <span class="chev">›</span></button>
         <button class="cell danger" type="button" id="you-signout">Sign out on this device</button>
@@ -379,25 +399,40 @@
 
 <!-- Shown once, after the first play: the code that collects a prize. -->
 <div class="sheet sheet-code" id="sheet-code" role="dialog" aria-modal="true" aria-labelledby="code-title" hidden>
-  <div class="sheet-head"><h2 id="code-title">Keep this</h2></div>
+  <div class="sheet-head"><h2 id="code-title">Your name and code</h2></div>
   <div class="sheet-body">
     <div class="code-big">
       <span class="code-name" id="code-name">JAK</span>
       <span class="code-digits" id="code-digits">0000</span>
     </div>
-    <p class="code-why">Your name and code collect a prize. Save them now.</p>
-    <div class="grid-2"><button class="btn" type="button" id="code-save">Save image</button><button class="btn" type="button" id="code-copy">Copy</button></div>
-    <button class="btn btn-primary btn-xl" type="button" id="code-done" style="margin-top:10px">Got it</button>
-    <p class="fineprint">Also on your You tab on this device.</p>
+    <p class="code-why">Show these to collect a prize.</p>
+    <button class="btn btn-primary btn-xl" type="button" id="code-save">Save to Photos</button>
+    <button class="btn btn-xl" type="button" id="code-done">Done</button>
+    <p class="fineprint">Also on your You tab.</p>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-how" role="dialog" aria-modal="true" aria-labelledby="how-title" hidden>
+  <div class="sheet-head"><h2 id="how-title">How to play</h2><button class="close" type="button" data-close aria-label="Close">×</button></div>
+  <div class="sheet-body">
+    <div class="card">
+      <ol class="steps">
+        <li>Tap when the light is on the mark.</li>
+        <li>Three lights a play. Each scores out of 1,000.</li>
+        <li>Your score is the average of the three.</li>
+        <li>Top of a board at the end wins a prize.</li>
+      </ol>
+    </div>
+    <button class="btn btn-primary btn-xl page-cta js-play" type="button">Play · €2</button>
   </div>
 </div>
 
 <!-- Optional: people at the school join the Students or Teachers board with their school email. -->
 <div class="sheet" id="sheet-school" role="dialog" aria-modal="true" aria-labelledby="school-title" hidden>
-  <div class="sheet-head"><h2 id="school-title">School email</h2><button class="close" type="button" data-close aria-label="Close">×</button></div>
+  <div class="sheet-head"><h2 id="school-title">Presentation Brothers College</h2><button class="close" type="button" data-close aria-label="Close">×</button></div>
   <form class="sheet-body" id="school-form" autocomplete="off" novalidate>
-    <p class="code-why">Students end with <b>@pbccork.ie</b>, teachers with <b>@pbc-cork.ie</b>.</p>
-    <div class="card"><label class="field"><span>School email</span><input id="school-email" type="email" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="name@pbccork.ie" autocomplete="email"></label></div>
+    <p class="code-why">Enter your school email to join your board.</p>
+    <div class="card"><label class="field"><span>School email</span><input id="school-email" type="email" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Your school email" autocomplete="email"></label></div>
     <p class="field-error" id="school-error" role="alert" hidden></p>
     <button class="btn btn-primary btn-xl page-cta" type="submit" id="school-submit">Join</button>
     <button class="link center quiet" type="button" data-close>Not at the school</button>
@@ -437,7 +472,7 @@
 <div class="overlay" id="overlay" hidden><div class="overlay-card"><div class="spinner" aria-hidden="true"></div><p id="overlay-text">One moment</p></div></div>
 
 <script src="config.js"></script>
-<script src="mock.js?v=9"></script>
-<script src="app.js?v=9"></script>
+<script src="mock.js?v=10"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>
