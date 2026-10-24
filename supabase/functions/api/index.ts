@@ -2,7 +2,7 @@
 //
 // Dependency-free on purpose: Postgres is reached through PostgREST RPC with the
 // service-role key, Stripe through its REST API. Every action is a POST with a
-// JSON body: { action: "register" | "update" | "school" | "signin" | "me" | "checkout" | "confirm" | "start" | "submit" | "admin", ... }.
+// JSON body: { action: "register" | "update" | "school" | "contact" | "signin" | "me" | "checkout" | "confirm" | "start" | "submit" | "admin", ... }.
 // "register" needs no name: the database assigns a random three-letter one. New players start on the
 // Everyone board (role "everyone"); "school" moves a player onto the Students or Teachers board by
 // checking the shape of a school email address (students @pbccork.ie, teachers @pbc-cork.ie; nothing is sent).
@@ -176,6 +176,19 @@ async function school(body: Body) {
   return await rpc("set_school", { p_id: playerId, p_email: email });
 }
 
+// Where to send the news if they win, plus an optional school email that joins a board. A school
+// address in the first field counts too. Format checks only; the database applies the same rules.
+const ANY_EMAIL = /^[a-z0-9._%+'-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+async function contact(body: Body) {
+  const playerId = requireUuid(body.player_id, "BAD_PLAYER");
+  if (typeof body.email !== "string") throw new HttpError(400, "BAD_EMAIL");
+  const email = body.email.trim().toLowerCase();
+  if (email.length < 6 || email.length > 120 || !ANY_EMAIL.test(email)) throw new HttpError(400, "BAD_EMAIL");
+  const school = body.school_email == null ? "" : String(body.school_email).trim().toLowerCase();
+  if (school !== "" && !SCHOOL_EMAIL.test(school)) throw new HttpError(400, "BAD_SCHOOL_EMAIL");
+  return await rpc("set_contact", { p_id: playerId, p_email: email, p_school_email: school === "" ? null : school });
+}
+
 async function me(body: Body) {
   const playerId = requireUuid(body.player_id, "BAD_PLAYER");
   return await rpc("me_player", { p_id: playerId });
@@ -286,7 +299,7 @@ async function signin(body: Body) {
   return await rpc("signin_player", { p_initials: initials, p_code: code });
 }
 
-const ADMIN_OPS = new Set(["overview", "void", "ban", "block", "set_code", "settings", "player", "reset_name", "stripe_status", "stripe_connect", "stripe_disconnect"]);
+const ADMIN_OPS = new Set(["overview", "emails", "void", "ban", "block", "set_code", "settings", "player", "reset_name", "stripe_status", "stripe_connect", "stripe_disconnect"]);
 
 // The committee code is checked by the database (same lockout as every admin call).
 async function adminVerify(code: string) {
@@ -366,6 +379,7 @@ async function admin(body: Body) {
       await rpc("admin_set_code", { p_code: code, p_new_code: newCode });
       return { ok: true };
     }
+    case "emails": return await rpc("admin_emails", { p_code: code }); // a bad code comes back as BAD_ADMIN, like overview
     case "stripe_status": {
       await adminVerify(code);
       return await stripeStatus();
@@ -434,6 +448,7 @@ export async function handler(req: Request): Promise<Response> {
       case "register": return json(await register(body));
       case "update": return json(await update(body));
       case "school": return json(await school(body));
+      case "contact": return json(await contact(body));
       case "signin": return json(await signin(body));
       case "admin": return json(await admin(body));
       case "me": return json(await me(body));

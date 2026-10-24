@@ -6,6 +6,7 @@
   const DEMO = !CONFIG.SUPABASE_URL;
   const STORAGE_KEY = 'preslink.player';
   const SCHOOL_ASKED_KEY = 'preslink.schoolAsked';
+  const CONTACT_ASKED_KEY = 'preslink.contactAsked';
   const CODE_SHOWN_KEY = 'preslink.codeShown';
   const HOW_SEEN_KEY = 'preslink.howSeen';
   const PENDING_KEY = 'preslink.pendingScore';
@@ -41,6 +42,7 @@
     BAD_GOAL: 'Enter a whole number of euro.',
     NO_PLAYER: 'No player with those initials.',
     BAD_SCHOOL_EMAIL: 'That is not a school email we recognise.',
+    BAD_EMAIL: 'That does not look like an email address.',
     NEEDS_SCHOOL_EMAIL: 'Add your school email first.',
     BAD_SIGNIN: 'That name and code do not match.',
     LOCKED: 'Too many tries. Wait 15 minutes.',
@@ -88,9 +90,9 @@
   let prevScreen = 'home';
 
   const savePlayer = () => store.set(STORAGE_KEY, player);
-  const clearPlayer = () => { player = null; credits = 0; openPlay = null; best = null; bestLight = null; store.del(STORAGE_KEY); store.del(SCHOOL_ASKED_KEY); store.del(CODE_SHOWN_KEY); store.del('preslink.prevBest'); store.del('preslink.prevRank'); };
+  const clearPlayer = () => { player = null; credits = 0; openPlay = null; best = null; bestLight = null; store.del(STORAGE_KEY); store.del(SCHOOL_ASKED_KEY); store.del(CODE_SHOWN_KEY); store.del(CONTACT_ASKED_KEY); store.del('preslink.prevBest'); store.del('preslink.prevRank'); };
   function adoptPlayer(p) {
-    player = { id: p.id, tag: p.tag, initials: p.initials, suffix: p.suffix || 1, display: p.display || p.initials, role: p.role || 'everyone', claim_code: p.claim_code, school_email: p.school_email || null };
+    player = { id: p.id, tag: p.tag, initials: p.initials, suffix: p.suffix || 1, display: p.display || p.initials, role: p.role || 'everyone', claim_code: p.claim_code, school_email: p.school_email || null, contact_email: p.contact_email || null };
     credits = p.credits || 0;
     openPlay = p.open_play || null;
     best = p.best != null ? p.best : (p.best_this_week == null ? null : p.best_this_week);
@@ -174,7 +176,7 @@
     $$('.sheet').forEach((s) => { s.hidden = true; });
     $('#sheet-backdrop').hidden = true;
   }
-  $('#sheet-backdrop').addEventListener('click', () => { if ($('#sheet-code').hidden) closeSheets(); });
+  $('#sheet-backdrop').addEventListener('click', () => { if (!$('#sheet-contact').hidden) { skipContact(); return; } if ($('#sheet-code').hidden) closeSheets(); });
   document.addEventListener('click', (e) => {
     const s = e.target.closest('[data-sheet]');
     if (s) { e.preventDefault(); openSheet(s.dataset.sheet); return; }
@@ -185,6 +187,7 @@
   function showIntro() {
     return new Promise((resolve) => {
       const sheet = $('#sheet-how');
+      store.set(HOW_SEEN_KEY, true); // once per device, even if the page is reloaded with the sheet open
       openSheet('how');
       const obs = new MutationObserver(() => { if (sheet.hidden) { obs.disconnect(); store.set(HOW_SEEN_KEY, true); resolve(); } });
       obs.observe(sheet, { attributes: true, attributeFilter: ['hidden'] });
@@ -347,7 +350,6 @@
   // Home and the money counter in the app bar
   // ---------------------------------------------------------------------------
   function renderHome() {
-    $('#home-school-text').textContent = isSchool() ? 'Presentation Brothers College' : 'Student or teacher? Join your board';
     const btn = $('#home-play');
     const canPlay = !!player && (credits > 0 || !!openPlay);
     btn.textContent = canPlay ? (openPlay ? 'Play · a play is waiting' : `Play · ${credits} left`) : 'Play · €2';
@@ -447,6 +449,7 @@
     const d = stats && stats.ends_on ? new Date(stats.ends_on + 'T12:00:00') : null;
     return d && !isNaN(d) ? 'Ends ' + d.toLocaleDateString('en-IE', { day: 'numeric', month: 'long' }) : '';
   };
+  const closesText = () => endsText().replace('Ends ', '');
   let statsSeq = 0;
   async function refreshStats() {
     const seq = ++statsSeq;
@@ -458,7 +461,9 @@
     showRing(Number(stats.total_raised_cents || 0), Number(stats.goal_cents || 0));
     const ends = endsText();
     $('#board-sub').textContent = ends ? `Prizes at the end · ${ends.replace('Ends', 'ends')}` : 'Prizes at the end';
-    $('#prize-sub').textContent = ends ? `Awarded at the end · ${ends.replace('Ends', 'ends')}` : 'Awarded at the end of the campaign';
+    const closes = closesText();
+    $('#prize-sub').textContent = closes ? `The arcade closes on ${closes}. Winners are emailed that day.` : 'Winners are emailed when the arcade closes.';
+    $('#home-ends').textContent = closes ? `Closes ${closes} · winners are emailed` : 'Winners are emailed';
     const pz = stats.prizes || {};
     const put = (id, v, fallback) => { $(id).textContent = (v || '').trim() || fallback; };
     put('#prize-everyone', pz.everyone, 'To be announced');
@@ -568,23 +573,24 @@
     x = x - 2 * Math.floor(x / 2);
     return x < 1 ? x : 2 - x;
   }
-  // Steep on purpose: 20 ms off at a one-second sweep is about 880, and 1,000 needs an error under a tenth of a millisecond.
-  // Mirrors round_score() in the database: 50 + 950 * exp(-|pos - target| / 0.0158). On a 950 ms pass
-  // that is 2 ms off = 880, 5 ms = 730, 10 ms = 540, 20 ms = 300, 50 ms = 85, so most plays land
-  // between 200 and 750 and 900+ needs three taps within about a millisecond and a half.
-  const roundScore = (pos, target) => 50 + Math.round(950 * Math.exp(-Math.abs(pos - target) / 0.0158));
+  // Mirrors round_score() in the database: a bell over the timing error in milliseconds, not a spike.
+  //   score = 50 + 950 * exp(-(error_ms / 40)^2),  error_ms = |pos - target| * speed_ms
+  // 10 ms off = 942, 15 ms = 875, 20 ms = 790, 30 ms = 591, 40 ms = 399, 50 ms = 249, 60 ms = 150, 80 ms = 67,
+  // further = 50. Flat near the mark (5 ms is still 985), so a good tap is not a coin flip.
+  const SCORE_WIDTH_MS = 40;
+  const roundScore = (pos, target, speed) => 50 + Math.round(950 * Math.exp(-(((Math.abs(pos - target) * speed) / SCORE_WIDTH_MS) ** 2)));
   function titleFor(s) {
-    if (s >= 800) return 'Outstanding';
-    if (s >= 650) return 'Superb';
-    if (s >= 500) return 'Great run';
-    if (s >= 350) return 'Good effort';
+    if (s >= 850) return 'Outstanding';
+    if (s >= 700) return 'Superb';
+    if (s >= 550) return 'Great run';
+    if (s >= 400) return 'Good effort';
     return 'Next time';
   }
   function verdictFor(s) {
-    if (s >= 880) return 'Perfect';
-    if (s >= 700) return 'So close';
-    if (s >= 500) return 'Nice';
-    if (s >= 300) return 'Not bad';
+    if (s >= 900) return 'Perfect';
+    if (s >= 750) return 'So close';
+    if (s >= 550) return 'Nice';
+    if (s >= 350) return 'Not bad';
     return 'Unlucky';
   }
   function setMarker(pos) { marker.style.transform = `translateX(${pos * game.trackW}px)`; }
@@ -599,7 +605,7 @@
     $$('#rounds .dot').forEach((d, i) => {
       d.className = 'dot';
       d.textContent = i < game.scores.length ? game.scores[i] : i + 1;
-      if (i < game.scores.length) d.classList.add('done', game.scores[i] < 500 ? 'low' : 'high');
+      if (i < game.scores.length) d.classList.add('done', game.scores[i] < 400 ? 'low' : 'high');
       else if (i === game.round && (game.state === 'sweeping' || game.state === 'countdown')) d.classList.add('live');
     });
   }
@@ -608,7 +614,7 @@
     $('#game').hidden = false;
     $('#game').classList.remove('done');
     $('#game-msg').textContent = 'Ready';
-    $('#game-msg').classList.remove('go');
+    $('#game-msg').classList.remove('go', 'coach');
     $('#score-value').textContent = '';
     $('.score').classList.remove('pop');
     $('#verdict').textContent = '';
@@ -638,10 +644,10 @@
     const fetching = api('start', { player_id: player.id });
     fetching.catch(() => {});
     const m = $('#game-msg');
-    m.classList.remove('count', 'go');
+    m.classList.remove('count', 'go', 'coach');
     m.textContent = '';
     // The first time, the rules sit over the game until Got it is tapped; nothing moves meanwhile.
-    if (!store.get(HOW_SEEN_KEY)) { await showIntro(); if (game.state !== 'loading') return; }
+    if (!store.get(HOW_SEEN_KEY) && best == null) { await showIntro(); if (game.state !== 'loading') return; }
     let res;
     try {
       res = await fetching;
@@ -668,7 +674,7 @@
     game.round = i;
     game.state = 'countdown';
     const m = $('#game-msg');
-    m.classList.remove('count', 'go');
+    m.classList.remove('count', 'go', 'coach');
     m.textContent = `Light ${i + 1} of 3`;
     setPin(r.target);
     marker.classList.remove('hit', 'miss');
@@ -681,7 +687,7 @@
   function beginRound(i) {
     game.round = i;
     const r = game.play.rounds[i];
-    if (i > 0) { const m = $('#game-msg'); m.classList.remove('go', 'count'); m.textContent = `Light ${i + 1} of 3`; }
+    if (i > 0) { const m = $('#game-msg'); m.classList.remove('go', 'count', 'coach'); m.textContent = `Light ${i + 1} of 3`; }
     setPin(r.target);
     marker.classList.remove('hit', 'miss');
     measure();
@@ -703,9 +709,34 @@
     game.state = 'idle';
   }
 
+  // The tap is timed from the touch itself: event.timeStamp carries the hardware time on phones,
+  // which is earlier than the moment this handler runs. The frame on screen is also about a frame
+  // and a half old, so DISPLAY_LAG_MS comes off too. People are scored on what they saw.
+  const DISPLAY_LAG_MS = 20;
+  function tapTime(e) {
+    const now = performance.now();
+    const ts = e && Number.isFinite(e.timeStamp) ? e.timeStamp : NaN;
+    const t = ts > 0 && ts <= now + 5 && ts > game.sweepStart - 1000 ? ts : now;
+    return Math.round(t - game.sweepStart - DISPLAY_LAG_MS);
+  }
+  // Signed timing error in ms: positive = late (the light had passed the mark), negative = early.
+  function signedError(ms, r) {
+    let x = ms / game.play.speed_ms + r.phase;
+    x = x - 2 * Math.floor(x / 2);
+    const pos = x < 1 ? x : 2 - x;
+    const dir = x < 1 ? 1 : -1;
+    return Math.round((pos - r.target) * dir * game.play.speed_ms);
+  }
+  // One line of coaching after a light, so the next one can be better.
+  function coachFor(s, err) {
+    const a = Math.abs(err);
+    if (s >= 900 || a <= 10) return '';
+    if (a < 40) return err > 0 ? 'A touch late' : 'A touch early';
+    return err > 0 ? 'Late · tap a bit sooner' : 'Early · tap a bit later';
+  }
   function onTap(e) {
     if (game.state !== 'sweeping') return;
-    const ms = Math.round(performance.now() - game.sweepStart);
+    const ms = tapTime(e);
     if (ms < SWEEP_GUARD_MS) return;
     if (e.cancelable) e.preventDefault();
     game.state = 'between';
@@ -714,37 +745,39 @@
     sounds.tap();
     const r = game.play.rounds[game.round];
     const pos = posAt(ms, r.phase, game.play.speed_ms);
-    const s = roundScore(pos, r.target);
+    const s = roundScore(pos, r.target, game.play.speed_ms);
     setMarker(pos);
     game.taps.push(ms);
     game.scores.push(s);
-    afterRound(s);
+    afterRound(s, signedError(ms, r));
   }
   $('#game').addEventListener('pointerdown', onTap);
   document.addEventListener('keydown', (e) => {
     if ((e.code === 'Space' || e.code === 'Enter') && game.state === 'sweeping') onTap(e);
   });
 
-  async function afterRound(s) {
+  async function afterRound(s, err) {
     const g = $('#game');
     g.classList.remove('flash'); void g.offsetWidth; g.classList.add('flash');
-    marker.classList.add(s >= 500 ? 'hit' : 'miss');
+    marker.classList.add(s >= 550 ? 'hit' : 'miss');
     const pop = document.createElement('span');
-    pop.className = 'light-pop' + (s >= 700 ? ' top' : '');
-    if (s >= 700) sounds.good();
+    pop.className = 'light-pop' + (s >= 750 ? ' top' : '');
+    if (s >= 750) sounds.good();
     pop.textContent = '+' + s;
     pop.style.left = marker.style.transform.replace(/[^0-9.]/g, '') + 'px';
     track.appendChild(pop);
     setTimeout(() => pop.remove(), 1200);
-    vibrate(s >= 880 ? [20, 30, 20] : 25);
+    vibrate(s >= 900 ? [20, 30, 20] : 25);
     renderDots();
     const el = $('#score-value');
     el.textContent = s;
     $('.score').classList.remove('pop'); void el.offsetWidth; $('.score').classList.add('pop');
     const v = $('#verdict');
     v.textContent = verdictFor(s);
-    v.classList.toggle('miss', s < 500);
-    $('#game-msg').textContent = '';
+    v.classList.toggle('miss', s < 550);
+    const m = $('#game-msg');
+    m.textContent = coachFor(s, err);
+    m.classList.toggle('coach', !!m.textContent);
     await wait(1150);
     if (game.state !== 'between') return;
     if (game.round < ROUNDS - 1) {
@@ -767,8 +800,8 @@
     const el = $('#score-value');
     await countUp(el, 0, score, 1200, String);
     $('.score').classList.add('pop');
-    vibrate(score >= 800 ? [30, 40, 30, 40, 60] : 40);
-    if (score >= 800) confetti.burst(score >= 900 ? 180 : 110);
+    vibrate(score >= 850 ? [30, 40, 30, 40, 60] : 40);
+    if (score >= 850) confetti.burst(score >= 950 ? 180 : 110);
     await wait(900);
 
     const payload = { player_id: player.id, play_id: game.play.play_id, score, taps: game.taps.slice() };
@@ -822,7 +855,7 @@
     $('#result-rank-sub').textContent = '';
     $('#result-rank-sub').className = '';
     if (r && rank) showGap(rank);
-    $('#result-school').hidden = !player || isSchool() || !!store.get(SCHOOL_ASKED_KEY) || !r;
+    renderResultEmail();
     const n = $('#result-note');
     n.textContent = note || '';
     n.hidden = !note;
@@ -840,11 +873,13 @@
       $('#result-topup').hidden = false;
     }
     $('#result').hidden = false;
-    // First scored play: the code sheet, and nothing on top of it.
-    const firstCode = r && player && !store.get(CODE_SHOWN_KEY);
-    if (r && rank === 1 && !firstCode) toast('You are top of the board');
-    if (firstCode) showCodeSheet();
+    // First scored play: ask where to send the news if they win, and nothing on top of it.
+    const firstAsk = !!r && !!player && !player.contact_email && !store.get(CONTACT_ASKED_KEY);
+    if (r && rank === 1 && !firstAsk) toast('You are top of the board');
+    if (firstAsk) openContact(true);
   }
+  // The reminder row on the result screen shows only while no email is on file.
+  function renderResultEmail() { $('#result-email').hidden = !player || !!player.contact_email; }
 
   // How far to the next place: the nudge that makes "one more go" worth it.
   async function showGap(rank) {
@@ -879,7 +914,7 @@
   $('#code-done').addEventListener('click', () => { store.set(CODE_SHOWN_KEY, true); closeSheets(); });
   $('#you-copy').addEventListener('click', () => copyCode());
   $('#code-save').addEventListener('click', () => saveCodeImage());
-  $('#you-save').addEventListener('click', () => saveCodeImage());
+  $('#you-save').addEventListener('click', () => (IS_APPLE_MOBILE ? showCodeSheet() : saveCodeImage())); // iPhone: the sheet shows what to tap
   async function copyCode() {
     if (!player) return;
     try { await navigator.clipboard.writeText(`PresLink Arcade: ${player.display} · code ${player.claim_code}`); toast('Copied'); }
@@ -991,47 +1026,52 @@
   }
 
   // ---------------------------------------------------------------------------
-  // School: optional. A school email puts you on the Students or Teachers board.
+  // If you win: an email to send the news to. A school email joins the Students or Teachers board.
   // ---------------------------------------------------------------------------
   const STUDENT_EMAIL = /^[a-z0-9._%+'-]+@pbccork\.ie$/;
   const TEACHER_EMAIL = /^[a-z0-9._%+'-]+@pbc-cork\.ie$/;
-  let schoolRole = '';
-  function pickSchoolRole(role) {
-    schoolRole = role;
-    $$('#school-role button').forEach((b) => { const on = b.dataset.role === role; b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); });
-    showError('school-error', '');
+  const ANY_EMAIL = /^[a-z0-9._%+'-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+  const isSchoolEmail = (v) => STUDENT_EMAIL.test(v) || TEACHER_EMAIL.test(v);
+  function openContact(first) {
+    if (!player) return;
+    showError('contact-error', '');
+    $('#contact-email').value = player.contact_email || '';
+    $('#contact-school').value = player.school_email || '';
+    $('#contact-school-wrap').hidden = !player.school_email;
+    $('#contact-more').hidden = !!player.school_email;
+    $('#contact-skip').hidden = !first;
+    $('#contact-close').hidden = !!first;
+    const closes = closesText();
+    $('#contact-note').textContent = closes ? `Winners are emailed when the arcade closes on ${closes}.` : 'Winners are emailed when the arcade closes.';
+    openSheet('contact');
+    if (!first) setTimeout(() => $('#contact-email').focus(), 60);
   }
-  $$('#school-role button').forEach((b) => b.addEventListener('click', () => { pickSchoolRole(b.dataset.role); setTimeout(() => $('#school-email').focus(), 60); }));
-  function openSchool() {
-    showError('school-error', '');
-    pickSchoolRole(player && player.role === 'teacher' ? 'teacher' : player && player.role === 'student' ? 'student' : '');
-    $('#school-email').value = player && player.school_email ? player.school_email : '';
-    openSheet('school');
-  }
-  $('#result-school').addEventListener('click', openSchool);
-  $('#you-school').addEventListener('click', openSchool);
-  $('#home-school').addEventListener('click', () => { if (isSchool()) go('about'); else if (player) openSchool(); else ensurePlayer(null, 'school'); });
-  $('#school-form').addEventListener('submit', async (e) => {
+  $('#contact-more').addEventListener('click', () => { $('#contact-school-wrap').hidden = false; $('#contact-more').hidden = true; setTimeout(() => $('#contact-school').focus(), 60); });
+  $('#contact-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!player) return;
-    if (!schoolRole) { showError('school-error', 'Student or teacher?'); return; }
-    const email = $('#school-email').value.trim().toLowerCase();
-    const ok = schoolRole === 'student' ? STUDENT_EMAIL.test(email) : TEACHER_EMAIL.test(email);
-    if (!ok) { showError('school-error', schoolRole === 'student' ? 'That is not a student email.' : 'That is not a teacher email.'); return; }
-    const btn = $('#school-submit');
+    const email = $('#contact-email').value.trim().toLowerCase();
+    if (!ANY_EMAIL.test(email)) { showError('contact-error', MESSAGES.BAD_EMAIL); return; }
+    const school = $('#contact-school-wrap').hidden ? '' : $('#contact-school').value.trim().toLowerCase();
+    if (school && !isSchoolEmail(school)) { showError('contact-error', 'That is not a school email.'); return; }
+    const btn = $('#contact-submit');
     btn.disabled = true;
     try {
-      adoptPlayer(await api('school', { player_id: player.id, email }));
-      store.set(SCHOOL_ASKED_KEY, true);
+      adoptPlayer(await api('contact', { player_id: player.id, email, school_email: school || null }));
+      store.set(CONTACT_ASKED_KEY, true);
       closeSheets();
-      $('#result-school').hidden = true;
       renderYou();
-      toast(`You are on the ${boardName(player.role)} board`);
+      renderResultEmail();
+      toast(isSchool() ? `Saved. You are on the ${boardName(player.role)} board.` : 'Saved. We will email you if you win.');
     } catch (ex) {
-      showError('school-error', msg(ex));
+      showError('contact-error', msg(ex));
     } finally { btn.disabled = false; }
   });
-  $$('#sheet-school [data-close]').forEach((b) => b.addEventListener('click', () => { store.set(SCHOOL_ASKED_KEY, true); $('#result-school').hidden = true; }));
+  const skipContact = () => { store.set(CONTACT_ASKED_KEY, true); closeSheets(); renderResultEmail(); };
+  $('#contact-skip').addEventListener('click', skipContact);
+  $('#contact-close').addEventListener('click', closeSheets);
+  $('#result-email').addEventListener('click', () => openContact(false));
+  $('#you-email').addEventListener('click', () => openContact(false));
 
   // ---------------------------------------------------------------------------
   // Leaderboard and prizes
@@ -1175,10 +1215,9 @@
     btn.disabled = true;
     try {
       adoptPlayer(await api('register', { role: 'everyone', initials }));
-      store.del(SCHOOL_ASKED_KEY); store.del(CODE_SHOWN_KEY); store.del('preslink.prevBest'); store.del('preslink.prevRank');
+      store.del(SCHOOL_ASKED_KEY); store.del(CODE_SHOWN_KEY); store.del(CONTACT_ASKED_KEY); store.del('preslink.prevBest'); store.del('preslink.prevRank');
       closeSheets();
-      if (pendingAfter === 'school') { pendingAfter = null; renderHome(); openSchool(); }
-      else buy(pendingBundle || 'single');
+      buy(pendingBundle || 'single');
     } catch (ex) {
       showError('name-error', msg(ex));
     } finally { btn.disabled = false; }
@@ -1198,7 +1237,7 @@
     const b = $('#you-board');
     b.textContent = isSchool() ? `${boardName(player.role)} board · ${player.school_email || 'school'}` : 'Everyone board';
     b.classList.toggle('school', isSchool());
-    $('#you-school').hidden = isSchool();
+    $('#you-email-text').textContent = player.contact_email || 'Add your email · so we can tell you if you win';
     $('#you-code').textContent = player.claim_code;
     $('#you-credits').textContent = credits;
     $('#you-best').textContent = best == null ? '–' : best;
@@ -1249,6 +1288,7 @@
     try {
       store.del(SCHOOL_ASKED_KEY); store.del('preslink.prevBest'); store.del('preslink.prevRank');
       adoptPlayer(await api('signin', { initials, code }));
+      store.set(HOW_SEEN_KEY, true); // they have played before
       store.set(CODE_SHOWN_KEY, true);
       toast(`Welcome back, ${player.display}`);
       go('you');
@@ -1262,6 +1302,7 @@
   // ---------------------------------------------------------------------------
   let adminRole = 'everyone';
   let adminData = null;
+  let adminEmails = [];
   const adminCode = () => session.get(ADMIN_KEY) || '';
 
   function renderAdminEntry() {
@@ -1295,6 +1336,7 @@
     }
     renderAdmin();
     adminCall('stripe_status').then(renderStripe).catch(() => {});
+    adminCall('emails').then((rows) => { adminEmails = Array.isArray(rows) ? rows : []; renderAdmin(); }).catch(() => {});
   }
   // Payments: the committee connects Stripe here; the key never reaches the browser again.
   function renderStripe(s) {
@@ -1347,13 +1389,14 @@
     tb.innerHTML = '';
     const rows = (d.board || []).filter((r) => adminRole === 'everyone' || r.role === adminRole)
       .sort((a, b) => b.score - a.score || String(a.finished_at).localeCompare(String(b.finished_at)));
+    const emailOf = (id) => { const e = adminEmails.find((x) => x.player_id === id); return e && e.contact_email ? e.contact_email : ''; };
     rows.forEach((r, i) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${adminRole === 'everyone' ? (r.rank_all == null ? '–' : r.rank_all) : (r.rank == null ? '–' : r.rank)}</td><td><b>${esc(r.initials)}</b>${r.banned ? ' <span class="muted">(banned)</span>' : ''}</td><td>${esc(boardName(r.role))}</td><td>${esc(r.claim_code)}</td><td><b>${r.score}</b></td><td>${r.best_light == null ? '' : r.best_light}</td><td>${r.plays}</td><td>${esc(fmtDate(r.finished_at, true))}</td>
+      tr.innerHTML = `<td>${adminRole === 'everyone' ? (r.rank_all == null ? '–' : r.rank_all) : (r.rank == null ? '–' : r.rank)}</td><td><b>${esc(r.initials)}</b>${r.banned ? ' <span class="muted">(banned)</span>' : ''}</td><td>${esc(boardName(r.role))}</td><td>${esc(r.claim_code)}</td><td class="email">${esc(emailOf(r.player_id))}</td><td><b>${r.score}</b></td><td>${r.best_light == null ? '' : r.best_light}</td><td>${r.plays}</td><td>${esc(fmtDate(r.finished_at, true))}</td>
         <td><button class="mini" data-void="${esc(r.play_id)}">Void</button> <button class="mini ${r.banned ? 'undo' : ''}" data-ban="${esc(r.player_id)}" data-banned="${r.banned ? '1' : ''}">${r.banned ? 'Unban' : 'Ban'}</button> <button class="mini alt" data-reset="${esc(r.player_id)}">New name</button></td>`;
       tb.appendChild(tr);
     });
-    if (!tb.children.length) tb.innerHTML = '<tr><td colspan="9" class="muted">No scores yet.</td></tr>';
+    if (!tb.children.length) tb.innerHTML = '<tr><td colspan="10" class="muted">No scores yet.</td></tr>';
     const sp = d.spot || {};
     // spot_prizes is a public read and carries no codes; the committee board rows do.
     const codeFor = (initials) => { const row = (d.board || []).find((r) => r.initials === initials); return row ? row.claim_code : '–'; };
@@ -1441,7 +1484,7 @@
     try {
       const res = await adminCall('player', { initials });
       const p = res.player;
-      box.innerHTML = `<dl><dt>Name</dt><dd>${esc(p.initials)}${p.banned ? ' (banned)' : ''}${(res.others || []).length ? ` <span class="muted">(also: ${res.others.map(esc).join(', ')})</span>` : ''}</dd><dt>Board</dt><dd>${esc(boardName(p.role))}${p.school_email ? ` · ${esc(p.school_email)}` : ''}</dd><dt>Code</dt><dd>${esc(p.claim_code)}</dd><dt>Plays left</dt><dd>${p.credits}</dd><dt>First seen</dt><dd>${esc(fmtDate(p.created_at, true))}</dd><dt>Last seen</dt><dd>${esc(fmtDate(p.last_seen_at, true))}</dd></dl>
+      box.innerHTML = `<dl><dt>Name</dt><dd>${esc(p.initials)}${p.banned ? ' (banned)' : ''}${(res.others || []).length ? ` <span class="muted">(also: ${res.others.map(esc).join(', ')})</span>` : ''}</dd><dt>Board</dt><dd>${esc(boardName(p.role))}${p.school_email ? ` · ${esc(p.school_email)}` : ''}</dd><dt>Email</dt><dd>${esc(p.contact_email || '–')}</dd><dt>Code</dt><dd>${esc(p.claim_code)}</dd><dt>Plays left</dt><dd>${p.credits}</dd><dt>First seen</dt><dd>${esc(fmtDate(p.created_at, true))}</dd><dt>Last seen</dt><dd>${esc(fmtDate(p.last_seen_at, true))}</dd></dl>
         <div class="table-wrap"><table class="table"><thead><tr><th>Play</th><th>Score</th><th></th></tr></thead><tbody>${(res.plays || []).map((x) => `<tr><td>${esc(fmtDate(x.started_at, true))}</td><td>${x.score == null ? '<span class="muted">open</span>' : '<b>' + x.score + '</b>'}${x.voided ? ' <span class="muted">(void)</span>' : ''}</td><td>${x.score == null ? '' : x.voided ? `<button class="mini undo" data-unvoid="${esc(x.play_id)}">Restore</button>` : `<button class="mini" data-void="${esc(x.play_id)}">Void</button>`}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">No plays.</td></tr>'}</tbody></table></div>
         <p class="note">${(res.payments || []).length} payment(s) · €${((res.payments || []).reduce((s, x) => s + x.amount_cents, 0) / 100).toFixed(2)}</p>`;
       box.hidden = false;
@@ -1480,11 +1523,20 @@
     if (!d) return;
     const rows = [['when', 'name', 'board', 'bundle', 'plays', 'amount_eur', 'email', 'stripe_session']];
     (d.payments || []).forEach((p) => rows.push([p.created_at, p.initials, p.role || '', p.bundle, p.credits, (p.amount_cents / 100).toFixed(2), p.email || '', p.stripe_session_id]));
+    downloadCsv(rows, 'preslink-payments.csv');
+  });
+  function downloadCsv(rows, name) {
     const csv = rows.map((r) => r.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    a.download = 'preslink-payments.csv';
+    a.download = name;
     a.click();
+  }
+  // Who to write to when the arcade closes: every player, both emails, best score.
+  $('#adm-emails-csv').addEventListener('click', () => {
+    const rows = [['name', 'board', 'email', 'school_email', 'code', 'best']];
+    adminEmails.forEach((p) => rows.push([p.initials, p.role || '', p.contact_email || '', p.school_email || '', p.claim_code, p.best == null ? '' : p.best]));
+    downloadCsv(rows, 'preslink-players.csv');
   });
 
   // ---------------------------------------------------------------------------

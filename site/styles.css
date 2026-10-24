@@ -63,7 +63,6 @@ h1, h2, h3 { margin: 0; line-height: 1.15; color: var(--ink); font-weight: 700; 
 .bundles-line > span { display: none; }
 .bundles-line .link { font-size: 14px; color: var(--ink); font-weight: 600; background: var(--fill); border-radius: 999px; padding: 9px 16px; transition: transform .12s ease, background .18s ease; }
 .bundles-line .link:active { transform: scale(.96); background: var(--fill-2); }
-.home-links { margin-top: 14px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .section { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin: 28px 16px 10px; }
 .card-h { font-size: 12px; font-weight: 700; color: var(--muted-d); text-transform: uppercase; letter-spacing: .08em; margin: 0; padding: 16px 18px 2px; }
@@ -74,8 +73,6 @@ button.cell { transition: background .18s ease; }
 button.cell:active { background: var(--fill); }
 .card-h + .cell, .card-h + .acc { position: static; } .card-h + .cell::before, .card-h + .acc::before { display: none; }
 .section:first-child { margin-top: 8px; }
-.school-id { display: inline-flex; align-items: center; gap: 8px; color: var(--purple); font-weight: 600; font-size: 13px; }
-.school-id img { width: 18px; height: 22px; }
 p { margin: 0 0 10px; }
 .small { font-size: 13px; }
 .muted { color: var(--muted); }
@@ -93,15 +90,7 @@ p { margin: 0 0 10px; }
 /* Surfaces: white grouped cards */
 .card { background: var(--surface); border-radius: 18px; overflow: hidden; border: 2px solid var(--line); border-bottom-width: 4px; }
 /* solid colour blocks: the main destinations, text only, with a darker lip that presses down */
-.blocks { display: grid; gap: 12px; }
 .card + .blocks, .blocks + .card { margin-top: 12px; }
-.block { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; width: 100%; min-height: 66px; padding: 18px 20px; border: 0; border-radius: 18px; font-size: 18px; font-weight: 800; letter-spacing: -.01em; text-align: left; color: #fff; cursor: pointer; box-shadow: 0 4px 0 var(--lip); transition: transform .12s ease, box-shadow .12s ease; }
-.block:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--lip); }
-.block .chev { font-size: 24px; font-weight: 600; line-height: 1; opacity: .75; }
-.block.yellow { background: var(--yellow); color: var(--ink); --lip: var(--yellow-d); }
-.block.orange { background: var(--orange); --lip: var(--orange-lip); }
-.block.purple { background: var(--purple); --lip: var(--purple-lip); }
-.block.green { background: var(--green); --lip: var(--green-d); }
 .card + .card, form + .card, .btn + .card { margin-top: 12px; }
 .card.pad { padding: 16px; }
 .pad-x { padding: 6px 16px 16px; }
@@ -170,14 +159,6 @@ button.cell:active { background: var(--fill); }
 .segmented button.active, .segmented button.on, .segmented .tab.active { background: transparent; color: var(--ink); box-shadow: none; }
 
 /* Choice buttons (student / teacher on the result screen) */
-.choice { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.choice button { min-height: 54px; border: 0; border-radius: 14px; background: var(--surface); color: var(--ink); font-weight: 600; font-size: 17px; cursor: pointer; transition: background .15s, color .15s, transform .08s; }
-.choice button:active { transform: scale(.98); }
-.choice button.on { background: var(--green); color: #fff; }
-.segmented.choice button { background: transparent; min-height: 34px; font-size: 14px; border-radius: 8px; }
-.segmented.choice button.on { background: transparent; color: var(--ink); box-shadow: none; }
-#school-role { margin-bottom: 12px; }
-#school-role button { min-height: 44px; font-size: 16px; }
 .segmented .thumb { transition: transform .32s cubic-bezier(.2, .8, .2, 1), opacity .2s; }
 
 /* Forms */
@@ -319,6 +300,18 @@ button.cell:active { background: var(--fill); }
 .game-mid { display: grid; align-content: center; gap: 0; }
 .game-msg { text-align: center; font-size: 17px; font-weight: 600; color: var(--muted); min-height: 56px; margin-bottom: 14px; letter-spacing: -.01em; display: grid; place-items: center; }
 .game-msg.go { color: var(--orange); font-size: 24px; font-weight: 800; }
+.game-msg.coach { color: var(--orange-d); font-weight: 700; }
+.acc { width: 100%; }
+.acc > .cell { cursor: pointer; }
+.acc > .cell .chev { transition: transform .25s; }
+.acc.open > .cell .chev { transform: rotate(90deg); }
+.acc-body { display: none; padding: 0 18px 18px; color: var(--text); font-size: 16px; line-height: 1.5; }
+.acc.open .acc-body { display: block; animation: rise .3s ease-out; }
+.acc-body .photo { border-radius: 14px; margin-bottom: 12px; }
+.acc-body p { margin: 0; }
+.acc-body .lead { display: block; margin-top: 8px; font-weight: 600; color: var(--ink); }
+.acc + .acc, .acc + .cell { position: relative; }
+.acc + .acc::before, .acc + .cell::before { content: ''; position: absolute; left: 18px; right: 0; top: 0; height: 1px; background: var(--sep); }
 .game-msg.count { font-size: 56px; font-weight: 800; color: var(--ink); animation: countpop .6s cubic-bezier(.2, .9, .3, 1.3) both; }
 @keyframes countpop { 0% { transform: scale(.4); opacity: 0; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
 .game.enter { animation: gamein .55s cubic-bezier(.2, .8, .2, 1) both; }
@@ -378,12 +371,6 @@ button.cell:active { background: var(--fill); }
 .result-note { color: var(--red); font-weight: 500; font-size: 14px; margin: 0 0 12px; text-align: center; }
 .result .cta-card { margin: 12px 0; }
 .result .cta-card .btn-xl { margin: 0; }
-.school-ask { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; border: 0; text-align: left; cursor: pointer; color: var(--ink); margin-bottom: 4px; }
-.school-ask { grid-template-columns: auto 1fr auto; }
-.school-ask img { width: 26px; height: 31px; }
-.school-ask strong { display: block; font-weight: 600; font-size: 16px; color: var(--ink); }
-.school-ask small { display: block; color: var(--muted); font-size: 13px; }
-.school-ask .chev { color: var(--muted-2); font-size: 22px; font-weight: 600; }
 .charity-line { text-align: center; color: var(--muted); font-size: 13px; margin: 18px 12px 0; }
 .role-ask { margin: 0 0 10px; }
 .role-ask p { font-weight: 600; color: var(--ink); font-size: 17px; margin: 0 0 10px; text-align: center; }
@@ -434,20 +421,8 @@ button.cell:active { background: var(--fill); }
 .winners .pts { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
 
 /* Accordion: a title row; tap to reveal */
-.acc { width: 100%; }
-.acc > .cell { cursor: pointer; }
-.acc > .cell .chev { transition: transform .25s; }
-.acc.open > .cell .chev { transform: rotate(90deg); }
-.acc-body { display: none; padding: 0 18px 18px; color: var(--text); font-size: 16px; line-height: 1.5; }
-.acc.open .acc-body { display: block; animation: rise .3s ease-out; }
-.acc-body .photo { border-radius: 14px; margin-bottom: 12px; }
-.acc-body p { margin: 0; }
-.acc-body .lead { display: block; margin-top: 8px; font-weight: 600; color: var(--ink); }
-.acc + .acc, .acc + .cell { position: relative; }
-.acc + .acc::before, .acc + .cell::before { content: ''; position: absolute; left: 18px; right: 0; top: 0; height: 1px; background: var(--sep); }
 
 /* Prize and About */
-.photo-card { overflow: hidden; }
 .photo { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; background: var(--fill); display: block; }
 [data-screen="prize"] .photo { aspect-ratio: 2 / 1; }
 .photo-cap { padding: 14px 16px 16px; }
@@ -524,7 +499,13 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
 .code-big { display: grid; justify-items: center; gap: 2px; padding: 8px 0 14px; }
 .code-name { font-size: 22px; font-weight: 700; color: var(--ink); letter-spacing: .06em; }
 .code-digits { font-size: 56px; font-weight: 800; color: var(--ink); letter-spacing: .16em; font-variant-numeric: tabular-nums; line-height: 1.1; }
-.code-why { text-align: center; color: var(--ink); font-size: 16px; font-weight: 500; line-height: 1.45; margin: 0 4px 16px; }
+.code-why, .sheet-body .sheet-note { text-align: center; color: var(--ink); font-size: 16px; font-weight: 500; line-height: 1.45; margin: 0 4px 16px; }
+.sheet-body .sheet-note { margin-top: 2px; }
+.lead-p { margin: 0; font-size: 16px; font-weight: 600; color: var(--ink); line-height: 1.45; }
+.lead-p.quiet { font-weight: 500; color: var(--text); margin-top: 6px; }
+#result-email[hidden] + .cell::before { display: none; }
+.admin-tools { margin: 0 0 8px; text-align: right; }
+.table td.email { font-size: 12px; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sheet-body .btn + .btn, .sheet-code .save-hint + .btn { margin-top: 10px; }
 .sheet-body .btn + .card { margin-top: 12px; }
 .ticket { display: block; width: auto; max-width: 100%; max-height: 38dvh; margin: 2px auto 16px; border-radius: 14px; }

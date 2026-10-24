@@ -28,7 +28,8 @@
   function roundScore(tapMs, phase, target, speedMs) {
     let x = tapMs / speedMs + phase; x = x - 2 * Math.floor(x / 2);
     const pos = x < 1 ? x : 2 - x;
-    return 50 + Math.round(950 * Math.exp(-Math.abs(pos - target) / 0.0158));
+    const err = Math.abs(pos - target) * speedMs;
+    return 50 + Math.round(950 * Math.exp(-((err / 40) ** 2)));
   }
   const newRounds = () => Array.from({ length: 3 }, () => ({ phase: Math.random(), target: 0.15 + Math.random() * 0.7 }));
 
@@ -49,7 +50,7 @@
   const me = (p) => {
     const open = db.plays.find((x) => x.player_id === p.id && x.score == null && !x.voided);
     const best = scoredPlays(p.id).reduce((m, x) => Math.max(m, x.score), null);
-    return { id: p.id, tag: tag(p.id), initials: p.initials, suffix: p.suffix || 1, display: disp(p), role: p.role || 'everyone', school_email: p.school_email || null, claim_code: p.claim_code, credits: p.credits, banned: !!p.banned, best, best_this_week: best, best_light: bestLightOf(p.id), open_play: open ? { play_id: open.id, speed_ms: open.speed_ms, rounds: open.rounds } : null };
+    return { id: p.id, tag: tag(p.id), initials: p.initials, suffix: p.suffix || 1, display: disp(p), role: p.role || 'everyone', school_email: p.school_email || null, contact_email: p.contact_email || null, claim_code: p.claim_code, credits: p.credits, banned: !!p.banned, best, best_this_week: best, best_light: bestLightOf(p.id), open_play: open ? { play_id: open.id, speed_ms: open.speed_ms, rounds: open.rounds } : null };
   };
   const board = (role, week, withIds) => {
     if (role === 'everyone') role = null;
@@ -99,6 +100,20 @@
         const m = email.match(/^[a-z0-9._%+'-]+@(pbccork\.ie|pbc-cork\.ie)$/);
         if (!m) fail('BAD_SCHOOL_EMAIL');
         player.role = m[1] === 'pbccork.ie' ? 'student' : 'teacher'; player.school_email = email; save(db);
+        return me(player);
+      }
+      case 'contact': {
+        if (!player) fail('PLAYER_NOT_FOUND');
+        const email = String(b.email || '').trim().toLowerCase();
+        if (!/^[a-z0-9._%+'-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(email)) fail('BAD_EMAIL');
+        let school = String(b.school_email || '').trim().toLowerCase();
+        if (!school && /@(pbccork\.ie|pbc-cork\.ie)$/.test(email)) school = email;
+        if (school) {
+          const m = school.match(/^[a-z0-9._%+'-]+@(pbccork\.ie|pbc-cork\.ie)$/);
+          if (!m) fail('BAD_SCHOOL_EMAIL');
+          player.role = m[1] === 'pbccork.ie' ? 'student' : 'teacher'; player.school_email = school;
+        }
+        player.contact_email = email; save(db);
         return me(player);
       }
       case 'register': {
@@ -163,7 +178,7 @@
         if (open) return { play_id: open.id, speed_ms: open.speed_ms, rounds: open.rounds, credits: player.credits, resumed: true };
         if (player.credits <= 0) fail('NO_CREDITS');
         player.credits -= 1;
-        const play = { id: uuid(), player_id: player.id, started_at: new Date().toISOString(), score: null, rounds: newRounds(), speed_ms: 850 + Math.floor(Math.random() * 201), voided: false };
+        const play = { id: uuid(), player_id: player.id, started_at: new Date().toISOString(), score: null, rounds: newRounds(), speed_ms: 1000, voided: false };
         db.plays.push(play); save(db);
         return { play_id: play.id, speed_ms: play.speed_ms, rounds: play.rounds, credits: player.credits, resumed: false };
       }
@@ -206,6 +221,7 @@
               banned: Object.values(db.players).filter((p) => p.banned).map((p) => ({ player_id: p.id, initials: disp(p), claim_code: p.claim_code })),
             };
           }
+          case 'emails': return Object.values(db.players).map((p) => ({ player_id: p.id, initials: disp(p), role: p.role || 'everyone', contact_email: p.contact_email || null, school_email: p.school_email || null, claim_code: p.claim_code, banned: !!p.banned, best: scoredPlays(p.id).reduce((m, x) => Math.max(m, x.score), null) }));
           case 'player': {
             const [ini, sfx] = String(b.initials).toUpperCase().split('#');
             const p = Object.values(db.players).sort((x, y) => (x.suffix || 1) - (y.suffix || 1)).find((x) => x.initials === ini && (!sfx || (x.suffix || 1) === Number(sfx))); if (!p) fail('PLAYER_NOT_FOUND');

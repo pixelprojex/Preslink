@@ -8,13 +8,13 @@ One campaign, three boards (Everyone, Students, Teachers) and prizes at the end,
 
 There is no sign-up. On the first tap a small sheet asks for two or three letters (your initials),
 picked on an on-screen letter pad (tap a box to clear that letter), so the phone keyboard never covers
-the boxes; then it goes straight to payment. After the first play a "Keep your code" sheet shows the player's **initials and four-digit
-code** on a ticket image and says plainly that prizes go to the top of each board when the arcade closes,
-so the code collects a prize only if they win. The save button does what each device allows: on an
-iPhone or iPad it opens Apple's share sheet, where Save Image is one tap (a web page cannot write to
-Photos any other way, and the line under the button says what to tap); on Android it downloads the
-picture, which the Gallery shows; on a Mac or PC it goes to the Downloads folder. The code is also on the
-**You** tab on that device and signs them in anywhere. Everyone is on the Everyone board. People at
+the boxes; then it goes straight to payment. After the first play an "If you win" sheet asks for an email, because winners are emailed when the
+arcade closes; a school email, in that field or the optional one under "At Presentation Brothers
+College?", puts the player on the Students or Teachers board on its own (no student/teacher choice to
+make). "Not now" leaves a reminder row on the result screen and the You tab. The four-digit **code**
+lives on the You tab, where "Save to Photos" keeps it as a ticket picture (on an iPhone or iPad through
+Apple's share sheet, where Save Image is one tap, since a web page cannot write to Photos any other way;
+a plain download elsewhere); winners show the code to collect. The code also signs them in anywhere. Everyone is on the Everyone board. People at
 Presentation Brothers College can optionally give their school email to join the Students board
 (@pbccork.ie) or the Teachers board (@pbc-cork.ie); it is a format check, nothing is sent. If someone
 already has the same letters you still get them, shown with a small tag (JAK, JAK#2), so nobody is ever refused.
@@ -92,6 +92,7 @@ server can read them. The free plays switch off by themselves the moment Stripe 
 | `supabase/migrations/0011_score_floor.sql` | Every light scores at least 50, so a wild tap never gives zero |
 | `supabase/migrations/0012_bell_curve.sql` | Bell-shaped score curve (15 ms per e-fold) so the field spreads out and 900+ stays rare |
 | `supabase/migrations/0013_stripe_from_admin.sql` | Server-only `app_secrets` table so the committee connects Stripe from the Committee screen instead of the Supabase dashboard |
+| `supabase/migrations/0014_fair_scores_contact.sql` | Bell-shaped score curve over milliseconds (40 ms wide), one-second sweep, `contact_email` and the committee's email list |
 | `site/poster.html` | A3 poster preview with a large QR code (vendored encoder in `site/vendor/`); its Save as PDF button downloads the file below |
 | `site/poster.pdf` | The poster rendered to A3 PDF for the printer, QR pointing at preslink.netlify.app (re-render it if the address changes) |
 | `site/assets/` | Logo (`logo.svg`, `cross.svg`), icons, and the photo slots `photo-*.svg` to replace with real photos |
@@ -106,7 +107,7 @@ Do these in order. Steps 1 and 2 are a one-off technical setup; 3 to 6 are the l
 
 ### 1. Supabase (database + functions): already done
 
-The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all thirteen migrations applied,
+The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all fourteen migrations applied,
 both functions deployed, and `site/config.js` points at it. The committee code was set at deployment
 and handed over privately; change it any time from the Committee screen.
 
@@ -161,7 +162,7 @@ the request came from.
 
 1. Open the site on your device. Tap **Play · €2**. Stripe's test page opens.
 2. Pay with card number `4242 4242 4242 4242`, any future expiry, any CVC, any postcode.
-3. You land back in the coin cabinet, see the coin go in and a token come out, and the game starts: three lights, then the result, the Keep your code sheet with your initials and four-digit code, and the At Presentation Brothers College? card (a school email joins a school board). Check the leaderboard after.
+3. You land back in the coin cabinet, see the coin go in and a token come out, and the game starts: three lights, then the result, then the If you win sheet asking for an email (a school email joins the Students or Teachers board on its own). Check the leaderboard after.
 4. In Supabase → **Table Editor** you will see the player, the payment and the play.
 5. In Stripe → **Developers → Webhooks** the endpoint should show a successful delivery.
 
@@ -205,12 +206,12 @@ hash in the database and locks for 15 minutes after 8 wrong tries. From there th
   `0002_names_signin_admin.sql` (table `blocked_initials`), the committee can add more, and can reset a
   player's name to a random one.
 - The game: a play is three lights. Each light sweeps the bar at its own random speed (about a second per
-  pass) and has its own mark; you tap when the light is on the mark. The score for a light falls off steeply
-  with distance along a bell-shaped curve (2 ms off is about 880, 5 ms about 730, 10 ms about 540, 20 ms about
-  300, 50 ms about 85, and a wild tap still scores 50, never zero), and the play's score is the average of the
-  three. Most plays land between 200 and 750; a play above 900 needs three taps within about a millisecond and
-  a half, and a single-light 1,000 needs an error under half a millisecond, which integer-millisecond taps
-  practically never hit.
+  pass) and has its own mark; you tap when the light is on the mark. The score for a light is a bell over the timing error in milliseconds, 50 + 950 × e^−(error ÷ 40 ms)²: 10 ms off is 942,
+  20 ms 790, 30 ms 591, 40 ms 399, 60 ms 150, and a wild tap still scores 50, never zero. The curve is flat near the
+  mark (5 ms is still 985), so a good tap is not a coin flip, and the play's score is the average of the three. Most
+  plays land between 300 and 800; a play above 900 needs three taps inside about 13 ms. The sweep is a fixed second
+  per pass, the tap is timed from the touch's own hardware timestamp with the frame lag taken off, and after each
+  light the screen says early or late so the next one can be better.
 - Everyone starts on the Everyone board. The result screen and the You tab offer "At Presentation Brothers
   College?": a school email ending @pbccork.ie puts the player on the Students board, @pbc-cork.ie on the
   Teachers board. The address is stored for the committee to check; nothing is emailed.

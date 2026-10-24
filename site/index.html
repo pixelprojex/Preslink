@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=18">
+  <link rel="stylesheet" href="styles.css?v=19">
 </head>
 <body>
 <div class="splash" id="splash" aria-hidden="true">
@@ -61,13 +61,9 @@
       <button class="btn btn-primary btn-xl" id="home-play" type="button">Play · €2</button>
       <p class="bundles-line"><button class="link" type="button" data-bundle="triple">3 plays €5</button><span>·</span><button class="link" type="button" data-bundle="seven">7 plays €10</button></p>
     </div>
-    <div class="blocks home-links">
-      <button class="block yellow" type="button" data-go="prize">Prizes <span class="chev">›</span></button>
-      <button class="block orange" type="button" data-sheet="how">How to play <span class="chev">›</span></button>
-      <button class="block purple" type="button" data-go="about">Where the money goes <span class="chev">›</span></button>
-    </div>
     <div class="card">
-      <button class="cell" type="button" id="home-school"><span class="school-id"><img src="assets/crest.svg?v=10" alt=""><span id="home-school-text">Student or teacher? Join your board</span></span> <span class="chev">›</span></button>
+      <button class="cell" type="button" data-go="prize"><span>Prizes<small id="home-ends"></small></span> <span class="chev">›</span></button>
+      <button class="cell" type="button" data-sheet="how">How to play <span class="chev">›</span></button>
     </div>
   </section>
 
@@ -120,16 +116,12 @@
         <div class="stat"><span>Rank</span><strong id="result-rank">–</strong><small id="result-rank-sub"></small></div>
       </div>
       <p class="result-note" id="result-note" hidden></p>
-      <button class="card school-ask" type="button" id="result-school" hidden>
-        <img src="assets/crest.svg?v=10" alt="">
-        <span><strong>Student or teacher? Join your board</strong></span>
-        <span class="chev">›</span>
-      </button>
       <div class="card pad cta-card">
         <button class="btn btn-primary btn-xl" type="button" id="result-again">Play again</button>
         <p class="bundles-line" id="result-topup" hidden><button class="link" type="button" data-bundle="triple">3 plays €5</button><span>·</span><button class="link" type="button" data-bundle="seven">7 plays €10</button></p>
       </div>
       <div class="card">
+        <button class="cell" type="button" id="result-email" hidden><span>Add your email<small>So we can tell you if you win</small></span> <span class="chev">›</span></button>
         <button class="cell" type="button" data-go="board">Leaderboard <span class="chev">›</span></button>
         <button class="cell" type="button" id="result-share">Share <span class="chev">›</span></button>
       </div>
@@ -163,20 +155,17 @@
   <!-- ================= PRIZES ================= -->
   <section class="screen" data-screen="prize" hidden>
     <div class="title"><h1>Prizes</h1></div>
-    <div class="card photo-card"><img class="photo" src="assets/photo-prize.svg" alt="The prizes"><p class="card-h foot" id="prize-sub">Awarded at the end of the campaign</p></div>
+    <div class="card pad"><p class="lead-p" id="prize-sub">Winners are emailed when the arcade closes.</p><p class="lead-p quiet">The top score on each board wins. Equal scores: the earlier one. Winners show their code to collect.</p></div>
     <div class="card">
       <h2 class="card-h">Top of each board</h2>
-      <div class="acc"><button class="cell" type="button" aria-expanded="false">Everyone <span class="chev">›</span></button><div class="acc-body"><p id="prize-everyone">To be announced</p><span class="lead" id="lead-everyone"></span></div></div>
-      <div class="acc"><button class="cell" type="button" aria-expanded="false">Students <span class="chev">›</span></button><div class="acc-body"><p id="prize-students">To be announced</p><span class="lead" id="lead-student"></span></div></div>
-      <div class="acc"><button class="cell" type="button" aria-expanded="false">Teachers <span class="chev">›</span></button><div class="acc-body"><p id="prize-teachers">To be announced</p><span class="lead" id="lead-teacher"></span></div></div>
+      <div class="cell"><span>Everyone<small id="prize-everyone">To be announced</small></span><span class="lead" id="lead-everyone"></span></div>
+      <div class="cell"><span>Students<small id="prize-students">To be announced</small></span><span class="lead" id="lead-student"></span></div>
+      <div class="cell"><span>Teachers<small id="prize-teachers">To be announced</small></span><span class="lead" id="lead-teacher"></span></div>
     </div>
     <div class="card">
       <h2 class="card-h">Spot prizes</h2>
-      <div class="acc"><button class="cell" type="button" aria-expanded="false">Best light <span class="chev">›</span></button><div class="acc-body"><p id="prize-best-light">Closest to 1,000 with one light.</p><span class="lead" id="lead-light"></span></div></div>
-      <div class="acc"><button class="cell" type="button" aria-expanded="false">Most plays <span class="chev">›</span></button><div class="acc-body"><p id="prize-most-plays">The biggest supporter.</p><span class="lead" id="lead-plays"></span></div></div>
-    </div>
-    <div class="card">
-      <div class="acc"><button class="cell" type="button" aria-expanded="false">How to collect <span class="chev">›</span></button><div class="acc-body"><p>Prizes go to the top of each board when the arcade closes. If you win, show the code on your You tab to collect your prize.</p></div></div>
+      <div class="cell"><span>Best light<small id="prize-best-light">Closest to 1,000 with one light.</small></span><span class="lead" id="lead-light"></span></div>
+      <div class="cell"><span>Most plays<small id="prize-most-plays">The biggest supporter.</small></span><span class="lead" id="lead-plays"></span></div>
     </div>
   </section>
 
@@ -227,7 +216,7 @@
       <div class="card code-card">
         <span class="profile-label">Your code</span>
         <strong id="you-code">0000</strong>
-        <p class="small">If you win, show this code to collect your prize.</p>
+        <p class="small">Winners show this code to collect their prize.</p>
         <div class="grid-2 code-actions"><button class="btn btn-small save-btn" type="button" id="you-save">Save picture</button><button class="btn btn-small" type="button" id="you-copy">Copy</button></div>
       </div>
       <div class="card">
@@ -245,7 +234,7 @@
         <div class="grid-2"><button class="btn" type="button" id="edit-cancel">Cancel</button><button class="btn btn-primary" type="submit" id="edit-save">Save</button></div>
       </form>
       <div class="card">
-        <button class="cell" type="button" id="you-school"><span class="school-id"><img src="assets/crest.svg?v=10" alt="">Student or teacher? Join your board</span> <span class="chev">›</span></button>
+        <button class="cell" type="button" id="you-email"><span>Email<small id="you-email-text">Add your email</small></span> <span class="chev">›</span></button>
         <button class="cell" type="button" id="you-edit">Change my initials <span class="chev">›</span></button>
         <button class="cell" type="button" data-go="signin">Sign in as someone else <span class="chev">›</span></button>
         <button class="cell danger" type="button" id="you-signout">Sign out</button>
@@ -306,7 +295,6 @@
             <label class="field"><span>Teachers board</span><input id="adm-prize-teachers" maxlength="200" placeholder="e.g. €30 voucher"></label>
             <label class="field"><span>Best light</span><input id="adm-prize-best-light" maxlength="200" placeholder="e.g. a box of chocolates"></label>
             <label class="field"><span>Most plays</span><input id="adm-prize-most-plays" maxlength="200" placeholder="e.g. a PresLink hoodie"></label>
-            <p class="note">Prize photo: replace <code>site/assets/photo-prize.svg</code> in the repository.</p>
           </div>
           <button class="btn btn-primary page-cta" type="submit">Save</button>
         </form>
@@ -331,7 +319,8 @@
           <button role="tab" type="button" class="tab" data-role="student">Students</button>
           <button role="tab" type="button" class="tab" data-role="teacher">Teachers</button>
         </div>
-        <div class="card"><div class="table-wrap"><table class="table" id="adm-board"><thead><tr><th>#</th><th>Name</th><th>Board</th><th>Code</th><th>Score</th><th>Light</th><th>Plays</th><th>When</th><th></th></tr></thead><tbody></tbody></table></div></div>
+        <p class="admin-tools"><button class="link small" type="button" id="adm-emails-csv">Download players and emails (CSV)</button></p>
+        <div class="card"><div class="table-wrap"><table class="table" id="adm-board"><thead><tr><th>#</th><th>Name</th><th>Board</th><th>Code</th><th>Email</th><th>Score</th><th>Light</th><th>Plays</th><th>When</th><th></th></tr></thead><tbody></tbody></table></div></div>
         <p class="note" id="adm-spot"></p>
         <p class="note">Highest score wins; the earlier time wins a tie. The winner shows their You tab: name and code must match.</p>
       </div>
@@ -401,14 +390,14 @@
 
 <!-- Shown once, after the first play: the code that collects a prize, if the player wins. -->
 <div class="sheet sheet-code" id="sheet-code" role="dialog" aria-modal="true" aria-labelledby="code-title" hidden>
-  <div class="sheet-head"><h2 id="code-title">Keep your code</h2></div>
+  <div class="sheet-head"><h2 id="code-title">Your code</h2></div>
   <div class="sheet-body">
     <img class="ticket" id="code-preview" alt="Your ticket: initials and code" hidden>
     <div class="code-big sr-only">
       <span class="code-name" id="code-name">JAK</span>
       <span class="code-digits" id="code-digits">0000</span>
     </div>
-    <p class="code-why">Prizes go to the top of each board when the arcade closes. <strong>If you win</strong>, this code collects your prize.</p>
+    <p class="code-why">Winners are emailed when the arcade closes. Show this code to collect your prize.</p>
     <button class="btn btn-primary btn-xl save-btn" type="button" id="code-save">Save to Photos</button>
     <p class="save-hint" id="save-hint" hidden>Then tap Save Image on the menu that opens.</p>
     <button class="btn btn-xl" type="button" id="code-done">Done</button>
@@ -431,17 +420,17 @@
 </div>
 
 <!-- Optional: people at the school join the Students or Teachers board with their school email. -->
-<div class="sheet" id="sheet-school" role="dialog" aria-modal="true" aria-labelledby="school-title" hidden>
-  <div class="sheet-head"><h2 id="school-title">Join your board</h2><button class="close" type="button" data-close aria-label="Close">×</button></div>
-  <form class="sheet-body" id="school-form" autocomplete="off" novalidate>
-    <div class="segmented choice" id="school-role" role="radiogroup" aria-label="Student or teacher">
-      <button type="button" role="radio" aria-checked="false" data-role="student">Student</button>
-      <button type="button" role="radio" aria-checked="false" data-role="teacher">Teacher</button>
-    </div>
-    <div class="card"><label class="field"><span>School email</span><input id="school-email" type="email" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Your school email" autocomplete="email"></label></div>
-    <p class="field-error" id="school-error" role="alert" hidden></p>
-    <button class="btn btn-primary btn-xl page-cta" type="submit" id="school-submit">Join</button>
-    <button class="btn btn-xl" type="button" data-close>Not at the school</button>
+<!-- After the first play: where to send the news if they win. A school email joins a board. -->
+<div class="sheet" id="sheet-contact" role="dialog" aria-modal="true" aria-labelledby="contact-title" hidden>
+  <div class="sheet-head"><h2 id="contact-title">If you win</h2><button class="close" type="button" id="contact-close" aria-label="Close">×</button></div>
+  <form class="sheet-body" id="contact-form" autocomplete="on" novalidate>
+    <p class="sheet-note" id="contact-note">Winners are emailed when the arcade closes.</p>
+    <div class="card"><label class="field"><span>Your email</span><input id="contact-email" type="email" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="name@example.com" autocomplete="email"></label></div>
+    <div class="card"><button class="cell" type="button" id="contact-more">At Presentation Brothers College? <span class="chev">›</span></button></div>
+    <div class="card" id="contact-school-wrap" hidden><label class="field"><span>School email · joins the Students or Teachers board</span><input id="contact-school" type="email" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Your school email"></label></div>
+    <p class="field-error" id="contact-error" role="alert" hidden></p>
+    <button class="btn btn-primary btn-xl page-cta" type="submit" id="contact-submit">Save</button>
+    <button class="btn btn-xl" type="button" id="contact-skip">Not now</button>
   </form>
 </div>
 
@@ -478,7 +467,7 @@
 <div class="overlay" id="overlay" hidden><div class="overlay-card"><div class="spinner" aria-hidden="true"></div><p id="overlay-text">One moment</p></div></div>
 
 <script src="config.js"></script>
-<script src="mock.js?v=18"></script>
-<script src="app.js?v=18"></script>
+<script src="mock.js?v=19"></script>
+<script src="app.js?v=19"></script>
 </body>
 </html>
