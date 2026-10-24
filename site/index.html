@@ -312,6 +312,18 @@
       </div>
 
       <div>
+        <h2 class="section">Payments</h2>
+        <div class="card">
+          <div class="cell"><span>Stripe</span><strong id="adm-stripe-status">…</strong></div>
+          <form id="admin-stripe" autocomplete="off" novalidate>
+            <label class="field"><span>Stripe secret key</span><input type="password" id="adm-stripe-key" placeholder="sk_live_…" autocomplete="off" spellcheck="false"></label>
+            <p class="note">From dashboard.stripe.com, Developers, API keys. Connect checks the key with Stripe, creates the webhook for you and keeps both secrets in the database. Nothing else to set up.</p>
+            <div class="grid-2 pad-x"><button class="btn btn-primary" type="submit" id="adm-stripe-connect">Connect</button><button class="btn" type="button" id="adm-stripe-disconnect" hidden>Disconnect</button></div>
+          </form>
+        </div>
+      </div>
+
+      <div>
         <h2 class="section">Boards</h2>
         <div class="segmented" role="tablist" id="admin-tabs">
           <button role="tab" type="button" class="tab active" data-role="everyone">Everyone</button>

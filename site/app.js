@@ -46,6 +46,8 @@
     LOCKED: 'Too many tries. Wait 15 minutes.',
     BANNED: 'This player has been removed by the committee.',
     STRIPE_NOT_CONFIGURED: 'Payments are not switched on yet.',
+    BAD_STRIPE_KEY: 'That is not a Stripe secret key. It starts with sk_live_ or sk_test_.',
+    STRIPE_KEY_REJECTED: 'Stripe did not accept that key.',
     NO_SITE_URL: 'Payments are not set up for this address yet.',
     PLAYER_NOT_FOUND: 'We could not find your player on this device. Tap Play to start fresh.',
     SCORE_MISMATCH: 'That score did not check out, so it was not saved.',
@@ -1072,7 +1074,7 @@
     const paint = () => {
       boxes.forEach((b, i) => {
         b.textContent = letters[i]; b.classList.toggle('filled', !!letters[i]); b.classList.toggle('active', i === active);
-        b.setAttribute('aria-label', letters[i] ? `Letter ${i + 1}: ${letters[i]}. Tap to clear` : `Letter ${i + 1}${i === 2 ? ', optional' : ''}, empty`);
+        b.setAttribute('aria-label', letters[i] ? `Initial ${i + 1}: ${letters[i]}. Tap to clear` : `Initial ${i + 1}${i === 2 ? ', optional' : ''}, empty`);
       });
       pad.classList.toggle('full', active < 0);
       $$('.key:not(.back)', pad).forEach((k) => k.setAttribute('aria-disabled', active < 0 ? 'true' : 'false'));
@@ -1248,7 +1250,34 @@
       toast(msg(ex), true); return;
     }
     renderAdmin();
+    adminCall('stripe_status').then(renderStripe).catch(() => {});
   }
+  // Payments: the committee connects Stripe here; the key never reaches the browser again.
+  function renderStripe(s) {
+    const el = $('#adm-stripe-status');
+    if (!s || !s.connected) el.textContent = 'Not connected · plays are free demo plays';
+    else el.textContent = (s.mode === 'live' ? 'Connected · live' : 'Connected · test mode') + (s.account ? ' · ' + s.account : '') + (s.webhook ? '' : ' · no webhook') + (s.from_env ? ' · set in Supabase' : '');
+    $('#adm-stripe-disconnect').hidden = !(s && s.connected && !s.from_env);
+    $('#admin-stripe').querySelector('.field').hidden = !!(s && s.from_env);
+  }
+  $('#admin-stripe').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const key = $('#adm-stripe-key').value.trim();
+    if (!key) { toast(MESSAGES.BAD_STRIPE_KEY, true); return; }
+    const btn = $('#adm-stripe-connect');
+    btn.disabled = true; btn.textContent = 'Checking with Stripe';
+    try {
+      renderStripe(await adminCall('stripe_connect', { secret_key: key }));
+      $('#adm-stripe-key').value = '';
+      toast('Connected to Stripe. Payments are live.');
+    } catch (ex) { toast(msg(ex), true); }
+    finally { btn.disabled = false; btn.textContent = 'Connect'; }
+  });
+  $('#adm-stripe-disconnect').addEventListener('click', async () => {
+    if (!confirm('Disconnect Stripe? Plays become free demo plays until it is connected again.')) return;
+    try { renderStripe(await adminCall('stripe_disconnect')); toast('Stripe disconnected'); }
+    catch (ex) { toast(msg(ex), true); }
+  });
   const fmtDate = (iso, withTime) => new Date(iso).toLocaleString('en-IE', withTime ? { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' } : { day: 'numeric', month: 'short' });
   const PRIZE_FIELDS = { everyone: '#adm-prize-everyone', students: '#adm-prize-students', teachers: '#adm-prize-teachers', best_light: '#adm-prize-best-light', most_plays: '#adm-prize-most-plays' };
   function renderAdmin() {

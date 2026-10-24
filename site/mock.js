@@ -86,6 +86,7 @@
     week_start: weekStart(), week_end: (() => { const d = new Date(weekStart() + 'T12:00:00'); d.setDate(d.getDate() + 6); return d.toISOString().slice(0, 10); })(),
   });
   const adminCheck = (code) => { if (code !== DEMO_ADMIN_CODE) fail('BAD_ADMIN'); };
+  const stripeStatus = () => { const s = db.settings.stripe; return s ? { connected: true, mode: s.mode, account: s.account, webhook: true, from_env: false } : { connected: false, mode: '', account: '', webhook: false, from_env: false }; };
 
   async function api(action, b) {
     await wait(250);
@@ -217,6 +218,14 @@
           case 'ban': { const p = db.players[b.player_id]; if (!p) fail('PLAYER_NOT_FOUND'); p.banned = b.banned !== false; save(db); return { ok: true }; }
           case 'block': { const i = String(b.initials).toUpperCase(); if (b.block !== false) { if (!db.blocked.includes(i)) db.blocked.push(i); } else db.blocked = db.blocked.filter((x) => x !== i); save(db); return { ok: true }; }
           case 'set_code': return { ok: true };
+          case 'stripe_status': return stripeStatus();
+          case 'stripe_connect': {
+            const key = String(b.secret_key || '').trim();
+            if (!/^sk_(live|test)_[A-Za-z0-9]{16,}$/.test(key)) fail('BAD_STRIPE_KEY');
+            db.settings.stripe = { mode: key.startsWith('sk_live_') ? 'live' : 'test', account: 'Demo account' };
+            save(db); return stripeStatus();
+          }
+          case 'stripe_disconnect': { db.settings.stripe = null; save(db); return stripeStatus(); }
           case 'settings': {
             if (b.goal_cents != null) db.settings.goal_cents = b.goal_cents;
             if (b.ends_on != null) { if (b.ends_on !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(b.ends_on)) fail('BAD_DATE'); db.settings.ends_on = b.ends_on; }

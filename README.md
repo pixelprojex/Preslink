@@ -58,9 +58,11 @@ nicer address, for example `preslink-arcade`.
 
 The committee screen is at your link with `/#admin` on the end. Use the committee code you were given.
 
-To take real money later: an adult opens a Stripe account for the charity, then in Supabase
-(**Edge Functions → Secrets**) adds `STRIPE_SECRET_KEY` and, for the webhook, `STRIPE_WEBHOOK_SECRET`.
-The free plays switch off by themselves the moment a Stripe key exists. Details are in section 2 below.
+To take real money later: an adult opens a Stripe account for the charity, then on the Committee
+screen under **Payments** pastes the Stripe secret key and taps **Connect**. The site checks the key
+with Stripe, creates the webhook for you and keeps both secrets in the database, where only the
+server can read them. The free plays switch off by themselves the moment Stripe is connected, and
+**Disconnect** brings them back. Nobody needs to open Supabase. Details are in section 2 below.
 
 ---
 
@@ -86,10 +88,11 @@ The free plays switch off by themselves the moment a Stripe key exists. Details 
 | `supabase/migrations/0010_demo_payments_count.sql` | Demo plays count on the raised total (clear them before going live, see `docs/admin.sql`) |
 | `supabase/migrations/0011_score_floor.sql` | Every light scores at least 50, so a wild tap never gives zero |
 | `supabase/migrations/0012_bell_curve.sql` | Bell-shaped score curve (15 ms per e-fold) so the field spreads out and 900+ stays rare |
+| `supabase/migrations/0013_stripe_from_admin.sql` | Server-only `app_secrets` table so the committee connects Stripe from the Committee screen instead of the Supabase dashboard |
 | `site/poster.html` | A3 poster preview with a large QR code (vendored encoder in `site/vendor/`); its Save as PDF button downloads the file below |
 | `site/poster.pdf` | The poster rendered to A3 PDF for the printer, QR pointing at preslink.netlify.app (re-render it if the address changes) |
 | `site/assets/` | Logo (`logo.svg`, `cross.svg`), icons, and the photo slots `photo-*.svg` to replace with real photos |
-| `supabase/functions/api/index.ts` | Register, checkout, confirm payment, start play, submit score |
+| `supabase/functions/api/index.ts` | Register, checkout, confirm payment, start play, submit score, committee actions (including Stripe connect) |
 | `supabase/functions/stripe-webhook/index.ts` | Receives Stripe's payment confirmation |
 | `docs/admin.sql` | Extra SQL for the committee (most day-to-day admin is in the app's Committee screen) |
 | `netlify.toml` | Netlify settings and security headers |
@@ -100,11 +103,11 @@ Do these in order. Steps 1 and 2 are a one-off technical setup; 3 to 6 are the l
 
 ### 1. Supabase (database + functions): already done
 
-The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all twelve migrations applied,
+The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all thirteen migrations applied,
 both functions deployed, and `site/config.js` points at it. The committee code was set at deployment
 and handed over privately; change it any time from the Committee screen.
 
-If you ever need to redo this on a fresh project: Dashboard → **SQL Editor** → run the ten files in
+If you ever need to redo this on a fresh project: Dashboard → **SQL Editor** → run the files in
 `supabase/migrations/` in order (the first line of `0007` must be run on its own, before the rest of that file), deploy the two functions with `--no-verify-jwt` (CLI below), set the
 committee code with `select public.admin_set_code(null, 'YourCode');`, and put the project URL and
 publishable key in `site/config.js`.
@@ -118,22 +121,28 @@ supabase functions deploy stripe-webhook --no-verify-jwt
 ### 2. Stripe (payments)
 
 The Stripe account must be opened by an adult in the charity's name, with the charity's bank account
-and registered details. A student cannot be the account holder.
+and registered details. A student cannot be the account holder. Everything else happens on the
+Committee screen; nobody needs to open Supabase.
 
 1. Create the account at <https://dashboard.stripe.com/register>. Stay in **Test mode** for now.
 2. **Developers → API keys** → copy the **Secret key** (`sk_test_...`).
-3. In Supabase: **Edge Functions → Secrets** → add:
-   - `STRIPE_SECRET_KEY` = the secret key
-   - `SITE_URL` = your site address, e.g. `https://preslink-arcade.netlify.app` (no trailing slash).
-     Optional: without it the function uses the address the request came from.
-4. **Developers → Webhooks → Add endpoint**:
-   - Endpoint URL: `https://bsovummlmfclefdlvsic.supabase.co/functions/v1/stripe-webhook`
-   - Events: `checkout.session.completed` and `checkout.session.async_payment_succeeded`
-   - After saving, copy the **Signing secret** (`whsec_...`) and add it in Supabase secrets as
-     `STRIPE_WEBHOOK_SECRET`.
+3. Open the site with `/#admin` on the end, enter the committee code, and under **Payments** paste the
+   key and tap **Connect**. The site checks the key with Stripe, creates the webhook endpoint
+   (`.../functions/v1/stripe-webhook`, listening for `checkout.session.completed` and
+   `checkout.session.async_payment_succeeded`) and stores the key and the webhook signing secret in the
+   database table `app_secrets`, which only the server can read. The card then shows the Stripe account
+   name and whether it is a test or a live key. Free plays stop at once.
+4. **Disconnect** removes the key, deletes the webhook endpoint and brings the free plays back.
+   Connecting a new key replaces the old webhook endpoint, so you can repeat step 3 any time.
 5. Optional but recommended: apply for Stripe's reduced nonprofit pricing (search "Stripe nonprofit
    pricing" in the Stripe support site) and switch on Apple Pay and Google Pay under **Settings →
    Payment methods** (they are on by default for Checkout).
+
+If you would rather keep the secrets out of the database, the old way still works and wins: set
+`STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` under **Edge Functions → Secrets** in Supabase, and the
+Committee screen shows that Stripe is set from the server. `SITE_URL` (your site address without a
+trailing slash) is optional in both cases: without it the function sends players back to the address
+the request came from.
 
 ### 3. Netlify (hosting)
 
@@ -142,8 +151,8 @@ and registered details. A student cannot be the account holder.
 3. Build settings: leave **Build command** empty, set **Publish directory** to `site`. (netlify.toml already
    says this.) Deploy.
 4. **Site configuration → Site details → Change site name** to something short, e.g. `preslink-arcade`.
-   The address is then `https://preslink-arcade.netlify.app`. If you set `SITE_URL` in step 2.3, make sure
-   it matches.
+   The address is then `https://preslink-arcade.netlify.app`. If you set the optional `SITE_URL`
+   secret, make sure it matches.
 
 ### 4. Test it end to end (still in Stripe test mode)
 
@@ -156,8 +165,9 @@ and registered details. A student cannot be the account holder.
 ### 5. Go live
 
 1. Finish Stripe account activation (the charity's details and bank account).
-2. Switch the Stripe dashboard to **Live mode** and repeat steps 2.2 to 2.4 with the **live** keys
-   (`sk_live_...`, a new webhook endpoint and its `whsec_...`). Replace the two secrets in Supabase.
+2. Switch the Stripe dashboard to **Live mode**, copy the **live** secret key (`sk_live_...`) and on
+   the Committee screen under **Payments** tap **Connect** with it. The site swaps the webhook and the
+   secrets for you; the card should now say Live.
 3. Fill the yellow placeholders in the terms in `site/index.html` (committee contact, where winners are
    announced). Have the school check the terms and the legal position of a paid game with a prize.
 4. Open `/poster.html`, tap Save as PDF, and print the PDF at A3.

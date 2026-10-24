@@ -4,11 +4,29 @@
 // the paid credits to the player. The same session is also confirmed by the
 // browser on return, so grant_credits is idempotent and the two never double-count.
 //
-// Secrets: STRIPE_WEBHOOK_SECRET (whsec_...), from the webhook endpoint you create in Stripe.
+// The signing secret comes from the endpoint the Committee page created (kept in app_secrets, read
+// with the service role), or from a STRIPE_WEBHOOK_SECRET environment secret, which wins if set.
 
 const SUPABASE_URL = (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, "");
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-const WEBHOOK_SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? "";
+const ENV_WEBHOOK_SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? "";
+let secretCache: { value: string; at: number } | null = null;
+async function webhookSecret(): Promise<string> {
+  if (ENV_WEBHOOK_SECRET) return ENV_WEBHOOK_SECRET;
+  if (secretCache && Date.now() - secretCache.at < 60_000) return secretCache.value;
+  let value = "";
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/app_secret_get`, {
+      method: "POST",
+      headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ p_key: "stripe_webhook_secret" }),
+    });
+    const data = res.ok ? await res.json() : null;
+    value = typeof data === "string" ? data : "";
+  } catch { value = ""; }
+  secretCache = { value, at: Date.now() };
+  return value;
+}
 
 const BUNDLES: Record<string, { credits: number; amount: number }> = {
   single: { credits: 1, amount: 200 },
@@ -98,13 +116,14 @@ async function grant(session: Record<string, unknown>): Promise<Record<string, u
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
-  if (!WEBHOOK_SECRET) {
-    console.error("STRIPE_WEBHOOK_SECRET is not set");
+  const secret = await webhookSecret();
+  if (!secret) {
+    console.error("no webhook secret: connect Stripe from the Committee page or set STRIPE_WEBHOOK_SECRET");
     return new Response("Webhook secret not configured", { status: 500 });
   }
 
   const payload = await req.text();
-  const ok = await verifyStripeSignature(payload, req.headers.get("stripe-signature"), WEBHOOK_SECRET);
+  const ok = await verifyStripeSignature(payload, req.headers.get("stripe-signature"), secret);
   if (!ok) return new Response("Bad signature", { status: 400 });
 
   let event: { type?: string; data?: { object?: Record<string, unknown> } };

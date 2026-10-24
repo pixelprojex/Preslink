@@ -104,6 +104,7 @@ p { margin: 0 0 10px; }
 .block.green { background: var(--green); --lip: var(--green-d); }
 .card + .card, form + .card, .btn + .card { margin-top: 12px; }
 .card.pad { padding: 16px; }
+.pad-x { padding: 6px 16px 16px; }
 .cell { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; width: 100%; min-height: 60px; padding: 16px 18px; background: none; border: 0; text-align: left; color: var(--ink); font-size: 17px; font-weight: 600; cursor: default; }
 button.cell { cursor: pointer; }
 button.cell:active { background: var(--fill); }
