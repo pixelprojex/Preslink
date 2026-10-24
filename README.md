@@ -9,7 +9,8 @@ One campaign, three boards (Everyone, Students, Teachers) and prizes at the end,
 There is no sign-up. On the first tap a small sheet asks for two or three letters (your initials),
 picked on an on-screen letter pad (tap a box to clear that letter), so the phone keyboard never covers
 the boxes; then it goes straight to payment. After the first play a sheet shows the player's **name and four-digit
-code** with Save image and Copy, because those two things collect a prize; the code is also on the
+code** on a prize ticket image; Save to Photos hands it to the share sheet (Save Image on an iPhone) and a
+long press on the ticket saves it too, because those two things collect a prize; the code is also on the
 **You** tab on that device and signs them in anywhere. Everyone is on the Everyone board. People at
 Presentation Brothers College can optionally give their school email to join the Students board
 (@pbccork.ie) or the Teachers board (@pbc-cork.ie); it is a format check, nothing is sent. If someone
@@ -49,7 +50,8 @@ counter so the site feels real; clear them before launch (`docs/admin.sql`).
    **Preslink** repository. Choose the branch **claude/trusting-goodall-qzegrn**. In
    **Publish directory** type `site`. Leave **Build command** empty. Click **Deploy**.
 3. Wait about a minute. Netlify shows a link like `https://something.netlify.app`. Open it on
-   your device. That is the site. To print the A3 poster, open the same link with `/poster.html` on the end.
+   your device. That is the site. The A3 poster is at `/poster.pdf` (ready to print) and `/poster.html` (regenerates
+   the QR code from the live address; print it at A3 with no margins).
 
 Optional: in Netlify, **Site configuration → Site details → Change site name** lets you pick a
 nicer address, for example `preslink-arcade`.
@@ -84,6 +86,7 @@ The free plays switch off by themselves the moment a Stripe key exists. Details 
 | `supabase/migrations/0010_demo_payments_count.sql` | Demo plays count on the raised total (clear them before going live, see `docs/admin.sql`) |
 | `supabase/migrations/0011_score_floor.sql` | Every light scores at least 50, so a wild tap never gives zero |
 | `site/poster.html` | Print-ready A3 poster with a large QR code (vendored encoder in `site/vendor/`) |
+| `site/poster.pdf` | The same poster rendered to A3 PDF for the printer, QR pointing at preslink.netlify.app |
 | `site/assets/` | Logo (`logo.svg`, `cross.svg`), icons, and the photo slots `photo-*.svg` to replace with real photos |
 | `supabase/functions/api/index.ts` | Register, checkout, confirm payment, start play, submit score |
 | `supabase/functions/stripe-webhook/index.ts` | Receives Stripe's payment confirmation |
@@ -156,7 +159,7 @@ and registered details. A student cannot be the account holder.
    (`sk_live_...`, a new webhook endpoint and its `whsec_...`). Replace the two secrets in Supabase.
 3. Fill the yellow placeholders in the terms in `site/index.html` (committee contact, where winners are
    announced). Have the school check the terms and the legal position of a paid game with a prize.
-4. Open `/poster.html` on the live site and print it (A3) or save it as a PDF.
+4. Print `/poster.pdf` at A3 (or open `/poster.html` on the live site and print it at A3, margins none).
 5. Make one real €2 payment yourself to be sure, then announce it.
 
 ### 6. Prizes at the end

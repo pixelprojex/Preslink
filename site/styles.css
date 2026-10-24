@@ -113,6 +113,7 @@ button.cell:active { background: var(--fill); }
 .odo .dg .in { animation: odoin .45s cubic-bezier(.2, .8, .2, 1) both; }
 .odo .dg .out { animation: odoout .45s cubic-bezier(.2, .8, .2, 1) both; }
 @keyframes odoin { from { transform: translateY(100%); opacity: .2; } to { transform: none; opacity: 1; } }
+/* digits roll like a mechanical counter: each change slides the old digit up and the new one in from below */
 @keyframes odoout { from { transform: none; opacity: 1; } to { transform: translateY(-100%); opacity: 0; } }
 .odo .sep { display: inline-block; height: 1.1em; line-height: 1.1em; }
 .raised-l { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
@@ -467,7 +468,9 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
 .code-name { font-size: 22px; font-weight: 700; color: var(--ink); letter-spacing: .06em; }
 .code-digits { font-size: 56px; font-weight: 800; color: var(--ink); letter-spacing: .16em; font-variant-numeric: tabular-nums; line-height: 1.1; }
 .code-why { text-align: center; color: var(--text); font-size: 16px; margin: 0 0 16px; }
-.sheet-code .btn + .btn { margin-top: 10px; }
+.sheet-code .btn + .btn, .sheet-code .save-hint + .btn { margin-top: 10px; }
+.ticket { display: block; width: auto; max-width: 100%; max-height: 38dvh; margin: 2px auto 16px; border-radius: 14px; }
+.sheet-code .save-hint { margin: 8px 0 0; }
 .sheet .card { background: var(--bg); }
 
 /* Splash: the four arms of the cross fly in and lock together, the centre pops, the name rises. */

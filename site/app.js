@@ -378,7 +378,7 @@
       setTimeout(() => plus.remove(), 2000);
       wrap.classList.remove('up'); void wrap.offsetWidth; wrap.classList.add('up');
       setTimeout(() => wrap.classList.remove('up'), 2000);
-      tickTo(el, shownRaised, target, fmt, 1400);
+      tickTo(el, shownRaised, target, fmt, 1900);
     } else {
       setOdometer(el, fmt(target));
     }
@@ -800,6 +800,7 @@
   function showCodeSheet() {
     $('#code-name').innerHTML = nameHtml(player.display);
     $('#code-digits').textContent = player.claim_code;
+    showTicket();
     openSheet('code');
   }
   $('#code-done').addEventListener('click', () => { store.set(CODE_SHOWN_KEY, true); closeSheets(); });
@@ -811,36 +812,58 @@
     try { await navigator.clipboard.writeText(`PresLink Arcade: ${player.display} · code ${player.claim_code}`); toast('Copied'); }
     catch (_) { toast(`${player.display} · ${player.claim_code}`); }
   }
-  // Draws a card with the name and code and hands it to the share sheet (Save Image on iPad and iPhone)
-  // or downloads it.
-  async function saveCodeImage() {
-    if (!player) return;
-    const W = 1080, H = 1080;
+  // The prize ticket: a 4:5 image with the PresLink cross, the light bar, the name and the code.
+  // Shown in the code sheet (long-press saves it on iPhone) and handed to the share sheet by
+  // "Save to Photos" (Save Image on iPhone and iPad) or downloaded elsewhere.
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+  const crossImage = new Promise((resolve) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => resolve(null); img.src = 'assets/cross.svg?v=11'; });
+  async function renderTicket() {
+    const W = 1080, H = 1350;
     const c = document.createElement('canvas');
     c.width = W; c.height = H;
     const ctx = c.getContext('2d');
-    ctx.fillStyle = '#5b3a9a'; ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = '#ffffff';
-    const r = 44, x = 80, y = 120, w = W - 160, h = H - 240;
-    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); ctx.fill();
-    await new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => { ctx.drawImage(img, W / 2 - 70, 190, 140, 140); resolve(); };
-      img.onerror = resolve;
-      img.src = 'assets/cross.svg?v=11';
-    });
-    const font = (size, weight) => `${weight} ${size}px -apple-system, BlinkMacSystemFont, Inter, Helvetica, Arial, sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#5b3a9a'; ctx.font = font(44, 700); ctx.fillText('PresLink Arcade', W / 2, 400);
-    ctx.fillStyle = '#8e8e93'; ctx.font = font(30, 600); ctx.fillText('YOUR NAME', W / 2, 500);
-    ctx.fillStyle = '#1c1c1e'; ctx.font = font(120, 800); ctx.fillText(player.display, W / 2, 620);
-    ctx.fillStyle = '#8e8e93'; ctx.font = font(30, 600); ctx.fillText('YOUR CODE', W / 2, 720);
-    ctx.fillStyle = '#1f9d5a'; ctx.font = font(150, 800); ctx.fillText(player.claim_code.split('').join(' '), W / 2, 860);
-    ctx.fillStyle = '#48484a'; ctx.font = font(30, 500); ctx.fillText('Show these to the committee to collect a prize.', W / 2, 920);
+    const font = (size, weight) => `${weight} ${size}px -apple-system, BlinkMacSystemFont, Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif`;
+    // green ground, white card
+    ctx.fillStyle = '#1f9d5a'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#ffffff'; roundRect(ctx, 56, 56, W - 112, H - 112, 52); ctx.fill();
+    // cross and wordmark
+    const img = await crossImage;
+    if (img) ctx.drawImage(img, W / 2 - 72, 128, 144, 144);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = '#1c1c1e'; ctx.font = font(50, 800); ctx.fillText('PresLink Arcade', W / 2, 356);
+    // the light bar: the game's own mark
+    const bx = 240, by = 396, bw = 600, bh = 34;
+    const g = ctx.createLinearGradient(bx, 0, bx + bw, 0);
+    g.addColorStop(0, '#fff3c4'); g.addColorStop(.45, '#ffd766'); g.addColorStop(.75, '#ffab45'); g.addColorStop(1, '#f26a1b');
+    ctx.fillStyle = g; roundRect(ctx, bx, by, bw, bh, bh / 2); ctx.fill();
+    ctx.fillStyle = '#1c1c1e'; roundRect(ctx, bx + bw * 0.62 - 3, by - 10, 6, bh + 20, 3); ctx.fill();
+    ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#1c1c1e'; ctx.lineWidth = 4; roundRect(ctx, bx + bw * 0.62 - 13, by - 6, 26, bh + 12, 13); ctx.fill(); ctx.stroke();
+    // name
+    ctx.fillStyle = '#8e8e93'; ctx.font = font(28, 700); ctx.fillText('Y O U R   N A M E', W / 2, 560);
+    ctx.fillStyle = '#1c1c1e'; ctx.font = font(170, 800); ctx.fillText(player.display, W / 2, 712);
+    // code
+    ctx.fillStyle = '#8e8e93'; ctx.font = font(28, 700); ctx.fillText('Y O U R   C O D E', W / 2, 820);
+    ctx.fillStyle = '#1f9d5a'; ctx.font = font(200, 800); ctx.fillText(player.claim_code.split('').join(' '), W / 2, 1000);
+    // rule and the two lines that matter
+    ctx.fillStyle = '#e5e5ea'; ctx.fillRect(160, 1064, W - 320, 3);
+    ctx.fillStyle = '#1c1c1e'; ctx.font = font(36, 700); ctx.fillText('Keep this. Name and code collect a prize.', W / 2, 1140);
+    ctx.fillStyle = '#8e8e93'; ctx.font = font(30, 600); ctx.fillText(location.host || 'preslink.netlify.app', W / 2, 1200);
+    return c;
+  }
+  async function showTicket() {
+    const img = $('#code-preview');
+    if (!player) { img.hidden = true; return; }
+    try { img.src = (await renderTicket()).toDataURL('image/png'); img.hidden = false; } catch (_) { img.hidden = true; }
+  }
+  async function saveCodeImage() {
+    if (!player) return;
+    const c = await renderTicket();
     const blob = await new Promise((resolve) => c.toBlob(resolve, 'image/png'));
     const file = new File([blob], `preslink-${player.display.replace('#', '-')}.png`, { type: 'image/png' });
     try {
-      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'PresLink Arcade code' }); return; }
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'PresLink Arcade ticket' }); return; }
     } catch (_) { return; /* cancelled */ }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -848,6 +871,8 @@
     a.click();
     toast('Saved');
   }
+  // iPhone and iPad: the share sheet opens with Save Image on it; say so once under the button.
+  if (navigator.canShare) $$('.save-hint').forEach((h) => { h.hidden = false; });
 
   // ---------------------------------------------------------------------------
   // School: optional. A school email puts you on the Students or Teachers board.
@@ -958,7 +983,7 @@
     };
     const clearError = () => { const err = root.parentElement.querySelector('.field-error'); if (err) err.hidden = true; };
     const type = (ch) => { if (active < 0) return; letters[active] = ch; active = firstEmpty(); paint(); clearError(); };
-    const back = () => { let i = 2; while (i >= 0 && !letters[i]) i--; if (i < 0) return; letters[i] = ''; active = i; paint(); };
+    const back = () => { let i = 2; while (i >= 0 && !letters[i]) i--; if (i < 0) return; letters[i] = ''; active = firstEmpty(); paint(); };
     boxes.forEach((b, i) => b.addEventListener('click', () => { letters[i] = ''; active = i; paint(); }));
     pad.addEventListener('click', (e) => {
       const k = e.target.closest('.key'); if (!k) return;
@@ -966,7 +991,7 @@
     });
     const field = {
       type, back,
-      value: () => letters.join(''),
+      value: () => letters.map((l) => l || ' ').join('').trimEnd(), // an empty middle box stays visible to the validator
       set: (v) => { const s = (v || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3); for (let i = 0; i < 3; i++) letters[i] = s[i] || ''; active = firstEmpty(); paint(); },
       focus: () => { liveLetters = field; },
       visible: () => root.getClientRects().length > 0,
