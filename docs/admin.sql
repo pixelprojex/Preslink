@@ -69,3 +69,7 @@ select p.initials, p.claim_code, p.credits, p.last_seen_at
   from public.players p
  where p.credits > 0
  order by p.last_seen_at;
+
+-- Before taking real money: remove the demo payments (free plays recorded while no Stripe key was set),
+-- so "raised so far" starts from zero. Run in the Supabase SQL editor.
+-- delete from public.payments where stripe_session_id like 'demo_%';

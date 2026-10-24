@@ -5,17 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
   <title>PresLink Arcade poster</title>
-  <meta name="description" content="Print-ready A3 poster with a QR code for PresLink Arcade.">
-  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <meta name="description" content="A3 poster with a QR code for PresLink Arcade. Save as PDF downloads the print file.">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <style>
+    /* Four type tiers: 22 mm headline, 11 mm wordmark / scan label / URL, 5.5 mm pill and photo
+       titles, 4.3 mm captions, school name and footer. White is the dominant colour; green is kept
+       for the three things that matter (Arcade, Fund a school, SCAN TO PLAY); yellow marks the price;
+       purple is the school's alone. */
     :root {
       --ink: #1c1c1e;
       --muted: #6e6e73;
       --green: #1f9d5a;
       --yellow: #f6c21f;
+      --orange: #f26a1b;
       --purple: #5b3a9a;
       --rule: #e3e3e8;
       --paper: #ffffff;
@@ -45,28 +50,28 @@
     .sheet {
       width: 297mm;
       height: 420mm;
-      padding: 18mm;
+      padding: 14mm 18mm 12mm;
       background: var(--paper);
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
+      justify-content: flex-start;
       transform-origin: top left;
       overflow: hidden;
       flex: none;
     }
 
-    /* a. Header */
+    /* a. Header: identification only, the quietest band */
     .top {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      height: 26mm;
+      height: 20mm;
     }
     .brand { display: flex; align-items: center; gap: 5mm; }
-    .mark { width: 22mm; height: 22mm; display: block; }
+    .mark { width: 18mm; height: 18mm; display: block; }
     .wordmark {
       font-weight: 800;
-      font-size: 11.5mm;
+      font-size: 11mm;
       letter-spacing: -0.025em;
       line-height: 1;
       white-space: nowrap;
@@ -83,108 +88,140 @@
       border-bottom: 0.45mm solid var(--purple);
       white-space: nowrap;
     }
-    .crest { height: 26mm; width: auto; display: block; }
+    .crest { height: 20mm; width: auto; display: block; }
 
-    /* b. Headline */
-    .hero { text-align: center; }
+    /* b. Price, headline, the light bar */
+    .hero { text-align: center; margin-top: 7mm; }
     .kicker {
-      margin: 0 0 3mm;
-      display: inline-block;
-      padding: 2mm 6mm;
+      margin: 0 0 4mm;
+      display: inline-flex;
+      align-items: center;
+      gap: 3.5mm;
+      padding: 2.2mm 7mm;
       border-radius: 99mm;
-      background: var(--green);
-      color: #fff;
-      font-weight: 800;
-      font-size: 5.2mm;
-      letter-spacing: 0.02em;
-      text-transform: uppercase;
+      background: var(--yellow);
+      color: var(--ink);
+      font-weight: 700;
+      font-size: 5.5mm;
+      letter-spacing: 0.01em;
+      line-height: 1;
     }
+    .kicker strong { font-weight: 900; font-size: 1.15em; }
+    .kicker i { font-style: normal; opacity: .4; font-weight: 600; }
     .hero h1 {
       margin: 0;
-      font-weight: 800;
-      font-size: 19mm;
-      line-height: 1;
-      letter-spacing: -0.035em;
+      font-weight: 900;
+      font-size: 22mm;
+      line-height: 0.95;
+      letter-spacing: -0.04em;
     }
     .hero h1 span { color: var(--green); }
-    .lede {
-      margin: 5mm 0 0;
-      color: var(--ink);
-      font-weight: 600;
-      font-size: 6.2mm;
-      line-height: 1.25;
-      letter-spacing: -0.01em;
+
+    /* the light bar: the game's own mark, with the pin on the page's centre axis pointing at the code */
+    .bar {
+      position: relative;
+      width: 150mm;
+      height: 10mm;
+      margin: 6mm auto 0;
+      border-radius: 99mm;
+      background: linear-gradient(90deg, #f6c21f 0%, #ffab45 60%, #f26a1b 100%);
+      box-shadow: inset 0 0 0 0.4mm var(--ink);
     }
-    .scan-label {
-      margin: 0 0 3mm;
-      font-weight: 800;
-      font-size: 6mm;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--muted);
+    .bar .pin {
+      position: absolute;
+      left: 50%;
+      top: -4mm;
+      width: 1.7mm;
+      height: 22mm;
+      margin-left: -0.85mm;
+      border-radius: 1mm;
+      background: var(--ink);
+    }
+    .bar .light {
+      position: absolute;
+      left: 50%;
+      top: -3mm;
+      width: 7.2mm;
+      height: 16mm;
+      margin-left: -3.6mm;
+      border-radius: 99mm;
+      background: #fff;
+      border: 1.1mm solid var(--ink);
     }
 
-    /* c. QR */
-    .scan { display: flex; flex-direction: column; align-items: center; }
-    .qr { width: 160mm; height: 160mm; }
+    /* c. Scan: label, code with its own four-module quiet zone, typed fallback */
+    .scan { display: flex; flex-direction: column; align-items: center; margin-top: 10mm; }
+    .scan-label {
+      margin: 0;
+      font-weight: 800;
+      font-size: 11mm;
+      line-height: 1;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--green);
+    }
+    .qr { width: 156mm; height: 156mm; }
     .qr svg { width: 100%; height: 100%; display: block; }
     .url {
-      margin: 5mm 0 0;
+      margin: 0;
       font-weight: 800;
-      font-size: 9.5mm;
+      font-size: 11mm;
       line-height: 1.1;
-      letter-spacing: -0.025em;
+      letter-spacing: 0;
       word-break: break-all;
       text-align: center;
     }
 
-    /* d. Photo cards */
+    /* d. Photos: one dominant face-first photo, equal heights, titles that say the outcome */
     .stories {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8mm;
+      grid-template-columns: 1.4fr 1fr 1fr;
+      gap: 7mm;
+      margin-top: 14mm;
     }
     .stories figure { margin: 0; min-width: 0; }
     .stories img {
       width: 100%;
-      aspect-ratio: 4 / 3;
+      height: 50mm;
       object-fit: cover;
       display: block;
-      border-radius: 5mm;
+      border-radius: 6mm;
       background: #f2f2f4;
     }
-    .stories figcaption { margin-top: 3.4mm; }
+    .stories figcaption { margin-top: 3.6mm; }
     .stories b {
       display: block;
-      font-weight: 700;
-      font-size: 5.2mm;
-      line-height: 1.2;
-      letter-spacing: -0.015em;
+      font-weight: 800;
+      font-size: 5.5mm;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
     }
     .stories span {
       display: block;
-      margin-top: 1.2mm;
+      margin-top: 1.4mm;
       color: var(--muted);
-      font-weight: 400;
-      font-size: 4mm;
+      font-weight: 500;
+      font-size: 4.3mm;
       line-height: 1.38;
     }
 
-    /* e. Footer */
+    /* e. Footer: the promise sits where the eye leaves the page */
     .foot {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
       gap: 12mm;
-      padding-top: 4.5mm;
+      margin-top: 4mm;
+      padding-top: 4mm;
       border-top: 0.3mm solid var(--rule);
       color: var(--muted);
       font-weight: 600;
-      font-size: 4mm;
+      font-size: 4.3mm;
       line-height: 1.3;
     }
     .foot p { margin: 0; }
-    .foot p:last-child { white-space: nowrap; }
+    .foot p:first-child { white-space: nowrap; }
+    .foot .promise { color: var(--ink); font-weight: 700; text-align: right; }
 
     /* ---------- Screen-only controls ---------- */
     .tools {
@@ -194,9 +231,12 @@
       z-index: 10;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      max-width: calc(100vw - 32px);
     }
-    .tools button {
+    .tools .save {
+      text-decoration: none;
+      display: inline-block;
       font: inherit;
       font-weight: 700;
       font-size: 14px;
@@ -207,18 +247,20 @@
       background: var(--ink);
       color: #fff;
       cursor: pointer;
+      white-space: nowrap;
     }
-    .tools button:hover { background: #000; }
+    .tools .save:hover { background: #000; }
     .tools .hint {
       font-size: 12px;
       font-weight: 600;
-      line-height: 1;
+      line-height: 1.3;
       color: var(--muted);
       background: #fff;
       border: 1px solid var(--rule);
-      border-radius: 999px;
-      padding: 11px 14px;
+      border-radius: 14px;
+      padding: 8px 12px;
     }
+    @media (max-width: 640px) { .tools .hint { display: none; } }
 
     /* ---------- Print ---------- */
     @page { size: A3; margin: 0; }
@@ -234,8 +276,8 @@
 </head>
 <body>
   <div class="tools">
-    <span class="hint">Set paper size to A3</span>
-    <button type="button" id="print">Print / Save as PDF</button>
+    <span class="hint">Print at 100%, not “fit to page”. Do not fold. Hang with the top edge about 1.6 m from the floor.</span>
+    <a class="save" href="poster.pdf" download="PresLink-Arcade-poster-A3.pdf">Save as PDF</a>
   </div>
 
   <div class="stage">
@@ -254,9 +296,9 @@
         </header>
 
         <section class="hero">
-          <p class="kicker">A €2 arcade game</p>
+          <p class="kicker"><strong>€2 a go</strong> <i>·</i> 3 for €5 <i>·</i> 7 for €10</p>
           <h1>Play. Win prizes.<br><span>Fund a school.</span></h1>
-          <p class="lede">Stop the light on the mark. Three lights a go, prizes at the end.</p>
+          <div class="bar" aria-hidden="true"><span class="pin"></span><span class="light"></span></div>
         </section>
 
         <section class="scan">
@@ -267,22 +309,22 @@
 
         <section class="stories">
           <figure>
-            <img src="assets/photo-classrooms.jpg" alt="Classrooms in Ghana">
-            <figcaption><b>Classrooms in Ghana</b><span>A three-classroom block in Sokabisi, Bolgatanga, funded by PresLink.</span></figcaption>
+            <img src="assets/photo-bikes.jpg" alt="Students with bicycles" style="object-position: 50% 25%">
+            <figcaption><b>Bikes that keep students in school</b><span>Bicycles so that students can get to class and stay in education.</span></figcaption>
           </figure>
           <figure>
-            <img src="assets/photo-bikes.jpg" alt="Bikes to school">
-            <figcaption><b>Bikes to school</b><span>Bicycles so that students can get to class and stay in education.</span></figcaption>
+            <img src="assets/photo-babies.jpg" alt="Mother of Mercy Home" style="object-position: 50% 55%">
+            <figcaption><b>Care for babies</b><span>Support for the Mother of Mercy Home in Sirigu, Ghana.</span></figcaption>
           </figure>
           <figure>
-            <img src="assets/photo-babies.jpg" alt="Mother of Mercy Babies Home">
-            <figcaption><b>Mother of Mercy Babies Home</b><span>Support for the babies home run by the Presentation Brothers in Sirigu, Ghana.</span></figcaption>
+            <img src="assets/photo-classrooms.jpg" alt="A new classroom in Ghana" style="object-position: 62% 50%">
+            <figcaption><b>Three new classrooms</b><span>A classroom block in Sokabisi, Bolgatanga, funded by PresLink.</span></figcaption>
           </figure>
         </section>
 
         <footer class="foot">
-          <p>Every cent after card fees goes to Presentation Brothers schools in Ghana and Nigeria.</p>
           <p>PresLink · student-run since 2005</p>
+          <p class="promise">Every cent after card fees goes to the schools in Ghana and Nigeria.</p>
         </footer>
 
       </div>
@@ -300,23 +342,23 @@
       document.getElementById('url').textContent = url.replace(/^https?:\/\//i, '').replace(/\/$/, '');
 
       // ---- QR code as inline SVG ----
-      // Error correction H (30 %) so the centre tile and rounded shapes stay well
-      // inside the tolerance. Modules are rounded squares, the three finder
-      // patterns are drawn as rounded shapes, and a white tile with the PresLink
-      // cross sits in the middle.
+      // Error correction H (30 %) so the centre tile and rounded data modules stay well inside the
+      // tolerance. The SVG carries its own four-module quiet zone (ISO/IEC 18004), so nothing printed
+      // next to the code can crowd it. Finder patterns are only lightly rounded so the 1:1:3:1:1
+      // ratio detectors look for survives on the diagonals.
       var INK = '#1c1c1e';
       var qr = qrcode(0, 'H');
       qr.addData(url);
       qr.make();
 
       var n = qr.getModuleCount();
-      var quiet = 1;                 // one module of quiet zone inside the SVG; page white space adds the rest
+      var quiet = 4;                 // four modules of white on every side, inside the SVG
       var size = n + quiet * 2;
       var f = function (v) { return (Math.round(v * 1000) / 1000).toString(); };
 
-      // Centre tile: about 18 % of the width, snapped to whole modules and centred on
-      // the grid so the cleared block is a clean square (7 x 7 for a 37-module code).
-      var k = Math.round(size * 0.18);
+      // Centre tile: about a fifth of the code width, snapped to whole modules and centred on
+      // the grid so the cleared block is a clean square (7 x 7 for a 33-module code).
+      var k = Math.round(n * 0.21);
       if ((k % 2) !== (n % 2)) k += 1;
       var first = (n - k) / 2;            // first module row/column under the tile
       var tile = k;
@@ -343,11 +385,11 @@
         }
       }
 
-      // Finder patterns: outer rounded square, white ring, inner rounded square.
+      // Finder patterns: outer square, white ring, inner square, each only lightly rounded.
       var finder = function (x, y) {
-        out.push('<rect x="' + x + '" y="' + y + '" width="7" height="7" rx="2.1" fill="' + INK + '"/>');
-        out.push('<rect x="' + (x + 1) + '" y="' + (y + 1) + '" width="5" height="5" rx="1.5" fill="#fff"/>');
-        out.push('<rect x="' + (x + 2) + '" y="' + (y + 2) + '" width="3" height="3" rx="0.95" fill="' + INK + '"/>');
+        out.push('<rect x="' + x + '" y="' + y + '" width="7" height="7" rx="1.2" fill="' + INK + '"/>');
+        out.push('<rect x="' + (x + 1) + '" y="' + (y + 1) + '" width="5" height="5" rx="0.9" fill="#fff"/>');
+        out.push('<rect x="' + (x + 2) + '" y="' + (y + 2) + '" width="3" height="3" rx="0.5" fill="' + INK + '"/>');
       };
       finder(quiet, quiet);
       finder(quiet + n - 7, quiet);
@@ -381,8 +423,6 @@
       window.addEventListener('resize', fit);
       window.addEventListener('beforeprint', function () { sheet.style.transform = ''; frame.style.width = ''; frame.style.height = ''; });
       window.addEventListener('afterprint', fit);
-
-      document.getElementById('print').addEventListener('click', function () { window.print(); });
     })();
   </script>
 </body>

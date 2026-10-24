@@ -7,8 +7,10 @@ One campaign, three boards (Everyone, Students, Teachers) and prizes at the end,
 (best single light, most plays). Every payment goes to PresLink.
 
 There is no sign-up. On the first tap a small sheet asks for two or three letters (your initials),
-then goes straight to payment. After the first play a sheet shows the player's **name and four-digit
-code** with Save image and Copy, because those two things collect a prize; the code is also on the
+picked on an on-screen letter pad (tap a box to clear that letter), so the phone keyboard never covers
+the boxes; then it goes straight to payment. After the first play a sheet shows the player's **name and four-digit
+code** on a prize ticket image; Save to Photos hands it to the share sheet (Save Image on an iPhone) and a
+long press on the ticket saves it too, because those two things collect a prize; the code is also on the
 **You** tab on that device and signs them in anywhere. Everyone is on the Everyone board. People at
 Presentation Brothers College can optionally give their school email to join the Students board
 (@pbccork.ie) or the Teachers board (@pbc-cork.ie); it is a format check, nothing is sent. If someone
@@ -40,14 +42,16 @@ with a photo, and very little text.
 ## Put it online in three steps (about 5 minutes)
 
 You need a free Netlify account. Nothing else. No Stripe is needed for the demo: without a
-Stripe key the site gives free plays and says so on screen.
+Stripe key the site gives free plays and says so on screen. Demo plays still move the "raised"
+counter so the site feels real; clear them before launch (`docs/admin.sql`).
 
 1. Go to <https://app.netlify.com>, click **Sign up**, choose **GitHub**.
 2. Click **Add new site**, then **Import an existing project**, then **GitHub**. Pick the
    **Preslink** repository. Choose the branch **claude/trusting-goodall-qzegrn**. In
    **Publish directory** type `site`. Leave **Build command** empty. Click **Deploy**.
 3. Wait about a minute. Netlify shows a link like `https://something.netlify.app`. Open it on
-   your device. That is the site. To print the A3 poster, open the same link with `/poster.html` on the end.
+   your device. That is the site. The A3 poster is at `/poster.html`: its Save as PDF button downloads
+   `/poster.pdf`, the print file (A3, QR pointing at preslink.netlify.app).
 
 Optional: in Netlify, **Site configuration → Site details → Change site name** lets you pick a
 nicer address, for example `preslink-arcade`.
@@ -79,7 +83,10 @@ The free plays switch off by themselves the moment a Stripe key exists. Details 
 | `supabase/migrations/0007_campaign.sql` | One campaign instead of weeks: Everyone board, school email for Students/Teachers, spot prizes, end date and five prize texts |
 | `supabase/migrations/0008_harder_scoring.sql` | Steeper score curve so 1,000 is practically unreachable and scores spread below 900 |
 | `supabase/migrations/0009_admin_school_email.sql` | Committee lookup shows a player's school email and best light |
-| `site/poster.html` | Print-ready A3 poster with a large QR code (vendored encoder in `site/vendor/`) |
+| `supabase/migrations/0010_demo_payments_count.sql` | Demo plays count on the raised total (clear them before going live, see `docs/admin.sql`) |
+| `supabase/migrations/0011_score_floor.sql` | Every light scores at least 50, so a wild tap never gives zero |
+| `site/poster.html` | A3 poster preview with a large QR code (vendored encoder in `site/vendor/`); its Save as PDF button downloads the file below |
+| `site/poster.pdf` | The poster rendered to A3 PDF for the printer, QR pointing at preslink.netlify.app (re-render it if the address changes) |
 | `site/assets/` | Logo (`logo.svg`, `cross.svg`), icons, and the photo slots `photo-*.svg` to replace with real photos |
 | `supabase/functions/api/index.ts` | Register, checkout, confirm payment, start play, submit score |
 | `supabase/functions/stripe-webhook/index.ts` | Receives Stripe's payment confirmation |
@@ -92,11 +99,11 @@ Do these in order. Steps 1 and 2 are a one-off technical setup; 3 to 6 are the l
 
 ### 1. Supabase (database + functions): already done
 
-The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all nine migrations applied,
+The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all eleven migrations applied,
 both functions deployed, and `site/config.js` points at it. The committee code was set at deployment
 and handed over privately; change it any time from the Committee screen.
 
-If you ever need to redo this on a fresh project: Dashboard → **SQL Editor** → run the nine files in
+If you ever need to redo this on a fresh project: Dashboard → **SQL Editor** → run the ten files in
 `supabase/migrations/` in order (the first line of `0007` must be run on its own, before the rest of that file), deploy the two functions with `--no-verify-jwt` (CLI below), set the
 committee code with `select public.admin_set_code(null, 'YourCode');`, and put the project URL and
 publishable key in `site/config.js`.
@@ -152,7 +159,7 @@ and registered details. A student cannot be the account holder.
    (`sk_live_...`, a new webhook endpoint and its `whsec_...`). Replace the two secrets in Supabase.
 3. Fill the yellow placeholders in the terms in `site/index.html` (committee contact, where winners are
    announced). Have the school check the terms and the legal position of a paid game with a prize.
-4. Open `/poster.html` on the live site and print it (A3) or save it as a PDF.
+4. Open `/poster.html`, tap Save as PDF, and print the PDF at A3.
 5. Make one real €2 payment yourself to be sure, then announce it.
 
 ### 6. Prizes at the end
@@ -179,13 +186,14 @@ hash in the database and locks for 15 minutes after 8 wrong tries. From there th
 
 ## Names, codes and signing back in
 
-- Two or three letters, chosen on the first tap. Duplicates get a tag (JAK#2) instead of a refusal, so
+- Two or three letters, picked on the letter pad on the first tap. Duplicates get a tag (JAK#2) instead of a refusal, so
   the real initials always work. Offensive letters are refused; the built-in list is in
   `0002_names_signin_admin.sql` (table `blocked_initials`), the committee can add more, and can reset a
   player's name to a random one.
 - The game: a play is three lights. Each light sweeps the bar at its own random speed (about a second per
   pass) and has its own mark; you tap when the light is on the mark. The score for a light falls off steeply
-  with distance (10 ms off is about 940, 20 ms about 880, 30 ms about 820, 50 ms about 715), and the play's
+  with distance (10 ms off is about 940, 20 ms about 885, 30 ms about 830, 50 ms about 730, and a wild tap
+  still scores 50, never zero), and the play's
   score is the average of the three, so one lucky tap is not enough: scores above 900 need three taps within
   about 15 ms, and a single-light 1,000 needs an error under a tenth of a millisecond, which integer-millisecond
   taps practically never hit.

@@ -137,7 +137,7 @@
     showError('name-error', '');
     nameInitials.set('');
     openSheet('name');
-    setTimeout(() => nameInitials.input.focus(), 80);
+    nameInitials.focus();
     return false;
   }
 
@@ -149,6 +149,7 @@
     const t = $('#toast');
     t.textContent = text;
     t.classList.toggle('error', isError);
+    t.classList.toggle('top', !$('#sheet-backdrop').hidden || $('#tabbar').hidden);
     t.hidden = false;
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => { t.hidden = true; }, ms);
@@ -162,6 +163,7 @@
   function openSheet(id) {
     $$('.sheet').forEach((s) => { s.hidden = s.id !== 'sheet-' + id; });
     $('#sheet-backdrop').hidden = false;
+    $('#toast').classList.add('top'); // a toast already showing must not sit on the sheet's buttons
   }
   function closeSheets() {
     $$('.sheet').forEach((s) => { s.hidden = true; });
@@ -319,6 +321,38 @@
     else buy('single');
   }
 
+  // Rolling-digit counter, like a follower ticker: each changed digit slides up.
+  function setOdometer(el, text) {
+    const chars = Array.from(text);
+    const cur = Array.from(el.querySelectorAll('.dg, .sep'));
+    if (cur.length !== chars.length || cur.some((c, i) => /\d/.test(chars[i]) !== c.classList.contains('dg'))) {
+      el.innerHTML = chars.map((c) => /\d/.test(c) ? `<span class="dg"><span>${c}</span></span>` : `<span class="sep">${esc(c)}</span>`).join('');
+      el.setAttribute('aria-label', text);
+      return;
+    }
+    chars.forEach((c, i) => {
+      const slot = cur[i];
+      if (!slot.classList.contains('dg')) { slot.textContent = c; return; }
+      const old = slot.querySelector('span:not(.out)');
+      if (old && old.textContent === c) return;
+      if (old) { old.className = 'out'; setTimeout(() => old.remove(), 500); }
+      const nu = document.createElement('span'); nu.className = 'in'; nu.textContent = c; slot.appendChild(nu);
+    });
+    el.setAttribute('aria-label', text);
+  }
+  function tickTo(el, from, to, fmt, dur) {
+    return new Promise((resolve) => {
+      if (reduceMotion() || to === from) { setOdometer(el, fmt(to)); resolve(); return; }
+      const steps = Math.min(14, Math.max(4, Math.abs(to - from)));
+      let i = 0;
+      const t = setInterval(() => {
+        i++;
+        const k = 1 - Math.pow(1 - i / steps, 2);
+        setOdometer(el, fmt(Math.round(from + (to - from) * k)));
+        if (i >= steps) { clearInterval(t); setOdometer(el, fmt(to)); resolve(); }
+      }, dur / steps);
+    });
+  }
   let shownRaised = null; // whole euro shown in the app bar
   function showRing(cents, goalCents) {
     const ring = $('#ring-fg');
@@ -333,7 +367,7 @@
     const fmt = (n) => '€' + n.toLocaleString('en-IE');
     if (shownRaised === null) {
       shownRaised = target;
-      countUp(el, 0, target, target > 0 ? 1600 : 0, fmt);
+      tickTo(el, 0, target, fmt, target > 0 ? 1500 : 0);
       return;
     }
     if (target > shownRaised) {
@@ -344,9 +378,9 @@
       setTimeout(() => plus.remove(), 2000);
       wrap.classList.remove('up'); void wrap.offsetWidth; wrap.classList.add('up');
       setTimeout(() => wrap.classList.remove('up'), 2000);
-      countUp(el, shownRaised, target, 1400, fmt);
+      tickTo(el, shownRaised, target, fmt, 1900);
     } else {
-      el.textContent = fmt(target);
+      setOdometer(el, fmt(target));
     }
     shownRaised = target;
   }
@@ -355,8 +389,13 @@
     const d = stats && stats.ends_on ? new Date(stats.ends_on + 'T12:00:00') : null;
     return d && !isNaN(d) ? 'Ends ' + d.toLocaleDateString('en-IE', { day: 'numeric', month: 'long' }) : '';
   };
+  let statsSeq = 0;
   async function refreshStats() {
-    try { stats = await rpc('stats'); } catch (_) { return; }
+    const seq = ++statsSeq;
+    let fresh;
+    try { fresh = await rpc('stats'); } catch (_) { return; }
+    if (seq !== statsSeq) return; // a newer answer is on its way (e.g. right after a payment)
+    stats = fresh;
     showRaised(Number(stats.total_raised_cents || 0));
     showRing(Number(stats.total_raised_cents || 0), Number(stats.goal_cents || 0));
     const ends = endsText();
@@ -474,7 +513,7 @@
     return x < 1 ? x : 2 - x;
   }
   // Steep on purpose: 20 ms off at a one-second sweep is about 880, and 1,000 needs an error under a tenth of a millisecond.
-  const roundScore = (pos, target) => Math.round(1000 * Math.pow(Math.max(0, 1 - Math.abs(pos - target) / 0.5), 3));
+  const roundScore = (pos, target) => 50 + Math.round(950 * Math.pow(Math.max(0, 1 - Math.abs(pos - target) / 0.5), 3));
   function titleFor(s) {
     if (s >= 950) return 'Outstanding';
     if (s >= 900) return 'Superb';
@@ -703,7 +742,8 @@
     kicker.textContent = newBest ? 'New best' : movedUp ? `Up ${prevRank - rank} ${prevRank - rank === 1 ? 'place' : 'places'}` : titleFor(score);
     if (r) { store.set('preslink.prevBest', best); if (rank != null) store.set('preslink.prevRank', rank); }
     $('#result-score').textContent = score;
-    $('#result-rounds').innerHTML = '<span class="lbl">3 lights</span>' + game.scores.map((s) => `<span class="${s >= 850 ? 'top' : ''}">${s}</span>`).join('');
+    const bestRound = Math.max(...game.scores);
+    $('#result-rounds').innerHTML = '<span class="lbl">3 lights</span>' + game.scores.map((s) => `<span class="chip${s === bestRound ? ' top' : ''}">${s}</span>`).join('');
     $('#result-best').textContent = r && best != null ? best : '–';
     $('#result-best-sub').textContent = r && r.best_light != null ? `best light ${r.best_light}` : '';
     $('#result-rank').textContent = rank ? '#' + rank : '–';
@@ -760,6 +800,7 @@
   function showCodeSheet() {
     $('#code-name').innerHTML = nameHtml(player.display);
     $('#code-digits').textContent = player.claim_code;
+    showTicket();
     openSheet('code');
   }
   $('#code-done').addEventListener('click', () => { store.set(CODE_SHOWN_KEY, true); closeSheets(); });
@@ -771,36 +812,58 @@
     try { await navigator.clipboard.writeText(`PresLink Arcade: ${player.display} · code ${player.claim_code}`); toast('Copied'); }
     catch (_) { toast(`${player.display} · ${player.claim_code}`); }
   }
-  // Draws a card with the name and code and hands it to the share sheet (Save Image on iPad and iPhone)
-  // or downloads it.
-  async function saveCodeImage() {
-    if (!player) return;
-    const W = 1080, H = 1080;
+  // The prize ticket: a 4:5 image with the PresLink cross, the light bar, the name and the code.
+  // Shown in the code sheet (long-press saves it on iPhone) and handed to the share sheet by
+  // "Save to Photos" (Save Image on iPhone and iPad) or downloaded elsewhere.
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+  const crossImage = new Promise((resolve) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => resolve(null); img.src = 'assets/cross.svg?v=11'; });
+  async function renderTicket() {
+    const W = 1080, H = 1350;
     const c = document.createElement('canvas');
     c.width = W; c.height = H;
     const ctx = c.getContext('2d');
-    ctx.fillStyle = '#5b3a9a'; ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = '#ffffff';
-    const r = 44, x = 80, y = 120, w = W - 160, h = H - 240;
-    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); ctx.fill();
-    await new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => { ctx.drawImage(img, W / 2 - 70, 190, 140, 140); resolve(); };
-      img.onerror = resolve;
-      img.src = 'assets/cross.svg?v=10';
-    });
-    const font = (size, weight) => `${weight} ${size}px -apple-system, BlinkMacSystemFont, Inter, Helvetica, Arial, sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#5b3a9a'; ctx.font = font(44, 700); ctx.fillText('PresLink Arcade', W / 2, 400);
-    ctx.fillStyle = '#8e8e93'; ctx.font = font(30, 600); ctx.fillText('YOUR NAME', W / 2, 500);
-    ctx.fillStyle = '#1c1c1e'; ctx.font = font(120, 800); ctx.fillText(player.display, W / 2, 620);
-    ctx.fillStyle = '#8e8e93'; ctx.font = font(30, 600); ctx.fillText('YOUR CODE', W / 2, 720);
-    ctx.fillStyle = '#1f9d5a'; ctx.font = font(150, 800); ctx.fillText(player.claim_code.split('').join(' '), W / 2, 860);
-    ctx.fillStyle = '#48484a'; ctx.font = font(30, 500); ctx.fillText('Show these to the committee to collect a prize.', W / 2, 920);
+    const font = (size, weight) => `${weight} ${size}px -apple-system, BlinkMacSystemFont, Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif`;
+    // green ground, white card
+    ctx.fillStyle = '#1f9d5a'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#ffffff'; roundRect(ctx, 56, 56, W - 112, H - 112, 52); ctx.fill();
+    // cross and wordmark
+    const img = await crossImage;
+    if (img) ctx.drawImage(img, W / 2 - 72, 128, 144, 144);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = '#1c1c1e'; ctx.font = font(50, 800); ctx.fillText('PresLink Arcade', W / 2, 356);
+    // the light bar: the game's own mark
+    const bx = 240, by = 396, bw = 600, bh = 34;
+    const g = ctx.createLinearGradient(bx, 0, bx + bw, 0);
+    g.addColorStop(0, '#fff3c4'); g.addColorStop(.45, '#ffd766'); g.addColorStop(.75, '#ffab45'); g.addColorStop(1, '#f26a1b');
+    ctx.fillStyle = g; roundRect(ctx, bx, by, bw, bh, bh / 2); ctx.fill();
+    ctx.fillStyle = '#1c1c1e'; roundRect(ctx, bx + bw * 0.62 - 3, by - 10, 6, bh + 20, 3); ctx.fill();
+    ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#1c1c1e'; ctx.lineWidth = 4; roundRect(ctx, bx + bw * 0.62 - 13, by - 6, 26, bh + 12, 13); ctx.fill(); ctx.stroke();
+    // name
+    ctx.fillStyle = '#8e8e93'; ctx.font = font(28, 700); ctx.fillText('Y O U R   N A M E', W / 2, 560);
+    ctx.fillStyle = '#1c1c1e'; ctx.font = font(170, 800); ctx.fillText(player.display, W / 2, 712);
+    // code
+    ctx.fillStyle = '#8e8e93'; ctx.font = font(28, 700); ctx.fillText('Y O U R   C O D E', W / 2, 820);
+    ctx.fillStyle = '#1f9d5a'; ctx.font = font(200, 800); ctx.fillText(player.claim_code.split('').join(' '), W / 2, 1000);
+    // rule and the two lines that matter
+    ctx.fillStyle = '#e5e5ea'; ctx.fillRect(160, 1064, W - 320, 3);
+    ctx.fillStyle = '#1c1c1e'; ctx.font = font(36, 700); ctx.fillText('Keep this. Name and code collect a prize.', W / 2, 1140);
+    ctx.fillStyle = '#8e8e93'; ctx.font = font(30, 600); ctx.fillText(location.host || 'preslink.netlify.app', W / 2, 1200);
+    return c;
+  }
+  async function showTicket() {
+    const img = $('#code-preview');
+    if (!player) { img.hidden = true; return; }
+    try { img.src = (await renderTicket()).toDataURL('image/png'); img.hidden = false; } catch (_) { img.hidden = true; }
+  }
+  async function saveCodeImage() {
+    if (!player) return;
+    const c = await renderTicket();
     const blob = await new Promise((resolve) => c.toBlob(resolve, 'image/png'));
     const file = new File([blob], `preslink-${player.display.replace('#', '-')}.png`, { type: 'image/png' });
     try {
-      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'PresLink Arcade code' }); return; }
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'PresLink Arcade ticket' }); return; }
     } catch (_) { return; /* cancelled */ }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -808,6 +871,8 @@
     a.click();
     toast('Saved');
   }
+  // iPhone and iPad: the share sheet opens with Save Image on it; say so once under the button.
+  if (navigator.canShare) $$('.save-hint').forEach((h) => { h.hidden = false; });
 
   // ---------------------------------------------------------------------------
   // School: optional. A school email puts you on the Students or Teachers board.
@@ -880,9 +945,8 @@
       const badges = [r.tag === lightTag ? ['i-flash', 'Best light', 'light'] : null, r.tag === playsTag ? ['i-repeat', 'Most plays', 'plays'] : null].filter(Boolean)
         .map(([i, t, k]) => `<button class="badge ${k}" type="button" data-badge="${k}" title="${t}" aria-label="${t}"><svg><use href="#${i}"/></svg></button>`).join('');
       li.innerHTML = `<span class="rank">${r.rank}</span>${avatarHtml(r.initials)}
-        <span class="name"><span class="badges">${badges}${me ? '<span class="youtag">You</span>' : ''}</span><span class="meta">${r.plays} ${Number(r.plays) === 1 ? 'play' : 'plays'} · ${fmtWhen(r.achieved_at)}${r.tag === lightTag ? ' · best light' : ''}${r.tag === playsTag ? ' · most plays' : ''}</span></span>
+        <span class="name"><span class="badges">${badges}${me ? '<span class="youtag">You</span>' : ''}</span><span class="meta">${r.plays} ${Number(r.plays) === 1 ? 'play' : 'plays'}</span></span>
         <span class="pts">${r.score}</span>`;
-      li.addEventListener('click', (e) => { if (!e.target.closest('.badge')) li.classList.toggle('open'); });
       list.appendChild(li);
     });
   }
@@ -901,32 +965,74 @@
   // ---------------------------------------------------------------------------
   // You: letters, board, code
   // ---------------------------------------------------------------------------
-  function initialsField(inputId) {
-    const input = $('#' + inputId);
-    const label = input.closest('.initials');
-    const boxes = $$('.box', label);
-    const sync = () => {
-      const v = input.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
-      if (v !== input.value) input.value = v;
+  // Letters are picked on an on-screen pad, so no system keyboard ever covers the boxes. Tap a box to
+  // clear that letter (the next letter goes there); a hardware keyboard works too.
+  let liveLetters = null;
+  function initialsField(id) {
+    const root = $('#' + id);
+    const boxes = $$('.box', root);
+    const pad = root.parentElement.querySelector('.letterpad');
+    const letters = ['', '', ''];
+    let active = 0;
+    pad.innerHTML = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((ch) => `<button class="key" type="button" data-key="${ch}">${ch}</button>`).join('')
+      + '<button class="key back" type="button" data-key="back" aria-label="Delete"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><path d="m18 9-6 6M12 9l6 6"/></svg></button>';
+    const firstEmpty = () => letters.findIndex((l) => !l);
+    const paint = () => {
       boxes.forEach((b, i) => {
-        b.textContent = v[i] || '';
-        b.classList.toggle('active', document.activeElement === input && i === Math.min(v.length, 2));
-        b.classList.toggle('filled', !!v[i]);
+        b.textContent = letters[i]; b.classList.toggle('filled', !!letters[i]); b.classList.toggle('active', i === active);
+        b.setAttribute('aria-label', letters[i] ? `Letter ${i + 1}: ${letters[i]}. Tap to clear` : `Letter ${i + 1}${i === 2 ? ', optional' : ''}, empty`);
       });
+      pad.classList.toggle('full', active < 0);
+      $$('.key:not(.back)', pad).forEach((k) => k.setAttribute('aria-disabled', active < 0 ? 'true' : 'false'));
     };
-    input.addEventListener('input', () => { sync(); const err = label.parentElement.querySelector('.field-error'); if (err) err.hidden = true; });
-    input.addEventListener('focus', sync);
-    input.addEventListener('blur', sync);
-    label.addEventListener('click', () => input.focus());
-    sync();
-    return { input, value: () => input.value.toUpperCase(), set: (v) => { input.value = v || ''; sync(); } };
+    const clearError = () => { const err = root.parentElement.querySelector('.field-error'); if (err) err.hidden = true; };
+    const type = (ch) => { if (active < 0) return; letters[active] = ch; active = firstEmpty(); paint(); clearError(); };
+    const back = () => { let i = 2; while (i >= 0 && !letters[i]) i--; if (i < 0) return; letters[i] = ''; active = firstEmpty(); paint(); };
+    boxes.forEach((b, i) => b.addEventListener('click', () => { letters[i] = ''; active = i; paint(); }));
+    pad.addEventListener('click', (e) => {
+      const k = e.target.closest('.key'); if (!k) return;
+      if (k.dataset.key === 'back') back(); else type(k.dataset.key);
+      if (e.detail > 0) k.blur(); // a tapped key gives focus back, so Enter on a hardware keyboard submits; keyboard users keep their place
+    });
+    const field = {
+      type, back,
+      value: () => letters.map((l) => l || ' ').join('').trimEnd(), // an empty middle box stays visible to the validator
+      set: (v) => { const s = (v || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3); for (let i = 0; i < 3; i++) letters[i] = s[i] || ''; active = firstEmpty(); paint(); },
+      focus: () => { liveLetters = field; setTimeout(() => { const b = boxes[Math.max(active, 0)]; if (b && b.getClientRects().length) b.focus({ preventScroll: true }); }, 80); },
+      visible: () => root.getClientRects().length > 0,
+      el: root,
+    };
+    paint();
+    return field;
   }
+  document.addEventListener('keydown', (e) => {
+    const f = liveLetters;
+    if (!f || !f.visible() || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (/^(input|textarea|select)$/i.test(e.target.tagName)) return;
+    const open = $$('.sheet').find((s) => !s.hidden);
+    if (open && !open.contains(f.el)) return; // another sheet sits on top of the letters
+    if (/^[a-z]$/i.test(e.key)) { e.preventDefault(); f.type(e.key.toUpperCase()); }
+    else if (e.key === 'Backspace') { e.preventDefault(); f.back(); }
+    else if (e.key === 'Enter') {
+      if (e.target !== document.body && !e.target.closest('.initials .box')) return; // Close, Cancel, tab bar and pad keys keep their own click
+      const form = f.el.closest('form'); if (form) { e.preventDefault(); form.requestSubmit(); }
+    }
+  });
+  // Sheets with a text field (school email) sit above the keyboard: iOS keeps the layout viewport
+  // and shrinks the visual one, so the gap between them is the keyboard height.
+  const vv = window.visualViewport;
+  function fitSheets() {
+    if (!vv) return;
+    const lift = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+    document.documentElement.style.setProperty('--kb', lift + 'px');
+  }
+  if (vv) { vv.addEventListener('resize', fitSheets); vv.addEventListener('scroll', fitSheets); }
   const editInitials = initialsField('edit-initials');
   const nameInitials = initialsField('name-initials');
   $('#name-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const initials = nameInitials.value();
-    if (!/^[A-Z]{2,3}$/.test(initials)) { showError('name-error', MESSAGES.BAD_INITIALS); nameInitials.input.focus(); return; }
+    if (!/^[A-Z]{2,3}$/.test(initials)) { showError('name-error', MESSAGES.BAD_INITIALS); return; }
     const btn = $('#name-submit');
     btn.disabled = true;
     try {
@@ -965,7 +1071,7 @@
     if (!f.hidden) {
       editInitials.set(player.initials);
       showError('edit-error', '');
-      setTimeout(() => editInitials.input.focus(), 50);
+      editInitials.focus();
     }
   });
   $('#edit-cancel').addEventListener('click', () => { $('#edit-form').hidden = true; });
@@ -1024,7 +1130,6 @@
     $('#admin-login').hidden = !!code;
     $('#admin-panel').hidden = !code;
     $('#admin-logout').hidden = !code;
-    $('#admin-sub').textContent = code ? 'Money, boards, players and prizes.' : 'Committee code required.';
     if (DEMO) $('#admin-code').placeholder = 'Demo code: PRESLINK';
     if (code) loadAdmin();
     else setTimeout(() => $('#admin-code').focus(), 60);
@@ -1097,7 +1202,7 @@
     });
     if (!td.children.length) td.innerHTML = '<tr><td colspan="3" class="muted">No payments yet.</td></tr>';
 
-    const tp = $('#adm-payments tbody');
+    const tp = $('#adm-payments-table tbody');
     tp.innerHTML = '';
     (d.payments || []).forEach((p) => {
       const tr = document.createElement('tr');
@@ -1225,10 +1330,12 @@
     if (!el) { resolve(); return; }
     const finish = () => { el.classList.add('gone'); resolve(); };
     const returning = /session_id=|cancelled=/.test(location.search);
-    if (reduceMotion() || returning) { finish(); return; }
-    setTimeout(finish, 3300);
+    if (returning) { finish(); return; }
+    setTimeout(finish, reduceMotion() ? 1400 : 3300);
     el.addEventListener('click', finish);
   });
+  // Coming back to the tab from the back-forward cache counts as opening the site: play it again.
+  window.addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); });
 
   async function boot() {
     const params = new URLSearchParams(location.search);
