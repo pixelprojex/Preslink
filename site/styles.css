@@ -48,8 +48,15 @@ img { max-width: 100%; display: block; }
 /* Type */
 h1, h2, h3 { margin: 0; line-height: 1.15; color: var(--ink); font-weight: 700; letter-spacing: -.02em; }
 .title { padding: 14px 4px 18px; }
-.title h1 { font-size: 34px; font-weight: 800; letter-spacing: -.03em; }
-.subtitle { margin: 6px 0 0; color: var(--muted); font-size: 16px; font-weight: 500; }
+.title h1 { font-size: 36px; font-weight: 800; letter-spacing: -.03em; }
+.subtitle { margin: 8px 0 0; color: var(--muted); font-size: 17px; font-weight: 500; line-height: 1.4; }
+.home-title { padding-top: 28px; padding-bottom: 26px; }
+.home-title h1 { font-size: 42px; }
+.btn-hero { min-height: 68px; font-size: 21px; border-radius: 20px; }
+.bundles-line { display: flex; justify-content: center; align-items: center; gap: 10px; margin: 14px 0 0; color: var(--muted-2); font-size: 15px; }
+.bundles-line .link { font-size: 15px; color: var(--muted); font-weight: 600; }
+.home-links { margin-top: 32px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .section { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin: 28px 16px 10px; }
 .section:first-child { margin-top: 8px; }
 .school-id { display: inline-flex; align-items: center; gap: 8px; color: var(--purple); font-weight: 600; font-size: 13px; }
@@ -72,7 +79,7 @@ p { margin: 0 0 10px; }
 .card { background: var(--surface); border-radius: 18px; overflow: hidden; }
 .card + .card { margin-top: 12px; }
 .card.pad { padding: 16px; }
-.cell { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 14px 18px; background: none; border: 0; text-align: left; color: var(--ink); font-size: 17px; font-weight: 500; cursor: default; }
+.cell { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; width: 100%; min-height: 60px; padding: 16px 18px; background: none; border: 0; text-align: left; color: var(--ink); font-size: 17px; font-weight: 600; cursor: default; }
 button.cell { cursor: pointer; }
 button.cell:active { background: var(--fill); }
 .cell + .cell { position: relative; }
@@ -324,14 +331,19 @@ button.cell:active { background: var(--fill); }
 .avatar.c3 { background: #e8f1ec; color: #2f5f45; }
 .avatar.c4 { background: #e8edf3; color: #3a4a5c; }
 .avatar.c5 { background: #eeedf4; color: #4b4766; }
-.avatar.big { width: 72px; height: 72px; font-size: 22px; margin: 0 auto 10px; }
+.avatar.big { width: 96px; height: 96px; font-size: 30px; margin: 0 auto 14px; letter-spacing: .04em; }
 .board .name { font-weight: 600; color: var(--ink); font-size: 15px; display: grid; gap: 4px; min-height: 20px; }
 .board .name .badges { display: flex; align-items: center; gap: 6px; min-height: 18px; }
 .board .meta { display: none; }
 .board li.open .meta { display: block; }
 .board .meta, .winners .meta { font-weight: 400; font-size: 13px; color: var(--muted); letter-spacing: 0; }
-.badge { width: 22px; height: 22px; border-radius: 50%; background: var(--fill); color: var(--text); display: grid; place-items: center; }
-.badge svg { width: 13px; height: 13px; }
+.badge { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; border: 0; padding: 0; cursor: pointer; }
+.badge svg { width: 14px; height: 14px; }
+.badge.light { background: #fff0b8; color: #8a5a00; }
+.badge.plays { background: var(--green-l); color: var(--green-d); }
+.bubble { position: absolute; z-index: 4; left: 16px; right: 16px; top: calc(100% - 6px); background: var(--ink); color: #fff; border-radius: 12px; padding: 10px 14px; font-size: 14px; font-weight: 500; line-height: 1.4; animation: rise .2s ease-out; }
+.bubble b { font-weight: 700; }
+.board li.bubbling { z-index: 5; }
 .sfx { font-size: .75em; color: var(--muted); font-weight: 600; margin-left: 1px; }
 .board .pts { font-weight: 700; color: var(--ink); font-size: 18px; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
 .spot-row { display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 12px; padding: 8px 0; font-size: 16px; color: var(--ink); }

@@ -174,6 +174,26 @@
     if (e.target.closest('[data-close]')) closeSheets();
   });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheets(); });
+  // Badge bubbles: tap a prize symbol to see what it means.
+  const BADGE_TEXT = { light: ['Best light', 'Closest to 1,000 with a single light. A spot prize at the end.'], plays: ['Most plays', 'The most plays in the campaign. A spot prize at the end.'] };
+  function closeBubbles() { $$('.bubble').forEach((b) => b.remove()); $$('.board li.bubbling').forEach((l) => l.classList.remove('bubbling')); }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-badge]');
+    const had = !!$('.bubble');
+    closeBubbles();
+    if (!b) return;
+    if (had && b.dataset.open === '1') { $$('[data-badge]').forEach((x) => { x.dataset.open = ''; }); return; }
+    $$('[data-badge]').forEach((x) => { x.dataset.open = ''; });
+    b.dataset.open = '1';
+    const li = b.closest('li');
+    const [title, text] = BADGE_TEXT[b.dataset.badge] || ['', ''];
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.setAttribute('role', 'status');
+    bubble.innerHTML = `<b>${esc(title)}</b> · ${esc(text)}`;
+    li.classList.add('bubbling');
+    li.appendChild(bubble);
+  });
   // Accordion rows: a title until tapped.
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('.acc > .cell');
@@ -857,12 +877,12 @@
       const li = document.createElement('li');
       const me = player && r.tag === player.tag;
       li.className = (me ? 'me ' : '') + (r.rank <= 3 ? 'r' + r.rank : '');
-      const badges = [r.tag === lightTag ? ['i-flash', 'Best light'] : null, r.tag === playsTag ? ['i-repeat', 'Most plays'] : null].filter(Boolean)
-        .map(([i, t]) => `<span class="badge" title="${t}" aria-label="${t}"><svg><use href="#${i}"/></svg></span>`).join('');
+      const badges = [r.tag === lightTag ? ['i-flash', 'Best light', 'light'] : null, r.tag === playsTag ? ['i-repeat', 'Most plays', 'plays'] : null].filter(Boolean)
+        .map(([i, t, k]) => `<button class="badge ${k}" type="button" data-badge="${k}" title="${t}" aria-label="${t}"><svg><use href="#${i}"/></svg></button>`).join('');
       li.innerHTML = `<span class="rank">${r.rank}</span>${avatarHtml(r.initials)}
         <span class="name"><span class="badges">${badges}${me ? '<span class="youtag">You</span>' : ''}</span><span class="meta">${r.plays} ${Number(r.plays) === 1 ? 'play' : 'plays'} · ${fmtWhen(r.achieved_at)}${r.tag === lightTag ? ' · best light' : ''}${r.tag === playsTag ? ' · most plays' : ''}</span></span>
         <span class="pts">${r.score}</span>`;
-      li.addEventListener('click', () => li.classList.toggle('open'));
+      li.addEventListener('click', (e) => { if (!e.target.closest('.badge')) li.classList.toggle('open'); });
       list.appendChild(li);
     });
   }

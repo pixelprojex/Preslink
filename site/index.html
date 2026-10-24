@@ -53,21 +53,14 @@
 
   <!-- ================= HOME ================= -->
   <section class="screen" data-screen="home">
-    <div class="title"><h1>Arcade</h1><p class="subtitle">Stop the light. Fund schools in Ghana and Nigeria.</p></div>
-    <div class="card hero-card">
-      <div class="demo-track" aria-hidden="true"><span class="demo-pin"></span><span class="demo-marker"></span></div>
-      <button class="btn btn-primary btn-xl" id="home-play" type="button">Play · €2</button>
-      <div class="bundles">
-        <button class="pill" type="button" data-bundle="triple">3 plays · €5<small>Save €1</small></button>
-        <button class="pill" type="button" data-bundle="seven">7 plays · €10<small>Save €4</small></button>
-      </div>
+    <div class="title home-title">
+      <h1>Stop the light.</h1>
+      <p class="subtitle">Three lights, best score wins.<br>Every play funds schools in Ghana and Nigeria.</p>
     </div>
-    <button class="prize-cta" type="button" data-go="prize" style="margin-top:12px">
-      <span class="ico"><svg><use href="#i-trophy"/></svg></span>
-      <strong>Prizes</strong>
-      <span class="chev">›</span>
-    </button>
-    <div class="card" style="margin-top:12px">
+    <button class="btn btn-primary btn-hero" id="home-play" type="button">Play · €2</button>
+    <p class="bundles-line"><button class="link" type="button" data-bundle="triple">3 plays €5</button><span>·</span><button class="link" type="button" data-bundle="seven">7 plays €10</button></p>
+    <div class="card home-links">
+      <button class="cell" type="button" data-go="prize">Prizes <span class="chev">›</span></button>
       <button class="cell" type="button" data-sheet="how">How to play <span class="chev">›</span></button>
       <button class="cell" type="button" data-go="about">Where the money goes <span class="chev">›</span></button>
     </div>
@@ -132,10 +125,7 @@
         <span class="chev">›</span>
       </button>
       <button class="btn btn-primary btn-xl" type="button" id="result-again">Play again</button>
-      <div class="bundles" id="result-topup" hidden style="margin-bottom:10px">
-        <button class="pill" type="button" data-bundle="triple">3 plays · €5<small>Save €1</small></button>
-        <button class="pill" type="button" data-bundle="seven">7 plays · €10<small>Save €4</small></button>
-      </div>
+      <p class="bundles-line" id="result-topup" hidden><button class="link" type="button" data-bundle="triple">3 plays €5</button><span>·</span><button class="link" type="button" data-bundle="seven">7 plays €10</button></p>
       <div class="grid-2">
         <button class="btn" type="button" data-go="board">Leaderboard</button>
         <button class="btn" type="button" id="result-share">Share</button>
@@ -218,7 +208,7 @@
     <div id="you-panel" hidden>
       <div class="card profile">
         <span class="avatar big" id="you-avatar">··</span>
-        <span class="profile-name" id="you-name">···</span>
+        <span class="profile-name sr-only" id="you-name">···</span>
         <span class="profile-board" id="you-board">Everyone board</span>
       </div>
       <div class="card code-card">
