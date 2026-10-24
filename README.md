@@ -40,7 +40,8 @@ with a photo, and very little text.
 ## Put it online in three steps (about 5 minutes)
 
 You need a free Netlify account. Nothing else. No Stripe is needed for the demo: without a
-Stripe key the site gives free plays and says so on screen.
+Stripe key the site gives free plays and says so on screen. Demo plays still move the "raised"
+counter so the site feels real; clear them before launch (`docs/admin.sql`).
 
 1. Go to <https://app.netlify.com>, click **Sign up**, choose **GitHub**.
 2. Click **Add new site**, then **Import an existing project**, then **GitHub**. Pick the
@@ -79,6 +80,7 @@ The free plays switch off by themselves the moment a Stripe key exists. Details 
 | `supabase/migrations/0007_campaign.sql` | One campaign instead of weeks: Everyone board, school email for Students/Teachers, spot prizes, end date and five prize texts |
 | `supabase/migrations/0008_harder_scoring.sql` | Steeper score curve so 1,000 is practically unreachable and scores spread below 900 |
 | `supabase/migrations/0009_admin_school_email.sql` | Committee lookup shows a player's school email and best light |
+| `supabase/migrations/0010_demo_payments_count.sql` | Demo plays count on the raised total (clear them before going live, see `docs/admin.sql`) |
 | `site/poster.html` | Print-ready A3 poster with a large QR code (vendored encoder in `site/vendor/`) |
 | `site/assets/` | Logo (`logo.svg`, `cross.svg`), icons, and the photo slots `photo-*.svg` to replace with real photos |
 | `supabase/functions/api/index.ts` | Register, checkout, confirm payment, start play, submit score |
@@ -92,11 +94,11 @@ Do these in order. Steps 1 and 2 are a one-off technical setup; 3 to 6 are the l
 
 ### 1. Supabase (database + functions): already done
 
-The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all nine migrations applied,
+The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all ten migrations applied,
 both functions deployed, and `site/config.js` points at it. The committee code was set at deployment
 and handed over privately; change it any time from the Committee screen.
 
-If you ever need to redo this on a fresh project: Dashboard → **SQL Editor** → run the nine files in
+If you ever need to redo this on a fresh project: Dashboard → **SQL Editor** → run the ten files in
 `supabase/migrations/` in order (the first line of `0007` must be run on its own, before the rest of that file), deploy the two functions with `--no-verify-jwt` (CLI below), set the
 committee code with `select public.admin_set_code(null, 'YourCode');`, and put the project URL and
 publishable key in `site/config.js`.

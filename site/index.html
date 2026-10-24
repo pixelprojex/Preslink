@@ -6,9 +6,10 @@
   <meta name="theme-color" content="#5b3a9a">
   <title>PresLink Arcade</title>
   <meta name="description" content="Stop the light on the mark. Every play funds Presentation Brothers schools in Ghana and Nigeria. Prizes at the end of the campaign.">
-  <link rel="icon" href="assets/favicon.svg?v=10" type="image/svg+xml">
-  <link rel="icon" href="assets/favicon-32.png?v=10" type="image/png" sizes="32x32">
-  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=10">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="assets/icon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="assets/icon-180.png">
+  <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -47,18 +48,19 @@
     <a class="brand" href="#home" aria-label="PresLink Arcade home"><img src="assets/cross.svg?v=10" alt=""><span>PresLink</span></a>
     <div class="raised" id="raised" aria-live="polite">
       <svg class="ring" viewBox="0 0 36 36" aria-hidden="true"><circle class="ring-bg" cx="18" cy="18" r="15.5"/><circle class="ring-fg" id="ring-fg" cx="18" cy="18" r="15.5" stroke-dasharray="0 97.4"/></svg>
-      <span class="raised-t"><span class="raised-n" id="raised-n">€0</span><span class="raised-l">raised</span></span>
+      <span class="raised-t"><span class="raised-n odo" id="raised-n" aria-label="€0">€0</span><span class="raised-l">raised</span></span>
     </div>
   </header>
 
   <!-- ================= HOME ================= -->
   <section class="screen" data-screen="home">
-    <div class="title home-title">
-      <h1>Stop the light.</h1>
-      <p class="subtitle">Three lights, best score wins.<br>Every play funds schools in Ghana and Nigeria.</p>
+    <div class="card hero-card">
+      <h1 class="hero-h">Stop the light.</h1>
+      <p class="hero-p">Three lights, best score wins. Every play funds schools in Ghana and Nigeria.</p>
+      <div class="demo-track" aria-hidden="true"><span class="demo-pin"></span><span class="demo-marker"></span></div>
+      <button class="btn btn-primary btn-xl" id="home-play" type="button">Play · €2</button>
+      <p class="bundles-line"><button class="link" type="button" data-bundle="triple">3 plays €5</button><span>·</span><button class="link" type="button" data-bundle="seven">7 plays €10</button></p>
     </div>
-    <button class="btn btn-primary btn-hero" id="home-play" type="button">Play · €2</button>
-    <p class="bundles-line"><button class="link" type="button" data-bundle="triple">3 plays €5</button><span>·</span><button class="link" type="button" data-bundle="seven">7 plays €10</button></p>
     <div class="card home-links">
       <button class="cell" type="button" data-go="prize">Prizes <span class="chev">›</span></button>
       <button class="cell" type="button" data-sheet="how">How to play <span class="chev">›</span></button>

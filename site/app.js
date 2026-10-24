@@ -319,6 +319,38 @@
     else buy('single');
   }
 
+  // Rolling-digit counter, like a follower ticker: each changed digit slides up.
+  function setOdometer(el, text) {
+    const chars = Array.from(text);
+    const cur = Array.from(el.querySelectorAll('.dg, .sep'));
+    if (cur.length !== chars.length || cur.some((c, i) => /\d/.test(chars[i]) !== c.classList.contains('dg'))) {
+      el.innerHTML = chars.map((c) => /\d/.test(c) ? `<span class="dg"><span>${c}</span></span>` : `<span class="sep">${esc(c)}</span>`).join('');
+      el.setAttribute('aria-label', text);
+      return;
+    }
+    chars.forEach((c, i) => {
+      const slot = cur[i];
+      if (!slot.classList.contains('dg')) { slot.textContent = c; return; }
+      const old = slot.querySelector('span:not(.out)');
+      if (old && old.textContent === c) return;
+      if (old) { old.className = 'out'; setTimeout(() => old.remove(), 500); }
+      const nu = document.createElement('span'); nu.className = 'in'; nu.textContent = c; slot.appendChild(nu);
+    });
+    el.setAttribute('aria-label', text);
+  }
+  function tickTo(el, from, to, fmt, dur) {
+    return new Promise((resolve) => {
+      if (reduceMotion() || to === from) { setOdometer(el, fmt(to)); resolve(); return; }
+      const steps = Math.min(14, Math.max(4, Math.abs(to - from)));
+      let i = 0;
+      const t = setInterval(() => {
+        i++;
+        const k = 1 - Math.pow(1 - i / steps, 2);
+        setOdometer(el, fmt(Math.round(from + (to - from) * k)));
+        if (i >= steps) { clearInterval(t); setOdometer(el, fmt(to)); resolve(); }
+      }, dur / steps);
+    });
+  }
   let shownRaised = null; // whole euro shown in the app bar
   function showRing(cents, goalCents) {
     const ring = $('#ring-fg');
@@ -333,7 +365,7 @@
     const fmt = (n) => '€' + n.toLocaleString('en-IE');
     if (shownRaised === null) {
       shownRaised = target;
-      countUp(el, 0, target, target > 0 ? 1600 : 0, fmt);
+      tickTo(el, 0, target, fmt, target > 0 ? 1500 : 0);
       return;
     }
     if (target > shownRaised) {
@@ -344,9 +376,9 @@
       setTimeout(() => plus.remove(), 2000);
       wrap.classList.remove('up'); void wrap.offsetWidth; wrap.classList.add('up');
       setTimeout(() => wrap.classList.remove('up'), 2000);
-      countUp(el, shownRaised, target, 1400, fmt);
+      tickTo(el, shownRaised, target, fmt, 1400);
     } else {
-      el.textContent = fmt(target);
+      setOdometer(el, fmt(target));
     }
     shownRaised = target;
   }
@@ -787,7 +819,7 @@
       const img = new Image();
       img.onload = () => { ctx.drawImage(img, W / 2 - 70, 190, 140, 140); resolve(); };
       img.onerror = resolve;
-      img.src = 'assets/cross.svg?v=10';
+      img.src = 'assets/cross.svg?v=11';
     });
     const font = (size, weight) => `${weight} ${size}px -apple-system, BlinkMacSystemFont, Inter, Helvetica, Arial, sans-serif`;
     ctx.textAlign = 'center';
@@ -1225,10 +1257,12 @@
     if (!el) { resolve(); return; }
     const finish = () => { el.classList.add('gone'); resolve(); };
     const returning = /session_id=|cancelled=/.test(location.search);
-    if (reduceMotion() || returning) { finish(); return; }
-    setTimeout(finish, 3300);
+    if (returning) { finish(); return; }
+    setTimeout(finish, reduceMotion() ? 1400 : 3300);
     el.addEventListener('click', finish);
   });
+  // Coming back to the tab from the back-forward cache counts as opening the site: play it again.
+  window.addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); });
 
   async function boot() {
     const params = new URLSearchParams(location.search);
