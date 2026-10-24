@@ -149,7 +149,7 @@
     const t = $('#toast');
     t.textContent = text;
     t.classList.toggle('error', isError);
-    t.classList.toggle('top', !$('#sheet-backdrop').hidden);
+    t.classList.toggle('top', !$('#sheet-backdrop').hidden || $('#tabbar').hidden);
     t.hidden = false;
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => { t.hidden = true; }, ms);
@@ -992,6 +992,7 @@
     pad.addEventListener('click', (e) => {
       const k = e.target.closest('.key'); if (!k) return;
       if (k.dataset.key === 'back') back(); else type(k.dataset.key);
+      if (e.detail > 0) k.blur(); // a tapped key gives focus back, so Enter on a hardware keyboard submits; keyboard users keep their place
     });
     const field = {
       type, back,
@@ -1012,7 +1013,10 @@
     if (open && !open.contains(f.el)) return; // another sheet sits on top of the letters
     if (/^[a-z]$/i.test(e.key)) { e.preventDefault(); f.type(e.key.toUpperCase()); }
     else if (e.key === 'Backspace') { e.preventDefault(); f.back(); }
-    else if (e.key === 'Enter') { const form = f.el.closest('form'); if (form) { e.preventDefault(); form.requestSubmit(); } }
+    else if (e.key === 'Enter') {
+      if (e.target !== document.body && !e.target.closest('.initials .box')) return; // Close, Cancel, tab bar and pad keys keep their own click
+      const form = f.el.closest('form'); if (form) { e.preventDefault(); form.requestSubmit(); }
+    }
   });
   // Sheets with a text field (school email) sit above the keyboard: iOS keeps the layout viewport
   // and shrinks the visual one, so the gap between them is the keyboard height.
@@ -1126,7 +1130,6 @@
     $('#admin-login').hidden = !!code;
     $('#admin-panel').hidden = !code;
     $('#admin-logout').hidden = !code;
-    $('#admin-sub').textContent = code ? 'Money, boards, players and prizes.' : 'Committee code required.';
     if (DEMO) $('#admin-code').placeholder = 'Demo code: PRESLINK';
     if (code) loadAdmin();
     else setTimeout(() => $('#admin-code').focus(), 60);
@@ -1199,7 +1202,7 @@
     });
     if (!td.children.length) td.innerHTML = '<tr><td colspan="3" class="muted">No payments yet.</td></tr>';
 
-    const tp = $('#adm-payments tbody');
+    const tp = $('#adm-payments-table tbody');
     tp.innerHTML = '';
     (d.payments || []).forEach((p) => {
       const tr = document.createElement('tr');

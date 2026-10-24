@@ -80,7 +80,7 @@
       </div>
       <div class="cab-tray-wrap"><div class="cab-tray"></div><div class="cab-token" id="token">1</div><span class="cab-hint" id="cab-hint"></span></div>
     </div>
-    <div class="cab-text">
+    <div class="card pad cab-text">
       <h2 id="cab-title">Thank you</h2>
       <p id="cab-text"></p>
       <button class="btn btn-primary btn-xl" id="cab-play" type="button">Play</button>
@@ -148,7 +148,7 @@
       <ol class="board" id="board-list"></ol>
       <p class="empty" id="board-empty" hidden>No scores yet. Be the first.</p>
     </div>
-    <div class="card" style="margin-top:28px" id="board-spot">
+    <div class="card" id="board-spot">
       <h2 class="card-h" id="board-sub">Prizes at the end</h2>
       <div class="acc"><button class="cell" type="button" aria-expanded="false">Spot prizes <span class="chev">›</span></button>
         <div class="acc-body">
@@ -175,17 +175,16 @@
       <div class="acc"><button class="cell" type="button" aria-expanded="false">Best light <span class="chev">›</span></button><div class="acc-body"><p id="prize-best-light">Closest to 1,000 with one light.</p><span class="lead" id="lead-light"></span></div></div>
       <div class="acc"><button class="cell" type="button" aria-expanded="false">Most plays <span class="chev">›</span></button><div class="acc-body"><p id="prize-most-plays">The biggest supporter.</p><span class="lead" id="lead-plays"></span></div></div>
     </div>
-    <div class="card" style="margin-top:28px">
+    <div class="card">
       <div class="acc"><button class="cell" type="button" aria-expanded="false">How to collect <span class="chev">›</span></button><div class="acc-body"><p>Keep your name and code (You tab). Winners are announced at the end. Show your name and code to collect.</p></div></div>
     </div>
-    <button class="btn btn-primary btn-xl page-cta js-play" type="button">Play · €2</button>
   </section>
 
   <!-- ================= ABOUT ================= -->
   <section class="screen" data-screen="about" hidden>
     <div class="title"><h1>About</h1></div>
     <div class="card">
-      <div class="acc"><button class="cell" type="button" aria-expanded="false">How to play <span class="chev">›</span></button><div class="acc-body"><p>Tap when the light is on the mark. Three lights a play, each out of 1,000. Your score is the average. Top of a board at the end wins a prize.</p></div></div>
+      <button class="cell" type="button" data-sheet="how">How to play <span class="chev">›</span></button>
     </div>
     <div class="card">
       <h2 class="card-h">Where the money goes</h2>
@@ -230,6 +229,7 @@
         <div class="cell"><span>Best light</span><strong id="you-light">–</strong></div>
       </div>
       <form id="edit-form" class="card pad stack" autocomplete="off" novalidate hidden>
+        <h2 class="card-h">Your letters</h2>
         <div class="initials" id="edit-initials" role="group" aria-label="Your letters, two or three" aria-live="polite">
           <button class="box" type="button" aria-label="Letter 1"></button><button class="box" type="button" aria-label="Letter 2"></button><button class="box opt" type="button" aria-label="Letter 3, optional"></button>
         </div>
@@ -265,7 +265,7 @@
 
   <!-- ================= ADMIN ================= -->
   <section class="screen" data-screen="admin" hidden>
-    <div class="title"><h1>Committee</h1><p class="subtitle" id="admin-sub">Committee code required.</p></div>
+    <div class="title"><h1>Committee</h1></div>
     <form id="admin-login" autocomplete="off">
       <div class="card">
         <label class="field"><span>Committee code</span><input type="password" id="admin-code" autocomplete="current-password"></label>
@@ -330,7 +330,7 @@
         <div class="admin-head"><h2 class="section">Money</h2><button class="link small" type="button" id="adm-csv">Download CSV</button></div>
         <div class="card"><div class="table-wrap"><table class="table" id="adm-days"><thead><tr><th>Day</th><th>Coins</th><th>€</th></tr></thead><tbody></tbody></table></div></div>
         <h2 class="section">Recent payments</h2>
-        <div class="card"><div class="table-wrap"><table class="table" id="adm-payments"><thead><tr><th>When</th><th>Name</th><th>Plays</th><th>€</th><th>Email</th></tr></thead><tbody></tbody></table></div></div>
+        <div class="card"><div class="table-wrap"><table class="table" id="adm-payments-table"><thead><tr><th>When</th><th>Name</th><th>Plays</th><th>€</th><th>Email</th></tr></thead><tbody></tbody></table></div></div>
       </div>
 
       <div>
@@ -390,7 +390,7 @@
     <button class="btn btn-primary btn-xl" type="button" id="code-save">Save to Photos</button>
     <p class="fineprint save-hint" hidden>Opens the share sheet. Tap Save Image.</p>
     <button class="btn btn-xl" type="button" id="code-done">Done</button>
-    <p class="fineprint">Also on your You tab.</p>
+    <div class="card"><div class="cell quiet"><span>Also on your You tab.</span></div></div>
   </div>
 </div>
 
@@ -413,11 +413,10 @@
 <div class="sheet" id="sheet-school" role="dialog" aria-modal="true" aria-labelledby="school-title" hidden>
   <div class="sheet-head"><h2 id="school-title">Presentation Brothers College</h2><button class="close" type="button" data-close aria-label="Close">×</button></div>
   <form class="sheet-body" id="school-form" autocomplete="off" novalidate>
-    <p class="code-why">Enter your school email to join your board.</p>
     <div class="card"><label class="field"><span>School email</span><input id="school-email" type="email" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Your school email" autocomplete="email"></label></div>
     <p class="field-error" id="school-error" role="alert" hidden></p>
     <button class="btn btn-primary btn-xl page-cta" type="submit" id="school-submit">Join</button>
-    <button class="link center quiet" type="button" data-close>Not at the school</button>
+    <button class="btn btn-xl" type="button" data-close>Not at the school</button>
   </form>
 </div>
 
