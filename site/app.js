@@ -163,6 +163,7 @@
   function openSheet(id) {
     $$('.sheet').forEach((s) => { s.hidden = s.id !== 'sheet-' + id; });
     $('#sheet-backdrop').hidden = false;
+    $('#toast').classList.add('top'); // a toast already showing must not sit on the sheet's buttons
   }
   function closeSheets() {
     $$('.sheet').forEach((s) => { s.hidden = true; });
