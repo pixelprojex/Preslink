@@ -81,6 +81,7 @@ The free plays switch off by themselves the moment a Stripe key exists. Details 
 | `supabase/migrations/0008_harder_scoring.sql` | Steeper score curve so 1,000 is practically unreachable and scores spread below 900 |
 | `supabase/migrations/0009_admin_school_email.sql` | Committee lookup shows a player's school email and best light |
 | `supabase/migrations/0010_demo_payments_count.sql` | Demo plays count on the raised total (clear them before going live, see `docs/admin.sql`) |
+| `supabase/migrations/0011_score_floor.sql` | Every light scores at least 50, so a wild tap never gives zero |
 | `site/poster.html` | Print-ready A3 poster with a large QR code (vendored encoder in `site/vendor/`) |
 | `site/assets/` | Logo (`logo.svg`, `cross.svg`), icons, and the photo slots `photo-*.svg` to replace with real photos |
 | `supabase/functions/api/index.ts` | Register, checkout, confirm payment, start play, submit score |
@@ -94,7 +95,7 @@ Do these in order. Steps 1 and 2 are a one-off technical setup; 3 to 6 are the l
 
 ### 1. Supabase (database + functions): already done
 
-The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all ten migrations applied,
+The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all eleven migrations applied,
 both functions deployed, and `site/config.js` points at it. The committee code was set at deployment
 and handed over privately; change it any time from the Committee screen.
 
@@ -187,7 +188,8 @@ hash in the database and locks for 15 minutes after 8 wrong tries. From there th
   player's name to a random one.
 - The game: a play is three lights. Each light sweeps the bar at its own random speed (about a second per
   pass) and has its own mark; you tap when the light is on the mark. The score for a light falls off steeply
-  with distance (10 ms off is about 940, 20 ms about 880, 30 ms about 820, 50 ms about 715), and the play's
+  with distance (10 ms off is about 940, 20 ms about 885, 30 ms about 830, 50 ms about 730, and a wild tap
+  still scores 50, never zero), and the play's
   score is the average of the three, so one lucky tap is not enough: scores above 900 need three taps within
   about 15 ms, and a single-light 1,000 needs an error under a tenth of a millisecond, which integer-millisecond
   taps practically never hit.

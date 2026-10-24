@@ -387,8 +387,13 @@
     const d = stats && stats.ends_on ? new Date(stats.ends_on + 'T12:00:00') : null;
     return d && !isNaN(d) ? 'Ends ' + d.toLocaleDateString('en-IE', { day: 'numeric', month: 'long' }) : '';
   };
+  let statsSeq = 0;
   async function refreshStats() {
-    try { stats = await rpc('stats'); } catch (_) { return; }
+    const seq = ++statsSeq;
+    let fresh;
+    try { fresh = await rpc('stats'); } catch (_) { return; }
+    if (seq !== statsSeq) return; // a newer answer is on its way (e.g. right after a payment)
+    stats = fresh;
     showRaised(Number(stats.total_raised_cents || 0));
     showRing(Number(stats.total_raised_cents || 0), Number(stats.goal_cents || 0));
     const ends = endsText();
@@ -506,7 +511,7 @@
     return x < 1 ? x : 2 - x;
   }
   // Steep on purpose: 20 ms off at a one-second sweep is about 880, and 1,000 needs an error under a tenth of a millisecond.
-  const roundScore = (pos, target) => Math.round(1000 * Math.pow(Math.max(0, 1 - Math.abs(pos - target) / 0.5), 3));
+  const roundScore = (pos, target) => 50 + Math.round(950 * Math.pow(Math.max(0, 1 - Math.abs(pos - target) / 0.5), 3));
   function titleFor(s) {
     if (s >= 950) return 'Outstanding';
     if (s >= 900) return 'Superb';
@@ -912,9 +917,8 @@
       const badges = [r.tag === lightTag ? ['i-flash', 'Best light', 'light'] : null, r.tag === playsTag ? ['i-repeat', 'Most plays', 'plays'] : null].filter(Boolean)
         .map(([i, t, k]) => `<button class="badge ${k}" type="button" data-badge="${k}" title="${t}" aria-label="${t}"><svg><use href="#${i}"/></svg></button>`).join('');
       li.innerHTML = `<span class="rank">${r.rank}</span>${avatarHtml(r.initials)}
-        <span class="name"><span class="badges">${badges}${me ? '<span class="youtag">You</span>' : ''}</span><span class="meta">${r.plays} ${Number(r.plays) === 1 ? 'play' : 'plays'} · ${fmtWhen(r.achieved_at)}${r.tag === lightTag ? ' · best light' : ''}${r.tag === playsTag ? ' · most plays' : ''}</span></span>
+        <span class="name"><span class="badges">${badges}${me ? '<span class="youtag">You</span>' : ''}</span><span class="meta">${r.plays} ${Number(r.plays) === 1 ? 'play' : 'plays'}</span></span>
         <span class="pts">${r.score}</span>`;
-      li.addEventListener('click', (e) => { if (!e.target.closest('.badge')) li.classList.toggle('open'); });
       list.appendChild(li);
     });
   }
