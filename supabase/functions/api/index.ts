@@ -2,7 +2,13 @@
 //
 // Dependency-free on purpose: Postgres is reached through PostgREST RPC with the
 // service-role key, Stripe through its REST API. Every action is a POST with a
-// JSON body: { action: "register" | "me" | "checkout" | "confirm" | "start" | "submit", ... }.
+// JSON body: { action: "register" | "update" | "school" | "signin" | "me" | "checkout" | "confirm" | "start" | "submit" | "admin", ... }.
+// "register" needs no name: the database assigns a random three-letter one. New players start on the
+// Everyone board (role "everyone"); "school" moves a player onto the Students or Teachers board by
+// checking the shape of a school email address (students @pbccork.ie, teachers @pbc-cork.ie; nothing is sent).
+// One campaign, no weeks: boards and spot prizes run until the committee's end date.
+// Admin calls carry the committee code; the database verifies it (SHA-256 hash in settings) and
+// locks the admin scope after repeated failures.
 //
 // Secrets (Supabase dashboard -> Edge Functions -> Secrets):
 //   STRIPE_SECRET_KEY   sk_test_... / sk_live_...
@@ -73,6 +79,11 @@ export async function rpc<T = unknown>(name: string, args: Record<string, unknow
     console.error("rpc error", name, res.status, text);
     throw new HttpError(code === "DB_ERROR" ? 500 : 400, code);
   }
+  // Some functions return { error: CODE } instead of raising, so that a failed sign-in or admin
+  // attempt stays recorded for the lockout. Surface those the same way.
+  if (data && typeof data === "object" && !Array.isArray(data) && typeof (data as { error?: unknown }).error === "string") {
+    throw new HttpError(400, String((data as { error: string }).error));
+  }
   return data as T;
 }
 
@@ -116,12 +127,39 @@ function requireUuid(v: unknown, code: string): string {
 // ---------------------------------------------------------------------------
 type Body = Record<string, unknown>;
 
+const ROLES = new Set(["student", "teacher", "everyone"]);
+// Students end with @pbccork.ie, teachers with @pbc-cork.ie. The database applies the same rule
+// (set_school raises BAD_SCHOOL_EMAIL); checking here first saves a round trip.
+const SCHOOL_EMAIL = /^[a-z0-9._%+'-]+@(pbccork\.ie|pbc-cork\.ie)$/;
+
 async function register(body: Body) {
-  const initials = String(body.initials ?? "").toUpperCase().trim();
-  const role = String(body.role ?? "");
-  if (!/^[A-Z]{3}$/.test(initials)) throw new HttpError(400, "BAD_INITIALS");
-  if (role !== "student" && role !== "teacher") throw new HttpError(400, "BAD_ROLE");
-  return await rpc("register_player", { p_initials: initials, p_role: role });
+  const role = String(body.role ?? "everyone");
+  if (!ROLES.has(role)) throw new HttpError(400, "BAD_ROLE");
+  const initials = body.initials == null ? null : String(body.initials).toUpperCase().trim();
+  if (initials !== null && !/^[A-Z]{2,3}$/.test(initials)) throw new HttpError(400, "BAD_INITIALS");
+  return await rpc("register_player", { p_role: role, p_initials: initials });
+}
+
+// Role "everyone" is always allowed; "student"/"teacher" need a matching school email on file
+// (the database raises NEEDS_SCHOOL_EMAIL otherwise).
+async function update(body: Body) {
+  const playerId = requireUuid(body.player_id, "BAD_PLAYER");
+  const initials = body.initials == null ? null : String(body.initials).toUpperCase().trim();
+  const role = body.role == null ? null : String(body.role);
+  if (initials !== null && !/^[A-Z]{2,3}$/.test(initials)) throw new HttpError(400, "BAD_INITIALS");
+  if (role !== null && !ROLES.has(role)) throw new HttpError(400, "BAD_ROLE");
+  if (initials === null && role === null) throw new HttpError(400, "NOTHING_TO_UPDATE");
+  return await rpc("update_player", { p_id: playerId, p_initials: initials, p_role: role });
+}
+
+// Joins the Students or Teachers board. Format check only: no mail is sent.
+async function school(body: Body) {
+  const playerId = requireUuid(body.player_id, "BAD_PLAYER");
+  if (typeof body.email !== "string") throw new HttpError(400, "BAD_SCHOOL_EMAIL");
+  const email = body.email.trim().toLowerCase();
+  if (email.length < 6 || email.length > 120 || email.split("@").length !== 2) throw new HttpError(400, "BAD_SCHOOL_EMAIL");
+  if (!SCHOOL_EMAIL.test(email)) throw new HttpError(400, "BAD_SCHOOL_EMAIL");
+  return await rpc("set_school", { p_id: playerId, p_email: email });
 }
 
 async function me(body: Body) {
@@ -137,6 +175,12 @@ async function checkout(req: Request, body: Body) {
 
   const player = await rpc<{ initials: string }>("me_player", { p_id: playerId });
   const origin = siteOrigin(req);
+
+  // Demo mode: with no Stripe key configured, plays are free and clearly labelled as such.
+  if (!STRIPE_KEY) {
+    const id = `cs_demo_${bundle}_${playerId}_${crypto.randomUUID().replace(/-/g, "")}`;
+    return { url: `${origin}/?session_id=${id}`, session_id: id, demo: true };
+  }
 
   const session = await stripe("POST", "/v1/checkout/sessions", {
     mode: "payment",
@@ -163,6 +207,13 @@ async function checkout(req: Request, body: Body) {
 // Called by the browser when Stripe sends it back. Idempotent with the webhook.
 async function confirm(body: Body) {
   const sessionId = String(body.session_id ?? "");
+  const demo = sessionId.match(/^cs_demo_(single|triple|seven)_([0-9a-f-]{36})_[0-9a-f]{32}$/);
+  if (demo && !STRIPE_KEY) {
+    const b = BUNDLES[demo[1]];
+    const grant = await rpc<{ credits: number }>("grant_demo_credits", { p_player_id: demo[2], p_credits: b.credits });
+    const player = await rpc("me_player", { p_id: demo[2] });
+    return { paid: true, granted: true, demo: true, credits_added: b.credits, bundle: demo[1], credits: grant.credits, player };
+  }
   if (!/^cs_(test|live)_[A-Za-z0-9]+$/.test(sessionId)) throw new HttpError(400, "BAD_SESSION");
 
   const s = await stripe("GET", `/v1/checkout/sessions/${sessionId}`);
@@ -188,7 +239,7 @@ async function confirm(body: Body) {
 
   // Returning the player lets a browser that lost its storage recover its account from the receipt URL.
   const player = await rpc("me_player", { p_id: meta.player_id });
-  return { paid: true, granted: grant.granted, credits_added: b.credits, player };
+  return { paid: true, granted: grant.granted, credits_added: b.credits, bundle: meta.bundle, player };
 }
 
 async function start(body: Body) {
@@ -200,17 +251,100 @@ async function submit(req: Request, body: Body) {
   const playerId = requireUuid(body.player_id, "BAD_PLAYER");
   const playId = requireUuid(body.play_id, "BAD_PLAY");
   const score = Number(body.score);
-  const tapMs = Number(body.tap_ms);
+  const taps = Array.isArray(body.taps) ? body.taps.map((t) => Number(t)) : [];
   if (!Number.isInteger(score) || score < 0 || score > 1000) throw new HttpError(400, "BAD_SCORE");
-  if (!Number.isInteger(tapMs) || tapMs < 0 || tapMs > 600000) throw new HttpError(400, "BAD_TAP");
+  if (taps.length !== 3 || taps.some((t) => !Number.isInteger(t) || t < 0 || t > 600000)) throw new HttpError(400, "BAD_TAP");
   const ua = req.headers.get("user-agent") ?? "";
-  return await rpc("submit_score", {
+  return await rpc("submit_play", {
     p_player_id: playerId,
     p_play_id: playId,
     p_score: score,
-    p_tap_ms: tapMs,
+    p_taps: taps,
     p_client: { ua: ua.slice(0, 200) },
   });
+}
+
+async function signin(body: Body) {
+  const initials = String(body.initials ?? "").toUpperCase().trim();
+  const code = String(body.code ?? "").replace(/\D/g, "");
+  if (!/^[A-Z]{2,3}(#\d{1,3})?$/.test(initials)) throw new HttpError(400, "BAD_INITIALS");
+  if (!/^\d{4}$/.test(code)) throw new HttpError(400, "BAD_SIGNIN");
+  return await rpc("signin_player", { p_initials: initials, p_code: code });
+}
+
+const ADMIN_OPS = new Set(["overview", "void", "ban", "block", "set_code", "settings", "player", "reset_name"]);
+const PRIZE_KEYS = new Set(["students", "teachers", "everyone", "best_light", "most_plays"]);
+
+// body.prizes: null (leave alone) or an object whose keys are the five prize slots; each value is
+// stored as settings.prize_<key>, cut to 200 characters.
+function parsePrizes(v: unknown): Record<string, string> | null {
+  if (v == null) return null;
+  if (typeof v !== "object" || Array.isArray(v)) throw new HttpError(400, "BAD_PRIZES");
+  const out: Record<string, string> = {};
+  for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+    if (!PRIZE_KEYS.has(k) || typeof val !== "string") throw new HttpError(400, "BAD_PRIZES");
+    out[k] = val.trim().slice(0, 200);
+  }
+  return out;
+}
+
+async function admin(body: Body) {
+  const code = String(body.code ?? "");
+  const op = String(body.op ?? "");
+  if (!code || code.length > 200) throw new HttpError(400, "BAD_ADMIN");
+  if (!ADMIN_OPS.has(op)) throw new HttpError(400, "BAD_ADMIN_OP");
+
+  switch (op) {
+    case "overview": {
+      // No week means the whole campaign (all-time); a date narrows to that week's plays.
+      const week = body.week == null ? null : String(body.week);
+      if (week !== null && !/^\d{4}-\d{2}-\d{2}$/.test(week)) throw new HttpError(400, "BAD_WEEK");
+      return await rpc("admin_overview", { p_code: code, p_week: week });
+    }
+    case "player": {
+      const initials = String(body.initials ?? "").toUpperCase().trim();
+      if (!/^[A-Z]{2,3}(#\d{1,3})?$/.test(initials)) throw new HttpError(400, "BAD_INITIALS");
+      return await rpc("admin_player", { p_code: code, p_initials: initials });
+    }
+    case "reset_name": {
+      const playerId = requireUuid(body.player_id, "BAD_PLAYER");
+      return await rpc("admin_reset_name", { p_code: code, p_player_id: playerId });
+    }
+    case "void": {
+      const playId = requireUuid(body.play_id, "BAD_PLAY");
+      await rpc("admin_void_play", { p_code: code, p_play_id: playId, p_voided: body.voided !== false, p_reason: String(body.reason ?? "committee").slice(0, 200) });
+      return { ok: true };
+    }
+    case "ban": {
+      const playerId = requireUuid(body.player_id, "BAD_PLAYER");
+      await rpc("admin_ban_player", { p_code: code, p_player_id: playerId, p_banned: body.banned !== false });
+      return { ok: true };
+    }
+    case "block": {
+      const initials = String(body.initials ?? "").toUpperCase().trim();
+      if (!/^[A-Z]{3}$/.test(initials)) throw new HttpError(400, "BAD_INITIALS");
+      await rpc("admin_block_initials", { p_code: code, p_initials: initials, p_block: body.block !== false });
+      return { ok: true };
+    }
+    case "set_code": {
+      const newCode = String(body.new_code ?? "");
+      if (newCode.length < 6 || newCode.length > 200) throw new HttpError(400, "CODE_TOO_SHORT");
+      await rpc("admin_set_code", { p_code: code, p_new_code: newCode });
+      return { ok: true };
+    }
+    case "settings": {
+      const goal = body.goal_cents == null ? null : Number(body.goal_cents);
+      if (goal !== null && (!Number.isInteger(goal) || goal < 0 || goal > 100000000)) throw new HttpError(400, "BAD_GOAL");
+      const prize = body.prize_text == null ? null : String(body.prize_text).slice(0, 200);
+      // ends_on: null leaves the date alone, "" clears it, otherwise YYYY-MM-DD (the database parses it).
+      const endsOn = body.ends_on == null ? null : String(body.ends_on).trim();
+      if (endsOn !== null && endsOn !== "" && !/^\d{4}-\d{2}-\d{2}$/.test(endsOn)) throw new HttpError(400, "BAD_DATE");
+      const prizes = parsePrizes(body.prizes);
+      await rpc("admin_set_settings", { p_code: code, p_goal_cents: goal, p_prize_text: prize, p_ends_on: endsOn, p_prizes: prizes });
+      return { ok: true };
+    }
+  }
+  throw new HttpError(400, "BAD_ADMIN_OP");
 }
 
 export async function handler(req: Request): Promise<Response> {
@@ -227,6 +361,10 @@ export async function handler(req: Request): Promise<Response> {
   try {
     switch (body.action) {
       case "register": return json(await register(body));
+      case "update": return json(await update(body));
+      case "school": return json(await school(body));
+      case "signin": return json(await signin(body));
+      case "admin": return json(await admin(body));
       case "me": return json(await me(body));
       case "checkout": return json(await checkout(req, body));
       case "confirm": return json(await confirm(body));
