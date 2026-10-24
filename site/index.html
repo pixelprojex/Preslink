@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=17">
+  <link rel="stylesheet" href="styles.css?v=18">
 </head>
 <body>
 <div class="splash" id="splash" aria-hidden="true">
@@ -176,7 +176,7 @@
       <div class="acc"><button class="cell" type="button" aria-expanded="false">Most plays <span class="chev">›</span></button><div class="acc-body"><p id="prize-most-plays">The biggest supporter.</p><span class="lead" id="lead-plays"></span></div></div>
     </div>
     <div class="card">
-      <div class="acc"><button class="cell" type="button" aria-expanded="false">How to collect <span class="chev">›</span></button><div class="acc-body"><p>Keep your name and code (You tab). Winners are announced at the end. Show your name and code to collect.</p></div></div>
+      <div class="acc"><button class="cell" type="button" aria-expanded="false">How to collect <span class="chev">›</span></button><div class="acc-body"><p>Prizes go to the top of each board when the arcade closes. If you win, show the code on your You tab to collect your prize.</p></div></div>
     </div>
   </section>
 
@@ -225,9 +225,10 @@
         <span class="profile-board" id="you-board">Everyone board</span>
       </div>
       <div class="card code-card">
-        <span class="profile-label">Your prize code</span>
+        <span class="profile-label">Your code</span>
         <strong id="you-code">0000</strong>
-        <div class="grid-2 code-actions"><button class="btn btn-small" type="button" id="you-save">Save image</button><button class="btn btn-small" type="button" id="you-copy">Copy</button></div>
+        <p class="small">If you win, show this code to collect your prize.</p>
+        <div class="grid-2 code-actions"><button class="btn btn-small save-btn" type="button" id="you-save">Save picture</button><button class="btn btn-small" type="button" id="you-copy">Copy</button></div>
       </div>
       <div class="card">
         <div class="cell"><span>Plays left</span><strong id="you-credits">0</strong></div>
@@ -398,17 +399,18 @@
   </form>
 </div>
 
-<!-- Shown once, after the first play: the code that collects a prize. -->
+<!-- Shown once, after the first play: the code that collects a prize, if the player wins. -->
 <div class="sheet sheet-code" id="sheet-code" role="dialog" aria-modal="true" aria-labelledby="code-title" hidden>
-  <div class="sheet-head"><h2 id="code-title">Your prize code</h2></div>
+  <div class="sheet-head"><h2 id="code-title">Keep your code</h2></div>
   <div class="sheet-body">
-    <img class="ticket" id="code-preview" alt="Your prize ticket" hidden>
+    <img class="ticket" id="code-preview" alt="Your ticket: initials and code" hidden>
     <div class="code-big sr-only">
       <span class="code-name" id="code-name">JAK</span>
       <span class="code-digits" id="code-digits">0000</span>
     </div>
-    <button class="btn btn-primary btn-xl" type="button" id="code-save">Save to Photos</button>
-    <p class="fineprint save-hint" hidden>Opens the share sheet. Tap Save Image.</p>
+    <p class="code-why">Prizes go to the top of each board when the arcade closes. <strong>If you win</strong>, this code collects your prize.</p>
+    <button class="btn btn-primary btn-xl save-btn" type="button" id="code-save">Save to Photos</button>
+    <p class="save-hint" id="save-hint" hidden>Then tap Save Image on the menu that opens.</p>
     <button class="btn btn-xl" type="button" id="code-done">Done</button>
   </div>
 </div>
@@ -476,7 +478,7 @@
 <div class="overlay" id="overlay" hidden><div class="overlay-card"><div class="spinner" aria-hidden="true"></div><p id="overlay-text">One moment</p></div></div>
 
 <script src="config.js"></script>
-<script src="mock.js?v=17"></script>
-<script src="app.js?v=17"></script>
+<script src="mock.js?v=18"></script>
+<script src="app.js?v=18"></script>
 </body>
 </html>

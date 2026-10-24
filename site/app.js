@@ -840,9 +840,10 @@
       $('#result-topup').hidden = false;
     }
     $('#result').hidden = false;
-    if (r && rank === 1) toast('You are top of the board');
-    // First scored play: make sure the code that collects a prize is kept.
-    if (r && player && !store.get(CODE_SHOWN_KEY)) showCodeSheet();
+    // First scored play: the code sheet, and nothing on top of it.
+    const firstCode = r && player && !store.get(CODE_SHOWN_KEY);
+    if (r && rank === 1 && !firstCode) toast('You are top of the board');
+    if (firstCode) showCodeSheet();
   }
 
   // How far to the next place: the nudge that makes "one more go" worth it.
@@ -884,9 +885,9 @@
     try { await navigator.clipboard.writeText(`PresLink Arcade: ${player.display} · code ${player.claim_code}`); toast('Copied'); }
     catch (_) { toast(`${player.display} · ${player.claim_code}`); }
   }
-  // The prize ticket: a 4:5 image with the PresLink cross, the light bar, the name and the code.
-  // Shown in the code sheet (long-press saves it on iPhone) and handed to the share sheet by
-  // "Save to Photos" (Save Image on iPhone and iPad) or downloaded elsewhere.
+  // The ticket: a 4:5 image with the PresLink cross, the light bar, the initials and the code, and
+  // the words that matter: it is not a prize, it is the code that collects one if you win. Shown in
+  // the code sheet and saved by the button below (where it goes depends on the device, see save).
   function roundRect(ctx, x, y, w, h, r) {
     ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
   }
@@ -913,38 +914,81 @@
     ctx.fillStyle = '#1c1c1e'; roundRect(ctx, bx + bw * 0.62 - 3, by - 10, 6, bh + 20, 3); ctx.fill();
     ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#1c1c1e'; ctx.lineWidth = 4; roundRect(ctx, bx + bw * 0.62 - 13, by - 6, 26, bh + 12, 13); ctx.fill(); ctx.stroke();
     // name
-    ctx.fillStyle = '#8e8e93'; ctx.font = font(28, 700); ctx.fillText('Y O U R   N A M E', W / 2, 560);
+    ctx.fillStyle = '#8e8e93'; ctx.font = font(28, 700); ctx.fillText('Y O U R   I N I T I A L S', W / 2, 560);
     ctx.fillStyle = '#1c1c1e'; ctx.font = font(170, 800); ctx.fillText(player.display, W / 2, 712);
     // code
     ctx.fillStyle = '#8e8e93'; ctx.font = font(28, 700); ctx.fillText('Y O U R   C O D E', W / 2, 820);
     ctx.fillStyle = '#1f9d5a'; ctx.font = font(200, 800); ctx.fillText(player.claim_code.split('').join(' '), W / 2, 1000);
-    // rule and the two lines that matter
+    // rule, then the condition first so nobody reads the ticket as a prize
     ctx.fillStyle = '#e5e5ea'; ctx.fillRect(160, 1064, W - 320, 3);
-    ctx.fillStyle = '#1c1c1e'; ctx.font = font(36, 700); ctx.fillText('Keep this. Name and code collect a prize.', W / 2, 1140);
-    ctx.fillStyle = '#8e8e93'; ctx.font = font(30, 600); ctx.fillText(location.host || 'preslink.netlify.app', W / 2, 1200);
+    ctx.fillStyle = '#1c1c1e'; ctx.font = font(36, 800); ctx.fillText('If you win, show this to collect your prize.', W / 2, 1130);
+    ctx.fillStyle = '#3a3a3c'; ctx.font = font(28, 600); ctx.fillText('Prizes go to the top of each board when the arcade closes.', W / 2, 1184);
+    ctx.fillStyle = '#8e8e93'; ctx.font = font(28, 600); ctx.fillText(location.host || 'preslink.netlify.app', W / 2, 1236);
     return c;
+  }
+  // One rendered ticket per player, kept as a blob so the save button has nothing left to wait for.
+  let ticket = null;
+  async function ticketFor() {
+    const key = `${player.display}|${player.claim_code}|${location.host}`;
+    if (ticket && ticket.key === key) return ticket;
+    const c = await renderTicket();
+    const blob = await new Promise((resolve, reject) => c.toBlob((b) => (b ? resolve(b) : reject(new Error('no image'))), 'image/png'));
+    if (ticket) URL.revokeObjectURL(ticket.url);
+    const file = new File([blob], `preslink-${player.display.replace('#', '-')}.png`, { type: 'image/png' });
+    ticket = { key, blob, file, url: URL.createObjectURL(blob) };
+    return ticket;
   }
   async function showTicket() {
     const img = $('#code-preview');
     if (!player) { img.hidden = true; return; }
-    try { img.src = (await renderTicket()).toDataURL('image/png'); img.hidden = false; } catch (_) { img.hidden = true; }
+    try { img.src = (await ticketFor()).url; img.hidden = false; } catch (_) { img.hidden = true; }
+  }
+  // Where the picture goes depends on the device, and only Apple's phones and tablets see a menu.
+  // iPhone and iPad: a web page cannot write to Photos; Apple's one road in is the share sheet, where
+  // Save Image is a single tap, so the button opens that and the line under it says what to tap.
+  // Android: a plain download, which lands in Downloads and shows up in the Gallery. Mac or PC: the
+  // Downloads folder. Nothing else pops up anywhere.
+  const UA = navigator.userAgent || '';
+  const IS_APPLE_MOBILE = /iP(hone|ad|od)/.test(UA) || (/Mac/.test(navigator.platform || '') && navigator.maxTouchPoints > 1);
+  const IS_ANDROID = /Android/i.test(UA);
+  const SAVE_LABEL = IS_APPLE_MOBILE ? 'Save to Photos' : IS_ANDROID ? 'Save to Gallery' : 'Save picture';
+  const HINT_TAP = 'Then tap Save Image on the menu that opens.';
+  const HINT_HOLD = 'Or hold your finger on the ticket, then tap Add to Photos.';
+  $$('.save-btn').forEach((b) => { b.textContent = SAVE_LABEL; });
+  $('#save-hint').textContent = HINT_TAP;
+  $('#save-hint').hidden = !IS_APPLE_MOBILE;
+  function downloadBlob(blob, name) {
+    const a = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    a.href = url; a.download = name; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
   async function saveCodeImage() {
     if (!player) return;
-    const c = await renderTicket();
-    const blob = await new Promise((resolve) => c.toBlob(resolve, 'image/png'));
-    const file = new File([blob], `preslink-${player.display.replace('#', '-')}.png`, { type: 'image/png' });
-    try {
-      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'PresLink Arcade ticket' }); return; }
-    } catch (_) { return; /* cancelled */ }
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = file.name;
-    a.click();
-    toast('Saved');
+    let t;
+    try { t = await ticketFor(); } catch (_) { toast('Could not make the picture', true); return; }
+    const canShareFile = !!(navigator.canShare && navigator.canShare({ files: [t.file] }));
+    if (IS_APPLE_MOBILE) {
+      if (!canShareFile) { holdHint(); return; }
+      try { await navigator.share({ files: [t.file], title: 'PresLink Arcade' }); toast('Saved'); }
+      catch (_) { holdHint(); /* the menu was closed without saving */ }
+      return;
+    }
+    if ('download' in HTMLAnchorElement.prototype) {
+      downloadBlob(t.blob, t.file.name);
+      toast(IS_ANDROID ? 'Saved. Look in Gallery, under Download.' : 'Saved to your Downloads folder.');
+      return;
+    }
+    if (canShareFile) { try { await navigator.share({ files: [t.file], title: 'PresLink Arcade' }); } catch (_) { /* cancelled */ } return; }
+    window.open(t.url, '_blank');
   }
-  // iPhone and iPad: the share sheet opens with Save Image on it; say so once under the button.
-  if (navigator.canShare) $$('.save-hint').forEach((h) => { h.hidden = false; });
+  // The share sheet was closed without saving: point at the other road into Photos, on the ticket itself.
+  function holdHint() {
+    if ($('#sheet-code').hidden) return;
+    const h = $('#save-hint');
+    h.hidden = false; h.textContent = HINT_HOLD;
+  }
 
   // ---------------------------------------------------------------------------
   // School: optional. A school email puts you on the Students or Teachers board.

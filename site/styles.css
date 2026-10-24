@@ -476,7 +476,7 @@ button.cell:active { background: var(--fill); }
 .code-card .btn { background: #fff; box-shadow: 0 3px 0 var(--yellow-d); }
 .code-card .btn:active { box-shadow: 0 1px 0 var(--yellow-d); }
 .code-card strong { font-size: 40px; font-weight: 800; color: var(--ink); letter-spacing: .14em; font-variant-numeric: tabular-nums; }
-.code-card .small { margin: 2px 0 0; color: var(--muted); }
+.code-card .small { margin: 2px 0 0; font-size: 14px; font-weight: 600; line-height: 1.35; }
 .code-actions { margin-top: 10px; }
 .code-actions .btn { width: 100%; }
 .you-empty { text-align: center; padding: 26px 16px 20px; }
@@ -512,7 +512,7 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
 @keyframes toastin { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
 .toast { position: fixed; bottom: calc(var(--tab-h) + var(--tab-gap) + 14px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); z-index: 30; max-width: min(92vw, 440px); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 14px; font-weight: 500; font-size: 14px; text-align: center; animation: toastin .32s cubic-bezier(.2, .8, .2, 1); }
 .toast.error { background: var(--red); }
-.toast.top { bottom: auto; top: calc(64px + env(safe-area-inset-top)); }
+.toast.top { bottom: auto; top: calc(10px + env(safe-area-inset-top)); }
 .overlay { position: fixed; inset: 0; background: rgba(243, 243, 245, .9); z-index: 40; display: grid; place-items: center; }
 .overlay-card { text-align: center; color: var(--ink); font-weight: 500; }
 .spinner { width: 36px; height: 36px; margin: 0 auto 14px; border-radius: 50%; border: 3px solid var(--fill-2); border-top-color: var(--green); animation: spin .8s linear infinite; }
@@ -524,11 +524,11 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
 .code-big { display: grid; justify-items: center; gap: 2px; padding: 8px 0 14px; }
 .code-name { font-size: 22px; font-weight: 700; color: var(--ink); letter-spacing: .06em; }
 .code-digits { font-size: 56px; font-weight: 800; color: var(--ink); letter-spacing: .16em; font-variant-numeric: tabular-nums; line-height: 1.1; }
-.code-why { text-align: center; color: var(--text); font-size: 16px; margin: 0 0 16px; }
+.code-why { text-align: center; color: var(--ink); font-size: 16px; font-weight: 500; line-height: 1.45; margin: 0 4px 16px; }
 .sheet-body .btn + .btn, .sheet-code .save-hint + .btn { margin-top: 10px; }
 .sheet-body .btn + .card { margin-top: 12px; }
 .ticket { display: block; width: auto; max-width: 100%; max-height: 38dvh; margin: 2px auto 16px; border-radius: 14px; }
-.sheet-code .save-hint { margin: 8px 0 0; }
+.save-hint { text-align: center; color: var(--ink); font-size: 15px; font-weight: 600; line-height: 1.4; margin: 10px 4px 0; }
 .sheet .card { background: var(--bg); border-color: transparent; }
 
 /* Splash: the four arms of the cross fly in and lock together, the centre pops, the name rises. */

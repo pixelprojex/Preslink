@@ -8,9 +8,12 @@ One campaign, three boards (Everyone, Students, Teachers) and prizes at the end,
 
 There is no sign-up. On the first tap a small sheet asks for two or three letters (your initials),
 picked on an on-screen letter pad (tap a box to clear that letter), so the phone keyboard never covers
-the boxes; then it goes straight to payment. After the first play a sheet shows the player's **name and four-digit
-code** on a prize ticket image; Save to Photos hands it to the share sheet (Save Image on an iPhone) and a
-long press on the ticket saves it too, because those two things collect a prize; the code is also on the
+the boxes; then it goes straight to payment. After the first play a "Keep your code" sheet shows the player's **initials and four-digit
+code** on a ticket image and says plainly that prizes go to the top of each board when the arcade closes,
+so the code collects a prize only if they win. The save button does what each device allows: on an
+iPhone or iPad it opens Apple's share sheet, where Save Image is one tap (a web page cannot write to
+Photos any other way, and the line under the button says what to tap); on Android it downloads the
+picture, which the Gallery shows; on a Mac or PC it goes to the Downloads folder. The code is also on the
 **You** tab on that device and signs them in anywhere. Everyone is on the Everyone board. People at
 Presentation Brothers College can optionally give their school email to join the Students board
 (@pbccork.ie) or the Teachers board (@pbc-cork.ie); it is a format check, nothing is sent. If someone
@@ -158,7 +161,7 @@ the request came from.
 
 1. Open the site on your device. Tap **Play · €2**. Stripe's test page opens.
 2. Pay with card number `4242 4242 4242 4242`, any future expiry, any CVC, any postcode.
-3. You land back in the coin cabinet, see the coin go in and a token come out, and the game starts: three lights, then the result, the Keep this sheet with your name and four-digit code, and the At Presentation Brothers College? card (a school email joins a school board). Check the leaderboard after.
+3. You land back in the coin cabinet, see the coin go in and a token come out, and the game starts: three lights, then the result, the Keep your code sheet with your initials and four-digit code, and the At Presentation Brothers College? card (a school email joins a school board). Check the leaderboard after.
 4. In Supabase → **Table Editor** you will see the player, the payment and the play.
 5. In Stripe → **Developers → Webhooks** the endpoint should show a successful delivery.
 
@@ -211,7 +214,7 @@ hash in the database and locks for 15 minutes after 8 wrong tries. From there th
 - Everyone starts on the Everyone board. The result screen and the You tab offer "At Presentation Brothers
   College?": a school email ending @pbccork.ie puts the player on the Students board, @pbc-cork.ie on the
   Teachers board. The address is stored for the committee to check; nothing is emailed.
-- Every player has a four-digit **code**, shown once after the first play (Save image / Copy) and always on
+- Every player has a four-digit **code**, shown once after the first play (save the ticket picture, or Copy) and always on
   the **You** tab. It proves a winning score is theirs and lets them **sign back in** on another device
   (You tab → "Played before?"). Five wrong codes lock that name for 15 minutes. A lost code can be looked up
   by the committee.
