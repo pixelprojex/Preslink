@@ -29,7 +29,7 @@
     let x = tapMs / speedMs + phase; x = x - 2 * Math.floor(x / 2);
     const pos = x < 1 ? x : 2 - x;
     const err = Math.abs(pos - target) * speedMs;
-    return 50 + Math.round(950 * Math.exp(-((err / 40) ** 2)));
+    return Math.max(50, Math.round(50 + 949 * Math.exp(-((err / 40) ** 2)) - 12 * Math.sqrt(Math.min(err, 3) / 3)));
   }
   const newRounds = () => Array.from({ length: 3 }, () => ({ phase: Math.random(), target: 0.15 + Math.random() * 0.7 }));
 
@@ -188,10 +188,9 @@
         if (!play) fail('PLAY_NOT_FOUND');
         if (play.score != null) fail('ALREADY_SCORED');
         const taps = Array.isArray(b.taps) ? b.taps.map(Number) : [];
-        if (taps.length !== 3 || taps.some((t) => !Number.isInteger(t) || t < 150 || t > 120000)) fail('BAD_TAP');
+        if (taps.length !== 3 || taps.some((t) => !Number.isInteger(t) || t < 60 || t > 120000)) fail('BAD_TAP');
         const rounds = taps.map((t, i) => roundScore(t, play.rounds[i].phase, play.rounds[i].target, play.speed_ms));
         const exp = Math.round((rounds[0] + rounds[1] + rounds[2]) / 3);
-        if (Math.abs(exp - b.score) > 5) fail('SCORE_MISMATCH');
         play.score = exp; play.taps = taps; play.finished_at = new Date().toISOString(); play.week_start = weekStart();
         save(db);
         const row = board(player.role === 'everyone' ? null : player.role).find((r) => r.tag === tag(player.id));

@@ -11,7 +11,7 @@
   const HOW_SEEN_KEY = 'preslink.howSeen';
   const PENDING_KEY = 'preslink.pendingScore';
   const ADMIN_KEY = 'preslink.adminCode';
-  const SWEEP_GUARD_MS = 150;
+  const SWEEP_GUARD_MS = 60; // the server accepts taps from 60 ms into a sweep
   const ROUNDS = 3;
   const BUNDLES = { single: { amount: 2, credits: 1 }, triple: { amount: 5, credits: 3 }, seven: { amount: 10, credits: 7 } };
   const SCHOOL = /^[a-z0-9._%+'-]+@(pbccork\.ie|pbc-cork\.ie)$/;
@@ -29,6 +29,7 @@
   // A coloured circle with the letters; the tint comes from the letters so it is stable.
   const avatarHtml = (display, big) => { const l = String(display || '').split('#')[0]; let h = 0; for (const c of l) h = (h * 31 + c.charCodeAt(0)) % 5; return `<span class="avatar c${h + 1}${big ? ' big' : ''}">${nameHtml(display)}</span>`; };
   const boardName = (role) => BOARD_NAMES[role] || 'Everyone';
+  const CREST_IMG = '<img class="crest-ic" src="assets/crest.svg?v=10" alt="">';
 
   const MESSAGES = {
     NETWORK: 'No connection. Check your signal and try again.',
@@ -438,9 +439,10 @@
   // the counter on everyone's screen within that time. Paused while the tab is hidden.
   const STATS_EVERY = 5000;
   let statsTimer = 0;
+  const inPlay = () => ['loading', 'countdown', 'sweeping', 'between'].includes(game.state);
   function pollStats() {
     clearTimeout(statsTimer);
-    if (document.hidden) return;
+    if (document.hidden || inPlay()) return; // nothing moves on the page while the light sweeps
     statsTimer = setTimeout(() => { refreshStats().finally(pollStats); }, STATS_EVERY);
   }
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshStats(); pollStats(); });
@@ -565,8 +567,9 @@
   // ---------------------------------------------------------------------------
   // Game: three lights, line each one up with the mark
   // ---------------------------------------------------------------------------
-  const game = { state: 'idle', play: null, round: 0, taps: [], scores: [], sweepStart: 0, raf: 0, trackW: 0, pending: null, lastScore: 0 };
-  const marker = $('#marker'), track = $('#track'), pin = $('#pin'), swatch = $('#swatch');
+  const game = { state: 'idle', play: null, round: 0, taps: [], scores: [], sweepStart: 0, trackW: 0, pending: null, lastScore: 0 };
+  const marker = $('#marker'), track = $('#track'), pin = $('#pin'), swatch = $('#swatch'), zone = $('#zone');
+  const ZONE_HALF = 0.025; // the sweet spot drawn on the track: 25 ms either side of the mark at a one-second sweep
 
   function posAt(ms, phase, speed) {
     let x = ms / speed + phase;
@@ -574,11 +577,15 @@
     return x < 1 ? x : 2 - x;
   }
   // Mirrors round_score() in the database: a bell over the timing error in milliseconds, not a spike.
-  //   score = 50 + 950 * exp(-(error_ms / 40)^2),  error_ms = |pos - target| * speed_ms
-  // 10 ms off = 942, 15 ms = 875, 20 ms = 790, 30 ms = 591, 40 ms = 399, 50 ms = 249, 60 ms = 150, 80 ms = 67,
-  // further = 50. Flat near the mark (5 ms is still 985), so a good tap is not a coin flip.
+  //   score = max(50, round(50 + 949 * exp(-(err/40)^2) - 12 * sqrt(min(err, 3) / 3))),  err = |pos - target| * speed_ms
+  // 999 on the mark, then a fine ruler over the first 3 ms (0.5 ms = 994, 1 ms = 991, 3 ms = 982) so the top of the
+  // board stays one person; the bell underneath keeps it fair: 10 ms = 930, 20 ms = 777, 30 ms = 579, 40 ms = 387,
+  // 60 ms = 138, 80 ms = 55, further = 50. 1,000 is not a score: 999 is the ceiling.
   const SCORE_WIDTH_MS = 40;
-  const roundScore = (pos, target, speed) => 50 + Math.round(950 * Math.exp(-(((Math.abs(pos - target) * speed) / SCORE_WIDTH_MS) ** 2)));
+  const roundScore = (pos, target, speed) => {
+    const err = Math.abs(pos - target) * speed;
+    return Math.max(50, Math.round(50 + 949 * Math.exp(-((err / SCORE_WIDTH_MS) ** 2)) - 12 * Math.sqrt(Math.min(err, 3) / 3)));
+  };
   function titleFor(s) {
     if (s >= 850) return 'Outstanding';
     if (s >= 700) return 'Superb';
@@ -596,9 +603,10 @@
   function setMarker(pos) { marker.style.transform = `translateX(${pos * game.trackW}px)`; }
   function setPin(target) {
     pin.style.left = (target * 100) + '%';
+    zone.style.left = ((target - ZONE_HALF) * 100) + '%';
     swatch.style.background = `color-mix(in srgb, #ffe08a ${Math.round((1 - target) * 100)}%, #f26a1b)`;
   }
-  function measure() { game.trackW = track.clientWidth; }
+  function measure() { game.trackW = track.clientWidth; marker.style.setProperty('--w', game.trackW + 'px'); }
   window.addEventListener('resize', measure);
 
   function renderDots() {
@@ -622,7 +630,7 @@
     $('#tap-hint').textContent = 'Tap when the light is on the mark';
     $('#tap-hint').classList.remove('live');
     $('#result-note').hidden = true;
-    marker.classList.remove('hit', 'miss');
+    marker.classList.remove('hit', 'miss', 'run');
     game.round = 0; game.taps = []; game.scores = [];
     renderDots();
     measure();
@@ -641,6 +649,7 @@
     const g = $('#game');
     g.classList.remove('enter'); void g.offsetWidth; g.classList.add('enter');
     game.state = 'loading';
+    pollStats(); // pauses the counter refresh until the play is over
     const fetching = api('start', { player_id: player.id });
     fetching.catch(() => {});
     const m = $('#game-msg');
@@ -677,7 +686,7 @@
     m.classList.remove('count', 'go', 'coach');
     m.textContent = `Light ${i + 1} of 3`;
     setPin(r.target);
-    marker.classList.remove('hit', 'miss');
+    marker.classList.remove('hit', 'miss', 'run');
     measure();
     setMarker(posAt(0, r.phase, game.play.speed_ms));
     marker.classList.remove('settle'); void marker.offsetWidth; marker.classList.add('settle');
@@ -689,35 +698,48 @@
     const r = game.play.rounds[i];
     if (i > 0) { const m = $('#game-msg'); m.classList.remove('go', 'count', 'coach'); m.textContent = `Light ${i + 1} of 3`; }
     setPin(r.target);
-    marker.classList.remove('hit', 'miss');
+    marker.classList.remove('hit', 'miss', 'run');
     measure();
     game.state = 'sweeping';
     $('#game').classList.add('sweeping');
     renderDots();
-    game.sweepStart = performance.now();
-    game.raf = requestAnimationFrame(loop);
+    startSweep(r);
   }
-  function loop(now) {
-    if (game.state !== 'sweeping') return;
-    const r = game.play.rounds[game.round];
-    setMarker(posAt(now - game.sweepStart, r.phase, game.play.speed_ms));
-    game.raf = requestAnimationFrame(loop);
+  // The sweep is a CSS animation: the browser's compositor moves the light on its own thread at the
+  // screen's full frame rate, whatever else the page is doing (a fetch, the counter rolling, a slow
+  // frame of script). A tap reads the animation's own clock, so the score matches what was drawn.
+  function startSweep(r) {
+    marker.classList.remove('run');
+    void marker.offsetWidth; // a fresh animation, never a resumed one
+    marker.style.setProperty('--cycle', (2 * game.play.speed_ms) + 'ms');
+    marker.style.setProperty('--delay', (-r.phase * game.play.speed_ms) + 'ms');
+    game.sweepStart = performance.now();
+    marker.classList.add('run');
+  }
+  function sweepAnimation() {
+    try { return (marker.getAnimations ? marker.getAnimations() : []).find((a) => a.animationName === 'sweep') || null; } catch (_) { return null; }
+  }
+  function stopSweep(pos) {
+    marker.classList.remove('run');
+    setMarker(pos);
   }
   function abandonGame() {
-    cancelAnimationFrame(game.raf);
+    marker.classList.remove('run');
     $('#game').classList.remove('sweeping');
     game.state = 'idle';
   }
 
-  // The tap is timed from the touch itself: event.timeStamp carries the hardware time on phones,
-  // which is earlier than the moment this handler runs. The frame on screen is also about a frame
-  // and a half old, so DISPLAY_LAG_MS comes off too. People are scored on what they saw.
+  // Time of a tap on the sweep's own clock. The animation's currentTime is what the compositor draws
+  // from. The input lag (handler time minus the event's hardware timestamp) and the age of the frame
+  // on screen (about a frame and a half) come off, so people are scored on what they saw.
   const DISPLAY_LAG_MS = 20;
   function tapTime(e) {
     const now = performance.now();
     const ts = e && Number.isFinite(e.timeStamp) ? e.timeStamp : NaN;
-    const t = ts > 0 && ts <= now + 5 && ts > game.sweepStart - 1000 ? ts : now;
-    return Math.round(t - game.sweepStart - DISPLAY_LAG_MS);
+    const inputLag = ts > 0 && ts <= now + 5 && ts > now - 400 ? now - ts : 0;
+    const anim = sweepAnimation();
+    const elapsed = anim && Number.isFinite(anim.currentTime) ? anim.currentTime : now - game.sweepStart;
+    return Math.round(elapsed - inputLag - DISPLAY_LAG_MS);
   }
   // Signed timing error in ms: positive = late (the light had passed the mark), negative = early.
   function signedError(ms, r) {
@@ -741,12 +763,11 @@
     if (e.cancelable) e.preventDefault();
     game.state = 'between';
     $('#game').classList.remove('sweeping');
-    cancelAnimationFrame(game.raf);
     sounds.tap();
     const r = game.play.rounds[game.round];
     const pos = posAt(ms, r.phase, game.play.speed_ms);
     const s = roundScore(pos, r.target, game.play.speed_ms);
-    setMarker(pos);
+    stopSweep(pos);
     game.taps.push(ms);
     game.scores.push(s);
     afterRound(s, signedError(ms, r));
@@ -833,7 +854,10 @@
   }
 
   function showResult(score, r, note) {
+    if (r && r.score != null) { score = r.score; game.lastScore = score; } // the server's number is the score
     updatePlayCredits();
+    refreshStats();
+    pollStats();
     $('#game').classList.add('done');
     $('#game').hidden = true;
     $('#tabbar').hidden = false; // the game is over: let people move around again
@@ -940,7 +964,7 @@
     const img = await crossImage;
     if (img) ctx.drawImage(img, W / 2 - 72, 128, 144, 144);
     ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-    ctx.fillStyle = '#1c1c1e'; ctx.font = font(50, 800); ctx.fillText('PresLink Arcade', W / 2, 356);
+    ctx.fillStyle = '#5b3a9a'; ctx.font = font(50, 800); ctx.fillText('PresLink Arcade', W / 2, 356);
     // the light bar: the game's own mark
     const bx = 240, by = 396, bw = 600, bh = 34;
     const g = ctx.createLinearGradient(bx, 0, bx + bw, 0);
@@ -1235,7 +1259,7 @@
     $('#you-name').innerHTML = nameHtml(player.display || player.initials);
     $('#you-avatar').outerHTML = avatarHtml(player.display || player.initials, true).replace('<span ', '<span id="you-avatar" ');
     const b = $('#you-board');
-    b.textContent = isSchool() ? `${boardName(player.role)} board · ${player.school_email || 'school'}` : 'Everyone board';
+    b.innerHTML = isSchool() ? `${CREST_IMG}${esc(boardName(player.role))} board · ${esc(player.school_email || 'school')}` : 'Everyone board';
     b.classList.toggle('school', isSchool());
     $('#you-email-text').textContent = player.contact_email || 'Add your email · so we can tell you if you win';
     $('#you-code').textContent = player.claim_code;
@@ -1547,7 +1571,7 @@
     const el = $('#splash');
     if (!el) { resolve(); return; }
     const finish = () => { el.classList.add('gone'); resolve(); };
-    const returning = /session_id=|cancelled=/.test(location.search);
+    const returning = /session_id=|cancelled=/.test(location.search) || document.documentElement.classList.contains('no-splash');
     if (returning) { finish(); return; }
     setTimeout(finish, reduceMotion() ? 1400 : 3300);
     el.addEventListener('click', finish);

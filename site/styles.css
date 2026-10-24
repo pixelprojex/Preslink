@@ -320,8 +320,13 @@ button.cell:active { background: var(--fill); }
 .track { position: relative; height: 58px; border-radius: 29px; background: linear-gradient(90deg, #fff3c4 0%, #ffd766 32%, #ffab45 66%, #f26a1b 100%); }
 .pin { position: absolute; top: -12px; bottom: -12px; width: 3px; margin-left: -1.5px; border-radius: 2px; background: var(--ink); transition: left .2s; }
 .pin .swatch { position: absolute; top: -30px; left: 50%; width: 22px; height: 22px; margin-left: -11px; border-radius: 50%; outline: 3px solid var(--surface); box-shadow: 0 0 0 4px rgba(28, 28, 30, .08); background: var(--orange); }
-.marker { position: absolute; left: 0; top: -7px; bottom: -7px; width: 12px; margin-left: -6px; border-radius: 6px; background: #fff; outline: 2px solid var(--ink); will-change: transform; }
-.marker.hit { background: var(--green); outline-color: var(--green-d); }
+/* The light: a bright core with a warm glow, moved by a compositor animation (see .marker.run). The
+   sweet spot on the track (.zone) is 25 ms either side of the mark. */
+.marker { position: absolute; left: 0; top: -9px; bottom: -9px; width: 16px; margin-left: -8px; border-radius: 8px; background: #fff; outline: 2px solid var(--ink); box-shadow: 0 0 0 3px rgba(255, 255, 255, .55), 0 0 16px 4px rgba(255, 171, 69, .85); will-change: transform; }
+.marker.run { animation: sweep var(--cycle, 2000ms) linear var(--delay, 0ms) infinite; }
+@keyframes sweep { 0% { transform: translateX(0); } 50% { transform: translateX(var(--w, 0px)); } 100% { transform: translateX(0); } }
+.marker.hit { background: var(--green); outline-color: var(--green-d); box-shadow: 0 0 0 3px rgba(255, 255, 255, .55), 0 0 18px 6px rgba(31, 157, 90, .7); }
+.zone { position: absolute; top: -3px; bottom: -3px; width: 5%; border-radius: 8px; background: rgba(255, 255, 255, .42); box-shadow: inset 0 0 0 2px rgba(28, 28, 30, .14); transition: left .2s; }
 .marker.settle { animation: settle .95s ease-in-out; }
 @keyframes settle { 0%, 100% { scale: 1; box-shadow: 0 0 0 0 rgba(28, 28, 30, .18); } 50% { scale: 1.16; box-shadow: 0 0 0 10px rgba(28, 28, 30, 0); } }
 .marker.miss { background: #fff; }
@@ -515,6 +520,7 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
 /* Splash: the four arms of the cross fly in and lock together, the centre pops, the name rises. */
 .splash { position: fixed; inset: 0; z-index: 50; background: #fff; display: grid; place-content: center; justify-items: center; gap: 10px; transition: opacity .6s ease, visibility .6s, transform .6s ease; }
 .splash.gone { opacity: 0; visibility: hidden; pointer-events: none; transform: scale(1.04); }
+.no-splash .splash { display: none; }
 .splash-mark { width: 150px; height: 150px; animation: markbounce .9s cubic-bezier(.3, 1.4, .5, 1) 1.15s both; }
 .splash-mark svg { width: 100%; height: 100%; overflow: visible; }
 .arm { animation: armin .85s cubic-bezier(.2, .9, .25, 1.2) both; transform-box: fill-box; transform-origin: center; }
@@ -609,3 +615,12 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
   #you-panel > * { margin-top: 0 !important; }
   #you-panel > :nth-child(n+3) { grid-column: 1 / -1; }
 }
+
+/* PresLink and the school are purple, with the crest wherever the school itself is meant. */
+.brand, .side-brand { color: var(--purple); }
+.pres { color: var(--purple); font-weight: 600; }
+.crest-ic { width: 16px; height: 19px; vertical-align: -4px; margin-right: 6px; }
+.cell .pres small { color: var(--muted); }
+.segmented .tab[data-role="student"], .segmented .tab[data-role="teacher"] { color: var(--purple); }
+.segmented .tab .crest-ic { width: 12px; height: 15px; vertical-align: -2px; margin-right: 4px; }
+.profile-board .crest-ic { vertical-align: -3px; }

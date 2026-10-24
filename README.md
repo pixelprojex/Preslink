@@ -93,6 +93,8 @@ server can read them. The free plays switch off by themselves the moment Stripe 
 | `supabase/migrations/0012_bell_curve.sql` | Bell-shaped score curve (15 ms per e-fold) so the field spreads out and 900+ stays rare |
 | `supabase/migrations/0013_stripe_from_admin.sql` | Server-only `app_secrets` table so the committee connects Stripe from the Committee screen instead of the Supabase dashboard |
 | `supabase/migrations/0014_fair_scores_contact.sql` | Bell-shaped score curve over milliseconds (40 ms wide), one-second sweep, `contact_email` and the committee's email list |
+| `supabase/migrations/0015_tolerant_submit.sql` | The server scores the taps itself and ignores the browser's number, so an older build keeps working when the curve changes; taps count from 60 ms |
+| `supabase/migrations/0016_top_is_999.sql` | 999 is the ceiling; a cusp over the first 3 ms of error makes the top a fine ruler, so the best score is one person's |
 | `site/poster.html` | A3 poster preview with a large QR code (vendored encoder in `site/vendor/`); its Save as PDF button downloads the file below |
 | `site/poster.pdf` | The poster rendered to A3 PDF for the printer, QR pointing at preslink.netlify.app (re-render it if the address changes) |
 | `site/assets/` | Logo (`logo.svg`, `cross.svg`), icons, and the photo slots `photo-*.svg` to replace with real photos |
@@ -107,7 +109,7 @@ Do these in order. Steps 1 and 2 are a one-off technical setup; 3 to 6 are the l
 
 ### 1. Supabase (database + functions): already done
 
-The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all fourteen migrations applied,
+The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all sixteen migrations applied,
 both functions deployed, and `site/config.js` points at it. The committee code was set at deployment
 and handed over privately; change it any time from the Committee screen.
 
@@ -206,15 +208,23 @@ hash in the database and locks for 15 minutes after 8 wrong tries. From there th
   `0002_names_signin_admin.sql` (table `blocked_initials`), the committee can add more, and can reset a
   player's name to a random one.
 - The game: a play is three lights. Each light sweeps the bar once a second and has its own mark and starting
-  point; you tap when the light is on the mark. The score for a light is a bell over the timing error in milliseconds, 50 + 950 × e^−(error ÷ 40 ms)²: 10 ms off is 942,
-  20 ms 790, 30 ms 591, 40 ms 399, 60 ms 150, and a wild tap still scores 50, never zero. The curve is flat near the
-  mark (5 ms is still 985), so a good tap is not a coin flip, and the play's score is the average of the three. Most
-  plays land between 300 and 800; a play above 900 needs three taps inside about 13 ms. The sweep is a fixed second
-  per pass, the tap is timed from the touch's own hardware timestamp with the frame lag taken off, and after each
-  light the screen says early or late so the next one can be better.
+  point; you tap when the light is on the mark. The score for a light is a bell over the timing error in milliseconds with a sharp cusp at the top:
+  max(50, 50 + 949 × e^−(error ÷ 40 ms)² − 12 × √(min(error, 3 ms) ÷ 3)). 999 is the ceiling (there is no 1,000,
+  though the screen says "out of 1,000"): on the mark is 999, half a millisecond off 994, 1 ms 991, 3 ms 982, 10 ms 930,
+  20 ms 777, 30 ms 579, 40 ms 387, 60 ms 138, and a wild tap still scores 50, never zero. Taps are whole milliseconds
+  and the mark is a random fraction, so a 999 needs the tap within a few microseconds of the mark, which keeps the
+  top of the board to one person (equal scores: the earlier one wins). The play's score is the average of the three;
+  most plays land between 300 and 800. The sweep is a fixed second
+  per pass. The light is moved by a CSS animation, so the browser's compositor draws it on its own thread at the
+  screen's full frame rate whatever the page is doing, and a tap reads the animation's own clock, with the input
+  lag (handler time minus the touch's hardware timestamp) and the age of the frame on screen taken off. After each
+  light the screen says early or late so the next one can be better. The server recomputes every light from the
+  taps and stores its own number; the browser's score is only what it shows while the answer is on its way.
 - Everyone starts on the Everyone board. The result screen and the You tab offer "At Presentation Brothers
   College?": a school email ending @pbccork.ie puts the player on the Students board, @pbc-cork.ie on the
   Teachers board. The address is stored for the committee to check; nothing is emailed.
+- The splash plays once per visit (decided by a tiny script in the page head, before anything loads), so a
+  return from payment or a reload in the same tab never flashes it.
 - Every player has a four-digit **code**, shown once after the first play (save the ticket picture, or Copy) and always on
   the **You** tab. It proves a winning score is theirs and lets them **sign back in** on another device
   (You tab → "Played before?"). Five wrong codes lock that name for 15 minutes. A lost code can be looked up

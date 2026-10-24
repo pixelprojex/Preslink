@@ -4,6 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="theme-color" content="#5b3a9a">
+  <script>
+    // The splash plays once per visit, before any stylesheet or script loads, so coming back from a
+    // payment (or any reload in the same tab) never flashes it. Decided here, in the head, so there
+    // is nothing to hide after the fact.
+    (function () {
+      try {
+        var back = /session_id=|cancelled=/.test(location.search);
+        var seen = sessionStorage.getItem('preslink.splashed');
+        if (back || seen) document.documentElement.classList.add('no-splash');
+        sessionStorage.setItem('preslink.splashed', '1');
+      } catch (e) { /* storage off: the splash plays */ }
+    })();
+  </script>
   <title>PresLink Arcade</title>
   <meta name="description" content="Stop the light on the mark. Every play funds Presentation Brothers schools in Ghana and Nigeria. Prizes at the end of the campaign.">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
@@ -13,7 +26,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=19">
+  <link rel="stylesheet" href="styles.css?v=20">
 </head>
 <body>
 <div class="splash" id="splash" aria-hidden="true">
@@ -95,6 +108,7 @@
         <div class="game-msg" id="game-msg">Ready</div>
         <div class="track-wrap">
           <div class="track" id="track">
+            <div class="zone" id="zone" aria-hidden="true"></div>
             <div class="pin" id="pin" style="left:50%"><span class="swatch" id="swatch"></span></div>
             <div class="marker" id="marker"></div>
           </div>
@@ -133,8 +147,8 @@
     <div class="title"><h1>Leaderboard</h1></div>
     <div class="segmented" role="tablist">
       <button role="tab" type="button" class="tab active" data-role="everyone" aria-selected="true">Everyone</button>
-      <button role="tab" type="button" class="tab" data-role="student" aria-selected="false">Students</button>
-      <button role="tab" type="button" class="tab" data-role="teacher" aria-selected="false">Teachers</button>
+      <button role="tab" type="button" class="tab" data-role="student" aria-selected="false"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Students</button>
+      <button role="tab" type="button" class="tab" data-role="teacher" aria-selected="false"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Teachers</button>
     </div>
     <div class="card">
       <ol class="board" id="board-list"></ol>
@@ -159,8 +173,8 @@
     <div class="card">
       <h2 class="card-h">Top of each board</h2>
       <div class="cell"><span>Everyone<small id="prize-everyone">To be announced</small></span><span class="lead" id="lead-everyone"></span></div>
-      <div class="cell"><span>Students<small id="prize-students">To be announced</small></span><span class="lead" id="lead-student"></span></div>
-      <div class="cell"><span>Teachers<small id="prize-teachers">To be announced</small></span><span class="lead" id="lead-teacher"></span></div>
+      <div class="cell"><span class="pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Students<small id="prize-students">To be announced</small></span><span class="lead" id="lead-student"></span></div>
+      <div class="cell"><span class="pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Teachers<small id="prize-teachers">To be announced</small></span><span class="lead" id="lead-teacher"></span></div>
     </div>
     <div class="card">
       <h2 class="card-h">Spot prizes</h2>
@@ -426,8 +440,8 @@
   <form class="sheet-body" id="contact-form" autocomplete="on" novalidate>
     <p class="sheet-note" id="contact-note">Winners are emailed when the arcade closes.</p>
     <div class="card"><label class="field"><span>Your email</span><input id="contact-email" type="email" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="name@example.com" autocomplete="email"></label></div>
-    <div class="card"><button class="cell" type="button" id="contact-more">At Presentation Brothers College? <span class="chev">›</span></button></div>
-    <div class="card" id="contact-school-wrap" hidden><label class="field"><span>School email · joins the Students or Teachers board</span><input id="contact-school" type="email" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Your school email"></label></div>
+    <div class="card"><button class="cell pres" type="button" id="contact-more"><span><img class="crest-ic" src="assets/crest.svg?v=10" alt="">At Presentation Brothers College?</span> <span class="chev">›</span></button></div>
+    <div class="card" id="contact-school-wrap" hidden><label class="field"><span class="pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">School email · joins the Students or Teachers board</span><input id="contact-school" type="email" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Your school email"></label></div>
     <p class="field-error" id="contact-error" role="alert" hidden></p>
     <button class="btn btn-primary btn-xl page-cta" type="submit" id="contact-submit">Save</button>
     <button class="btn btn-xl" type="button" id="contact-skip">Not now</button>
@@ -467,7 +481,7 @@
 <div class="overlay" id="overlay" hidden><div class="overlay-card"><div class="spinner" aria-hidden="true"></div><p id="overlay-text">One moment</p></div></div>
 
 <script src="config.js"></script>
-<script src="mock.js?v=19"></script>
-<script src="app.js?v=19"></script>
+<script src="mock.js?v=20"></script>
+<script src="app.js?v=20"></script>
 </body>
 </html>
