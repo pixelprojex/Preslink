@@ -81,7 +81,7 @@ p { margin: 0 0 10px; }
 
 /* Surfaces: white grouped cards */
 .card { background: var(--surface); border-radius: 18px; overflow: hidden; }
-.card + .card { margin-top: 12px; }
+.card + .card, form + .card, .btn + .card { margin-top: 12px; }
 .card.pad { padding: 16px; }
 .cell { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; width: 100%; min-height: 60px; padding: 16px 18px; background: none; border: 0; text-align: left; color: var(--ink); font-size: 17px; font-weight: 600; cursor: default; }
 button.cell { cursor: pointer; }
@@ -454,6 +454,7 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
 /* Feedback */
 .toast { position: fixed; bottom: calc(var(--tab-h) + 18px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); z-index: 30; max-width: min(92vw, 440px); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 14px; font-weight: 500; font-size: 14px; text-align: center; animation: fade .2s ease-out; }
 .toast.error { background: var(--red); }
+.toast.top { bottom: auto; top: calc(12px + env(safe-area-inset-top)); }
 .overlay { position: fixed; inset: 0; background: rgba(243, 243, 245, .9); z-index: 40; display: grid; place-items: center; }
 .overlay-card { text-align: center; color: var(--ink); font-weight: 500; }
 .spinner { width: 36px; height: 36px; margin: 0 auto 14px; border-radius: 50%; border: 3px solid var(--fill-2); border-top-color: var(--green); animation: spin .8s linear infinite; }

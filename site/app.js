@@ -149,6 +149,7 @@
     const t = $('#toast');
     t.textContent = text;
     t.classList.toggle('error', isError);
+    t.classList.toggle('top', !$('#sheet-backdrop').hidden);
     t.hidden = false;
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => { t.hidden = true; }, ms);
