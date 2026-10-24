@@ -186,7 +186,7 @@ button.cell:active { background: var(--fill); }
 
 /* Sheets */
 .sheet-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, .4); z-index: 20; }
-.sheet { position: fixed; left: 0; right: 0; bottom: var(--kb, 0px); z-index: 21; max-width: 520px; margin: 0 auto; background: var(--surface); border-radius: 22px 22px 0 0; padding: 10px 20px calc(22px + env(safe-area-inset-bottom)); max-height: calc(92dvh - var(--kb, 0px)); overflow: auto; animation: slideup .4s cubic-bezier(.2, .8, .2, 1); transition: bottom .15s ease-out; }
+.sheet { position: fixed; left: 0; right: 0; bottom: var(--kb, 0px); z-index: 21; max-width: 520px; margin: 0 auto; background: var(--surface); border-radius: 22px 22px 0 0; padding: 10px 20px calc(22px + env(safe-area-inset-bottom)); max-height: 88vh; max-height: calc(92dvh - var(--kb, 0px)); overflow: auto; animation: slideup .4s cubic-bezier(.2, .8, .2, 1); transition: bottom .15s ease-out; }
 .sheet::before { content: ''; display: block; width: 36px; height: 5px; border-radius: 3px; background: var(--muted-2); margin: 0 auto 12px; }
 @keyframes slideup { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
 .sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }

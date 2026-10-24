@@ -978,7 +978,10 @@
       + '<button class="key back" type="button" data-key="back" aria-label="Delete"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><path d="m18 9-6 6M12 9l6 6"/></svg></button>';
     const firstEmpty = () => letters.findIndex((l) => !l);
     const paint = () => {
-      boxes.forEach((b, i) => { b.textContent = letters[i]; b.classList.toggle('filled', !!letters[i]); b.classList.toggle('active', i === active); });
+      boxes.forEach((b, i) => {
+        b.textContent = letters[i]; b.classList.toggle('filled', !!letters[i]); b.classList.toggle('active', i === active);
+        b.setAttribute('aria-label', letters[i] ? `Letter ${i + 1}: ${letters[i]}. Tap to clear` : `Letter ${i + 1}${i === 2 ? ', optional' : ''}, empty`);
+      });
       pad.classList.toggle('full', active < 0);
     };
     const clearError = () => { const err = root.parentElement.querySelector('.field-error'); if (err) err.hidden = true; };
@@ -995,6 +998,7 @@
       set: (v) => { const s = (v || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3); for (let i = 0; i < 3; i++) letters[i] = s[i] || ''; active = firstEmpty(); paint(); },
       focus: () => { liveLetters = field; },
       visible: () => root.getClientRects().length > 0,
+      el: root,
     };
     paint();
     return field;
@@ -1003,8 +1007,11 @@
     const f = liveLetters;
     if (!f || !f.visible() || e.metaKey || e.ctrlKey || e.altKey) return;
     if (/^(input|textarea|select)$/i.test(e.target.tagName)) return;
+    const open = $$('.sheet').find((s) => !s.hidden);
+    if (open && !open.contains(f.el)) return; // another sheet sits on top of the letters
     if (/^[a-z]$/i.test(e.key)) { e.preventDefault(); f.type(e.key.toUpperCase()); }
     else if (e.key === 'Backspace') { e.preventDefault(); f.back(); }
+    else if (e.key === 'Enter') { const form = f.el.closest('form'); if (form) { e.preventDefault(); form.requestSubmit(); } }
   });
   // Sheets with a text field (school email) sit above the keyboard: iOS keeps the layout viewport
   // and shrinks the visual one, so the gap between them is the keyboard height.
