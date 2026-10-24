@@ -7,6 +7,7 @@
   const STORAGE_KEY = 'preslink.player';
   const SCHOOL_ASKED_KEY = 'preslink.schoolAsked';
   const CODE_SHOWN_KEY = 'preslink.codeShown';
+  const HOW_SEEN_KEY = 'preslink.howSeen';
   const PENDING_KEY = 'preslink.pendingScore';
   const ADMIN_KEY = 'preslink.adminCode';
   const SWEEP_GUARD_MS = 150;
@@ -31,14 +32,14 @@
   const MESSAGES = {
     NETWORK: 'No connection. Check your signal and try again.',
     NO_CREDITS: 'No plays left.',
-    BAD_INITIALS: 'Two or three letters, A to Z.',
-    BLOCKED_INITIALS: 'Those letters are not allowed. Try others.',
-    TAKEN: 'Those letters are taken. Try others.',
+    BAD_INITIALS: 'Two or three initials, A to Z.',
+    BLOCKED_INITIALS: 'Those initials are not allowed. Try others.',
+    TAKEN: 'Those initials are taken. Try others.',
     BAD_ROLE: 'To join a school board, add your school email on the You tab.',
     BAD_SESSION: 'This payment link is not valid any more. Nothing was charged.',
     UNKNOWN_SESSION: 'This payment link is not valid any more. Nothing was charged.',
     BAD_GOAL: 'Enter a whole number of euro.',
-    NO_PLAYER: 'No player with those letters.',
+    NO_PLAYER: 'No player with those initials.',
     BAD_SCHOOL_EMAIL: 'That is not a school email we recognise.',
     NEEDS_SCHOOL_EMAIL: 'Add your school email first.',
     BAD_SIGNIN: 'That name and code do not match.',
@@ -131,9 +132,11 @@
 
   // The first tap opens a small sheet asking for two or three letters; the player is created on submit.
   let pendingBundle = null;
-  function ensurePlayer(bundle) {
+  let pendingAfter = null; // 'school' when the initials sheet was opened from the join-your-board row
+  function ensurePlayer(bundle, after) {
     if (player) return true;
     pendingBundle = bundle || 'single';
+    pendingAfter = after || null;
     showError('name-error', '');
     nameInitials.set('');
     openSheet('name');
@@ -176,6 +179,38 @@
     if (e.target.closest('[data-close]')) closeSheets();
   });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheets(); });
+  // How to play: shown by its rows, and once by itself before the very first light.
+  function showIntro() {
+    return new Promise((resolve) => {
+      const sheet = $('#sheet-how');
+      openSheet('how');
+      const obs = new MutationObserver(() => { if (sheet.hidden) { obs.disconnect(); store.set(HOW_SEEN_KEY, true); resolve(); } });
+      obs.observe(sheet, { attributes: true, attributeFilter: ['hidden'] });
+    });
+  }
+  $('#how-done').addEventListener('click', () => { store.set(HOW_SEEN_KEY, true); closeSheets(); });
+  // Arcade sounds: a soft tick on each tap, a two-note chime for a good light, a run of notes for a
+  // new best. Built with the Web Audio API on the first tap, so nothing plays uninvited.
+  let audio = null;
+  function beep(freq, ms, gain, type, at) {
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === 'suspended') audio.resume();
+      const t = audio.currentTime + (at || 0);
+      const o = audio.createOscillator(); const g = audio.createGain();
+      o.type = type || 'sine'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(gain, t + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + ms / 1000);
+      o.connect(g); g.connect(audio.destination);
+      o.start(t); o.stop(t + ms / 1000 + 0.02);
+    } catch (_) { /* no sound on this device */ }
+  }
+  const sounds = {
+    tap: () => beep(640, 50, 0.04, 'square', 0),
+    good: () => { beep(880, 140, 0.05, 'sine', 0); beep(1320, 220, 0.05, 'sine', 0.11); },
+    best: () => [660, 880, 1100, 1320].forEach((f, i) => beep(f, 180, 0.05, 'sine', i * 0.1)),
+  };
   // Badge bubbles: tap a prize symbol to see what it means.
   const BADGE_TEXT = { light: ['Best light', 'Closest to 1,000 with a single light. A spot prize at the end.'], plays: ['Most plays', 'The most plays in the campaign. A spot prize at the end.'] };
   function closeBubbles() { $$('.bubble').forEach((b) => b.remove()); $$('.board li.bubbling').forEach((l) => l.classList.remove('bubbling')); }
@@ -310,6 +345,7 @@
   // Home and the money counter in the app bar
   // ---------------------------------------------------------------------------
   function renderHome() {
+    $('#home-school-text').textContent = isSchool() ? 'Presentation Brothers College' : 'Student or teacher? Join your board';
     const btn = $('#home-play');
     const canPlay = !!player && (credits > 0 || !!openPlay);
     btn.textContent = canPlay ? (openPlay ? 'Play · a play is waiting' : `Play · ${credits} left`) : 'Play · €2';
@@ -478,9 +514,7 @@
     const n = result.credits_added || 1;
     const b = BUNDLES[result.bundle];
     $('#cab-title').textContent = result.demo ? 'Demo play' : 'Thank you';
-    $('#cab-text').textContent = result.demo
-      ? 'No payment was taken: payments are not switched on yet.'
-      : `Your €${b ? b.amount : 2} goes to Presentation Brothers schools in Ghana and Nigeria.`;
+    $('#cab-text').textContent = '';
     cabinetBusy = true;
     await splashDone;
     go('cabinet');
@@ -533,19 +567,22 @@
     return x < 1 ? x : 2 - x;
   }
   // Steep on purpose: 20 ms off at a one-second sweep is about 880, and 1,000 needs an error under a tenth of a millisecond.
-  const roundScore = (pos, target) => 50 + Math.round(950 * Math.pow(Math.max(0, 1 - Math.abs(pos - target) / 0.5), 3));
+  // Mirrors round_score() in the database: 50 + 950 * exp(-|pos - target| / 0.0158). On a 950 ms pass
+  // that is 2 ms off = 880, 5 ms = 730, 10 ms = 540, 20 ms = 300, 50 ms = 85, so most plays land
+  // between 200 and 750 and 900+ needs three taps within about a millisecond and a half.
+  const roundScore = (pos, target) => 50 + Math.round(950 * Math.exp(-Math.abs(pos - target) / 0.0158));
   function titleFor(s) {
-    if (s >= 950) return 'Outstanding';
-    if (s >= 900) return 'Superb';
-    if (s >= 800) return 'Great run';
-    if (s >= 600) return 'Good effort';
+    if (s >= 800) return 'Outstanding';
+    if (s >= 650) return 'Superb';
+    if (s >= 500) return 'Great run';
+    if (s >= 350) return 'Good effort';
     return 'Next time';
   }
   function verdictFor(s) {
-    if (s >= 990) return 'Perfect';
-    if (s >= 950) return 'So close';
-    if (s >= 850) return 'Nice';
-    if (s >= 600) return 'Not bad';
+    if (s >= 880) return 'Perfect';
+    if (s >= 700) return 'So close';
+    if (s >= 500) return 'Nice';
+    if (s >= 300) return 'Not bad';
     return 'Unlucky';
   }
   function setMarker(pos) { marker.style.transform = `translateX(${pos * game.trackW}px)`; }
@@ -560,7 +597,7 @@
     $$('#rounds .dot').forEach((d, i) => {
       d.className = 'dot';
       d.textContent = i < game.scores.length ? game.scores[i] : i + 1;
-      if (i < game.scores.length) d.classList.add('done', game.scores[i] < 850 ? 'low' : 'high');
+      if (i < game.scores.length) d.classList.add('done', game.scores[i] < 500 ? 'low' : 'high');
       else if (i === game.round && (game.state === 'sweeping' || game.state === 'countdown')) d.classList.add('live');
     });
   }
@@ -596,16 +633,13 @@
     const g = $('#game');
     g.classList.remove('enter'); void g.offsetWidth; g.classList.add('enter');
     game.state = 'loading';
-    // The play is fetched while the countdown runs, so the light starts the moment "Go" shows.
     const fetching = api('start', { player_id: player.id });
     fetching.catch(() => {});
     const m = $('#game-msg');
-    for (const n of ['3', '2', '1']) {
-      if (game.state !== 'loading') return;
-      m.textContent = n;
-      m.classList.remove('count'); void m.offsetWidth; m.classList.add('count');
-      await wait(650);
-    }
+    m.classList.remove('count', 'go');
+    m.textContent = '';
+    // The first time, the rules sit over the game until Got it is tapped; nothing moves meanwhile.
+    if (!store.get(HOW_SEEN_KEY)) { await showIntro(); if (game.state !== 'loading') return; }
     let res;
     try {
       res = await fetching;
@@ -622,15 +656,25 @@
     credits = res.credits;
     openPlay = null;
     updatePlayCredits();
-    game.state = 'countdown';
-    setPin(res.rounds[0].target);
-    renderDots();
-    m.classList.remove('count');
-    m.textContent = 'Go';
-    m.classList.add('go');
     $('#tap-hint').classList.add('live');
-    beginRound(0);
-    setTimeout(() => { if (game.state === 'sweeping' && game.round === 0) { m.classList.remove('go'); m.textContent = 'Light 1 of 3'; } }, 700);
+    settleThen(0);
+  }
+  // The light appears where it will start and breathes for a moment before it moves. Nothing is
+  // counted until it sweeps, so there is no rush and no surprise.
+  function settleThen(i) {
+    const r = game.play.rounds[i];
+    game.round = i;
+    game.state = 'countdown';
+    const m = $('#game-msg');
+    m.classList.remove('count', 'go');
+    m.textContent = `Light ${i + 1} of 3`;
+    setPin(r.target);
+    marker.classList.remove('hit', 'miss');
+    measure();
+    setMarker(posAt(0, r.phase, game.play.speed_ms));
+    marker.classList.remove('settle'); void marker.offsetWidth; marker.classList.add('settle');
+    renderDots();
+    setTimeout(() => { if (game.state === 'countdown' && game.round === i) { marker.classList.remove('settle'); beginRound(i); } }, 950);
   }
   function beginRound(i) {
     game.round = i;
@@ -640,6 +684,7 @@
     marker.classList.remove('hit', 'miss');
     measure();
     game.state = 'sweeping';
+    $('#game').classList.add('sweeping');
     renderDots();
     game.sweepStart = performance.now();
     game.raf = requestAnimationFrame(loop);
@@ -652,6 +697,7 @@
   }
   function abandonGame() {
     cancelAnimationFrame(game.raf);
+    $('#game').classList.remove('sweeping');
     game.state = 'idle';
   }
 
@@ -661,7 +707,9 @@
     if (ms < SWEEP_GUARD_MS) return;
     if (e.cancelable) e.preventDefault();
     game.state = 'between';
+    $('#game').classList.remove('sweeping');
     cancelAnimationFrame(game.raf);
+    sounds.tap();
     const r = game.play.rounds[game.round];
     const pos = posAt(ms, r.phase, game.play.speed_ms);
     const s = roundScore(pos, r.target);
@@ -678,21 +726,22 @@
   async function afterRound(s) {
     const g = $('#game');
     g.classList.remove('flash'); void g.offsetWidth; g.classList.add('flash');
-    marker.classList.add(s >= 850 ? 'hit' : 'miss');
+    marker.classList.add(s >= 500 ? 'hit' : 'miss');
     const pop = document.createElement('span');
-    pop.className = 'light-pop' + (s >= 900 ? ' top' : '');
+    pop.className = 'light-pop' + (s >= 700 ? ' top' : '');
+    if (s >= 700) sounds.good();
     pop.textContent = '+' + s;
     pop.style.left = marker.style.transform.replace(/[^0-9.]/g, '') + 'px';
     track.appendChild(pop);
     setTimeout(() => pop.remove(), 1200);
-    vibrate(s >= 950 ? [20, 30, 20] : 25);
+    vibrate(s >= 880 ? [20, 30, 20] : 25);
     renderDots();
     const el = $('#score-value');
     el.textContent = s;
     $('.score').classList.remove('pop'); void el.offsetWidth; $('.score').classList.add('pop');
     const v = $('#verdict');
     v.textContent = verdictFor(s);
-    v.classList.toggle('miss', s < 850);
+    v.classList.toggle('miss', s < 500);
     $('#game-msg').textContent = '';
     await wait(1150);
     if (game.state !== 'between') return;
@@ -700,7 +749,7 @@
       v.textContent = '';
       $('#score-value').textContent = '';
       $('.score').classList.remove('pop');
-      beginRound(game.round + 1);
+      settleThen(game.round + 1);
     } else {
       finishPlay();
     }
@@ -716,8 +765,8 @@
     const el = $('#score-value');
     await countUp(el, 0, score, 1200, String);
     $('.score').classList.add('pop');
-    vibrate(score >= 900 ? [30, 40, 30, 40, 60] : 40);
-    if (score >= 900) confetti.burst(score >= 950 ? 180 : 110);
+    vibrate(score >= 800 ? [30, 40, 30, 40, 60] : 40);
+    if (score >= 800) confetti.burst(score >= 900 ? 180 : 110);
     await wait(900);
 
     const payload = { player_id: player.id, play_id: game.play.play_id, score, taps: game.taps.slice() };
@@ -760,13 +809,13 @@
     const newBest = !!r && prevBest != null && score > prevBest;
     const movedUp = !!r && prevRank != null && rank != null && rank < prevRank;
     kicker.className = 'result-kicker' + (newBest ? ' best' : movedUp ? ' up' : '');
+    if (newBest) sounds.best();
     kicker.textContent = newBest ? 'New best' : movedUp ? `Up ${prevRank - rank} ${prevRank - rank === 1 ? 'place' : 'places'}` : titleFor(score);
     if (r) { store.set('preslink.prevBest', best); if (rank != null) store.set('preslink.prevRank', rank); }
     countUp($('#result-score'), score, 900);
     const bestRound = Math.max(...game.scores);
     $('#result-rounds').innerHTML = '<span class="lbl">3 lights</span>' + game.scores.map((s) => `<span class="chip${s === bestRound ? ' top' : ''}">${s}</span>`).join('');
     $('#result-best').textContent = r && best != null ? best : '–';
-    $('#result-best-sub').textContent = r && r.best_light != null ? `best light ${r.best_light}` : '';
     $('#result-rank').textContent = rank ? '#' + rank : '–';
     $('#result-rank-sub').textContent = '';
     $('#result-rank-sub').className = '';
@@ -898,19 +947,31 @@
   // ---------------------------------------------------------------------------
   // School: optional. A school email puts you on the Students or Teachers board.
   // ---------------------------------------------------------------------------
+  const STUDENT_EMAIL = /^[a-z0-9._%+'-]+@pbccork\.ie$/;
+  const TEACHER_EMAIL = /^[a-z0-9._%+'-]+@pbc-cork\.ie$/;
+  let schoolRole = '';
+  function pickSchoolRole(role) {
+    schoolRole = role;
+    $$('#school-role button').forEach((b) => { const on = b.dataset.role === role; b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); });
+    showError('school-error', '');
+  }
+  $$('#school-role button').forEach((b) => b.addEventListener('click', () => { pickSchoolRole(b.dataset.role); setTimeout(() => $('#school-email').focus(), 60); }));
   function openSchool() {
     showError('school-error', '');
+    pickSchoolRole(player && player.role === 'teacher' ? 'teacher' : player && player.role === 'student' ? 'student' : '');
     $('#school-email').value = player && player.school_email ? player.school_email : '';
     openSheet('school');
-    setTimeout(() => $('#school-email').focus(), 80);
   }
   $('#result-school').addEventListener('click', openSchool);
   $('#you-school').addEventListener('click', openSchool);
+  $('#home-school').addEventListener('click', () => { if (isSchool()) go('about'); else if (player) openSchool(); else ensurePlayer(null, 'school'); });
   $('#school-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!player) return;
+    if (!schoolRole) { showError('school-error', 'Student or teacher?'); return; }
     const email = $('#school-email').value.trim().toLowerCase();
-    if (!SCHOOL.test(email)) { showError('school-error', MESSAGES.BAD_SCHOOL_EMAIL); return; }
+    const ok = schoolRole === 'student' ? STUDENT_EMAIL.test(email) : TEACHER_EMAIL.test(email);
+    if (!ok) { showError('school-error', schoolRole === 'student' ? 'That is not a student email.' : 'That is not a teacher email.'); return; }
     const btn = $('#school-submit');
     btn.disabled = true;
     try {
@@ -936,7 +997,7 @@
     if (!tabs.length) return;
     const thumb = document.createElement('span'); thumb.className = 'thumb'; thumb.setAttribute('aria-hidden', 'true'); seg.prepend(thumb);
     seg.style.setProperty('--n', tabs.length);
-    const place = () => { const i = Math.max(0, tabs.findIndex((b) => b.classList.contains('active') || b.classList.contains('on'))); seg.style.setProperty('--i', i); };
+    const place = () => { const i = tabs.findIndex((b) => b.classList.contains('active') || b.classList.contains('on')); seg.style.setProperty('--i', Math.max(0, i)); thumb.style.opacity = i < 0 ? '0' : '1'; };
     place();
     new MutationObserver(place).observe(seg, { attributes: true, subtree: true, attributeFilter: ['class'] });
   });
@@ -1070,7 +1131,8 @@
       adoptPlayer(await api('register', { role: 'everyone', initials }));
       store.del(SCHOOL_ASKED_KEY); store.del(CODE_SHOWN_KEY); store.del('preslink.prevBest'); store.del('preslink.prevRank');
       closeSheets();
-      buy(pendingBundle || 'single');
+      if (pendingAfter === 'school') { pendingAfter = null; renderHome(); openSchool(); }
+      else buy(pendingBundle || 'single');
     } catch (ex) {
       showError('name-error', msg(ex));
     } finally { btn.disabled = false; }
@@ -1122,7 +1184,7 @@
     } finally { $('#edit-save').disabled = false; }
   });
   $('#you-signout').addEventListener('click', () => {
-    if (!confirm(`Sign out ${player.display} on this device? Sign back in with your letters and code ${player.claim_code}.`)) return;
+    if (!confirm(`Sign out ${player.display} on this device? Sign back in with your initials and code ${player.claim_code}.`)) return;
     clearPlayer();
     renderHome();
     toast('Signed out');
@@ -1133,7 +1195,7 @@
     e.preventDefault();
     const initials = $('#signin-name').value.toUpperCase().replace(/\s/g, '');
     const code = $('#signin-code').value.replace(/\D/g, '');
-    if (!/^[A-Z]{2,3}(#\d{1,3})?$/.test(initials)) { showError('signin-error', 'Two or three letters, like JAK or JAK#2.'); return; }
+    if (!/^[A-Z]{2,3}(#\d{1,3})?$/.test(initials)) { showError('signin-error', 'Two or three initials, like JAK or JAK#2.'); return; }
     if (!/^\d{4}$/.test(code)) { showError('signin-error', 'Your code is four digits.'); return; }
     const btn = $('#signin-submit');
     btn.disabled = true;
@@ -1321,7 +1383,7 @@
   $('#admin-block').addEventListener('submit', async (e) => {
     e.preventDefault();
     const initials = $('#adm-block-initials').value.toUpperCase().trim();
-    if (!/^[A-Z]{3}$/.test(initials)) { toast('Three letters, A to Z.', true); return; }
+    if (!/^[A-Z]{3}$/.test(initials)) { toast('Three initials, A to Z.', true); return; }
     try {
       await adminCall('block', { initials, block: true });
       $('#adm-block-initials').value = '';

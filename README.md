@@ -85,6 +85,7 @@ The free plays switch off by themselves the moment a Stripe key exists. Details 
 | `supabase/migrations/0009_admin_school_email.sql` | Committee lookup shows a player's school email and best light |
 | `supabase/migrations/0010_demo_payments_count.sql` | Demo plays count on the raised total (clear them before going live, see `docs/admin.sql`) |
 | `supabase/migrations/0011_score_floor.sql` | Every light scores at least 50, so a wild tap never gives zero |
+| `supabase/migrations/0012_bell_curve.sql` | Bell-shaped score curve (15 ms per e-fold) so the field spreads out and 900+ stays rare |
 | `site/poster.html` | A3 poster preview with a large QR code (vendored encoder in `site/vendor/`); its Save as PDF button downloads the file below |
 | `site/poster.pdf` | The poster rendered to A3 PDF for the printer, QR pointing at preslink.netlify.app (re-render it if the address changes) |
 | `site/assets/` | Logo (`logo.svg`, `cross.svg`), icons, and the photo slots `photo-*.svg` to replace with real photos |
@@ -99,7 +100,7 @@ Do these in order. Steps 1 and 2 are a one-off technical setup; 3 to 6 are the l
 
 ### 1. Supabase (database + functions): already done
 
-The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all eleven migrations applied,
+The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all twelve migrations applied,
 both functions deployed, and `site/config.js` points at it. The committee code was set at deployment
 and handed over privately; change it any time from the Committee screen.
 
@@ -192,11 +193,11 @@ hash in the database and locks for 15 minutes after 8 wrong tries. From there th
   player's name to a random one.
 - The game: a play is three lights. Each light sweeps the bar at its own random speed (about a second per
   pass) and has its own mark; you tap when the light is on the mark. The score for a light falls off steeply
-  with distance (10 ms off is about 940, 20 ms about 885, 30 ms about 830, 50 ms about 730, and a wild tap
-  still scores 50, never zero), and the play's
-  score is the average of the three, so one lucky tap is not enough: scores above 900 need three taps within
-  about 15 ms, and a single-light 1,000 needs an error under a tenth of a millisecond, which integer-millisecond
-  taps practically never hit.
+  with distance along a bell-shaped curve (2 ms off is about 880, 5 ms about 730, 10 ms about 540, 20 ms about
+  300, 50 ms about 85, and a wild tap still scores 50, never zero), and the play's score is the average of the
+  three. Most plays land between 200 and 750; a play above 900 needs three taps within about a millisecond and
+  a half, and a single-light 1,000 needs an error under half a millisecond, which integer-millisecond taps
+  practically never hit.
 - Everyone starts on the Everyone board. The result screen and the You tab offer "At Presentation Brothers
   College?": a school email ending @pbccork.ie puts the player on the Students board, @pbc-cork.ie on the
   Teachers board. The address is stored for the committee to check; nothing is emailed.
