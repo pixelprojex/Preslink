@@ -343,6 +343,7 @@
   function tickTo(el, from, to, fmt, dur) {
     return new Promise((resolve) => {
       if (reduceMotion() || to === from) { setOdometer(el, fmt(to)); resolve(); return; }
+      clearInterval(el._tick);
       const steps = Math.min(14, Math.max(4, Math.abs(to - from)));
       let i = 0;
       const t = setInterval(() => {
@@ -351,6 +352,7 @@
         setOdometer(el, fmt(Math.round(from + (to - from) * k)));
         if (i >= steps) { clearInterval(t); setOdometer(el, fmt(to)); resolve(); }
       }, dur / steps);
+      el._tick = t;
     });
   }
   let shownRaised = null; // whole euro shown in the app bar
@@ -360,30 +362,28 @@
     const pct = goalCents > 0 ? Math.min(1, cents / goalCents) : (cents > 0 ? 1 : 0);
     ring.setAttribute('stroke-dasharray', `${Math.max(pct > 0 ? 3 : 0, pct * circ).toFixed(1)} ${circ}`);
   }
+  // The raised total only ever rolls: digits slide to the new value, nothing else changes.
   function showRaised(cents) {
     const el = $('#raised-n');
-    const wrap = $('#raised');
     const target = Math.round((cents || 0) / 100);
     const fmt = (n) => '€' + n.toLocaleString('en-IE');
-    if (shownRaised === null) {
-      shownRaised = target;
-      tickTo(el, 0, target, fmt, target > 0 ? 1500 : 0);
-      return;
-    }
-    if (target > shownRaised) {
-      const plus = document.createElement('span');
-      plus.className = 'raised-plus';
-      plus.textContent = '+' + fmt(target - shownRaised);
-      wrap.appendChild(plus);
-      setTimeout(() => plus.remove(), 2000);
-      wrap.classList.remove('up'); void wrap.offsetWidth; wrap.classList.add('up');
-      setTimeout(() => wrap.classList.remove('up'), 2000);
-      tickTo(el, shownRaised, target, fmt, 1900);
-    } else {
-      setOdometer(el, fmt(target));
-    }
+    const from = shownRaised;
     shownRaised = target;
+    if (from === null) { tickTo(el, 0, target, fmt, target > 0 ? 1500 : 0); return; }
+    if (target === from) return;
+    if (target > from) tickTo(el, from, target, fmt, 1600);
+    else setOdometer(el, fmt(target));
   }
+  // Live total: every open page asks for the total every few seconds, so a payment anywhere rolls
+  // the counter on everyone's screen within that time. Paused while the tab is hidden.
+  const STATS_EVERY = 5000;
+  let statsTimer = 0;
+  function pollStats() {
+    clearTimeout(statsTimer);
+    if (document.hidden) return;
+    statsTimer = setTimeout(() => { refreshStats().finally(pollStats); }, STATS_EVERY);
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshStats(); pollStats(); });
 
   const endsText = () => {
     const d = stats && stats.ends_on ? new Date(stats.ends_on + 'T12:00:00') : null;
@@ -1352,6 +1352,7 @@
 
     renderHome();
     refreshStats();
+    pollStats();
     render(location.hash.slice(1) || 'home');
     if (sessionId) await confirmPayment(sessionId);
     else if (cancelled) toast('Payment cancelled. Nothing was charged.');
