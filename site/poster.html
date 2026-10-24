@@ -175,34 +175,26 @@
     /* d. Photos: one dominant face-first photo, equal heights, titles that say the outcome */
     .stories {
       display: grid;
-      grid-template-columns: 1.4fr 1fr 1fr;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 7mm;
       margin-top: 14mm;
     }
     .stories figure { margin: 0; min-width: 0; }
     .stories img {
       width: 100%;
-      height: 50mm;
+      height: 60mm;
       object-fit: cover;
       display: block;
       border-radius: 6mm;
       background: #f2f2f4;
     }
-    .stories figcaption { margin-top: 3.6mm; }
+    .stories figcaption { margin-top: 3.6mm; text-align: center; }
     .stories b {
       display: block;
       font-weight: 800;
-      font-size: 5.5mm;
+      font-size: 6mm;
       line-height: 1.15;
       letter-spacing: -0.02em;
-    }
-    .stories span {
-      display: block;
-      margin-top: 1.4mm;
-      color: var(--muted);
-      font-weight: 500;
-      font-size: 4.3mm;
-      line-height: 1.38;
     }
 
     /* e. Footer: the promise sits where the eye leaves the page */
@@ -310,21 +302,21 @@
         <section class="stories">
           <figure>
             <img src="assets/photo-bikes.jpg" alt="Students with bicycles" style="object-position: 50% 25%">
-            <figcaption><b>Bikes that keep students in school</b><span>Bicycles so that students can get to class and stay in education.</span></figcaption>
+            <figcaption><b>Bikes to school</b></figcaption>
           </figure>
           <figure>
             <img src="assets/photo-babies.jpg" alt="Mother of Mercy Home" style="object-position: 50% 55%">
-            <figcaption><b>Care for babies</b><span>Support for the Mother of Mercy Home in Sirigu, Ghana.</span></figcaption>
+            <figcaption><b>Care for babies</b></figcaption>
           </figure>
           <figure>
             <img src="assets/photo-classrooms.jpg" alt="A new classroom in Ghana" style="object-position: 62% 50%">
-            <figcaption><b>Three new classrooms</b><span>A classroom block in Sokabisi, Bolgatanga, funded by PresLink.</span></figcaption>
+            <figcaption><b>New classrooms</b></figcaption>
           </figure>
         </section>
 
         <footer class="foot">
-          <p>PresLink · student-run since 2005</p>
-          <p class="promise">Every cent after card fees goes to the schools in Ghana and Nigeria.</p>
+          <p>Student-run since 2005</p>
+          <p class="promise">Every cent after card fees goes to schools in Ghana and Nigeria.</p>
         </footer>
 
       </div>
