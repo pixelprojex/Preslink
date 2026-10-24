@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="theme-color" content="#5b3a9a">
   <title>PresLink Arcade</title>
   <meta name="description" content="Stop the light on the mark. Every play funds Presentation Brothers schools in Ghana and Nigeria. Prizes at the end of the campaign.">
@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=10">
+  <link rel="stylesheet" href="styles.css?v=12">
 </head>
 <body>
 <div class="splash" id="splash" aria-hidden="true">
@@ -66,10 +66,9 @@
       <button class="cell" type="button" data-sheet="how">How to play <span class="chev">›</span></button>
       <button class="cell" type="button" data-go="about">Where the money goes <span class="chev">›</span></button>
     </div>
-    <footer class="footer">
-      <span class="school-id"><img src="assets/crest.svg?v=10" alt="">Presentation Brothers College</span>
-      <span class="row-links"><button class="link" type="button" data-sheet="terms">Terms</button><span>·</span><span>Payments by Stripe</span></span>
-    </footer>
+    <div class="card">
+      <button class="cell" type="button" data-go="about"><span class="school-id"><img src="assets/crest.svg?v=10" alt="">Presentation Brothers College</span> <span class="chev">›</span></button>
+    </div>
   </section>
 
   <!-- ================= CABINET (after a payment) ================= -->
@@ -111,7 +110,7 @@
     </div>
 
     <div class="result" id="result" hidden>
-      <div class="result-head">
+      <div class="card result-head">
         <p class="result-kicker" id="result-title">Score</p>
         <div class="result-score"><span id="result-score">0</span><small>/ 1000</small></div>
         <div class="result-rounds" id="result-rounds"></div>
@@ -126,19 +125,20 @@
         <span><strong>At Presentation Brothers College?</strong><small>Join your school board</small></span>
         <span class="chev">›</span>
       </button>
-      <button class="btn btn-primary btn-xl" type="button" id="result-again">Play again</button>
-      <p class="bundles-line" id="result-topup" hidden><button class="link" type="button" data-bundle="triple">3 plays €5</button><span>·</span><button class="link" type="button" data-bundle="seven">7 plays €10</button></p>
-      <div class="grid-2">
-        <button class="btn" type="button" data-go="board">Leaderboard</button>
-        <button class="btn" type="button" id="result-share">Share</button>
+      <div class="card pad cta-card">
+        <button class="btn btn-primary btn-xl" type="button" id="result-again">Play again</button>
+        <p class="bundles-line" id="result-topup" hidden><button class="link" type="button" data-bundle="triple">3 plays €5</button><span>·</span><button class="link" type="button" data-bundle="seven">7 plays €10</button></p>
       </div>
-      <p class="charity-line" id="result-charity">Every play funds schools in Ghana and Nigeria.</p>
+      <div class="card">
+        <button class="cell" type="button" data-go="board">Leaderboard <span class="chev">›</span></button>
+        <button class="cell" type="button" id="result-share">Share <span class="chev">›</span></button>
+      </div>
     </div>
   </section>
 
   <!-- ================= LEADERBOARD ================= -->
   <section class="screen" data-screen="board" hidden>
-    <div class="title"><h1>Leaderboard</h1><p class="subtitle" id="board-sub">Prizes at the end</p></div>
+    <div class="title"><h1>Leaderboard</h1></div>
     <div class="segmented" role="tablist">
       <button role="tab" type="button" class="tab active" data-role="everyone" aria-selected="true">Everyone</button>
       <button role="tab" type="button" class="tab" data-role="student" aria-selected="false">Students</button>
@@ -149,6 +149,7 @@
       <p class="empty" id="board-empty" hidden>No scores yet. Be the first.</p>
     </div>
     <div class="card" style="margin-top:28px" id="board-spot">
+      <h2 class="card-h" id="board-sub">Prizes at the end</h2>
       <div class="acc"><button class="cell" type="button" aria-expanded="false">Spot prizes <span class="chev">›</span></button>
         <div class="acc-body">
           <div class="spot-row"><svg class="ico"><use href="#i-flash"/></svg><span>Best light<small>Closest to 1,000 with one light</small></span><strong id="spot-light">–</strong></div>
@@ -161,16 +162,16 @@
 
   <!-- ================= PRIZES ================= -->
   <section class="screen" data-screen="prize" hidden>
-    <div class="title"><h1>Prizes</h1><p class="subtitle" id="prize-sub">Awarded at the end of the campaign</p></div>
-    <div class="card photo-card"><img class="photo" src="assets/photo-prize.svg" alt="The prizes"></div>
-    <h2 class="section">Top of each board</h2>
+    <div class="title"><h1>Prizes</h1></div>
+    <div class="card photo-card"><img class="photo" src="assets/photo-prize.svg" alt="The prizes"><p class="card-h foot" id="prize-sub">Awarded at the end of the campaign</p></div>
     <div class="card">
+      <h2 class="card-h">Top of each board</h2>
       <div class="acc"><button class="cell" type="button" aria-expanded="false">Everyone <span class="chev">›</span></button><div class="acc-body"><p id="prize-everyone">To be announced</p><span class="lead" id="lead-everyone"></span></div></div>
       <div class="acc"><button class="cell" type="button" aria-expanded="false">Students <span class="chev">›</span></button><div class="acc-body"><p id="prize-students">To be announced</p><span class="lead" id="lead-student"></span></div></div>
       <div class="acc"><button class="cell" type="button" aria-expanded="false">Teachers <span class="chev">›</span></button><div class="acc-body"><p id="prize-teachers">To be announced</p><span class="lead" id="lead-teacher"></span></div></div>
     </div>
-    <h2 class="section">Spot prizes</h2>
     <div class="card">
+      <h2 class="card-h">Spot prizes</h2>
       <div class="acc"><button class="cell" type="button" aria-expanded="false">Best light <span class="chev">›</span></button><div class="acc-body"><p id="prize-best-light">Closest to 1,000 with one light.</p><span class="lead" id="lead-light"></span></div></div>
       <div class="acc"><button class="cell" type="button" aria-expanded="false">Most plays <span class="chev">›</span></button><div class="acc-body"><p id="prize-most-plays">The biggest supporter.</p><span class="lead" id="lead-plays"></span></div></div>
     </div>
@@ -182,18 +183,20 @@
 
   <!-- ================= ABOUT ================= -->
   <section class="screen" data-screen="about" hidden>
-    <div class="title"><h1>PresLink</h1><p class="subtitle">The student-run charity of Presentation Brothers College, Cork.</p></div>
+    <div class="title"><h1>About</h1></div>
     <div class="card">
       <div class="acc"><button class="cell" type="button" aria-expanded="false">How to play <span class="chev">›</span></button><div class="acc-body"><p>Tap when the light is on the mark. Three lights a play, each out of 1,000. Your score is the average. Top of a board at the end wins a prize.</p></div></div>
     </div>
-    <h2 class="section">Where the money goes</h2>
     <div class="card">
+      <h2 class="card-h">Where the money goes</h2>
       <div class="acc"><button class="cell" type="button" aria-expanded="false">Classrooms in Ghana <span class="chev">›</span></button><div class="acc-body"><img class="photo" src="assets/photo-classrooms.jpg" alt="Children in a new classroom in Ghana" loading="lazy"><p>A three-classroom block in Sokabisi, Bolgatanga, funded by PresLink.</p></div></div>
       <div class="acc"><button class="cell" type="button" aria-expanded="false">Bikes to school <span class="chev">›</span></button><div class="acc-body"><img class="photo" src="assets/photo-bikes.jpg" alt="Students with their bicycles outside school" loading="lazy"><p>Bicycles so that students can get to class and stay in education.</p></div></div>
       <div class="acc"><button class="cell" type="button" aria-expanded="false">Mother of Mercy Babies Home <span class="chev">›</span></button><div class="acc-body"><img class="photo" src="assets/photo-babies.jpg" alt="Mother of Mercy Babies Home" loading="lazy"><p>Support for the babies home run by the Presentation Brothers in Sirigu, Ghana.</p></div></div>
-      <div class="acc school"><button class="cell" type="button" aria-expanded="false"><span class="school-id"><img src="assets/crest.svg?v=10" alt="">Run by students</span> <span class="chev">›</span></button><div class="acc-body"><p>A committee of Presentation Brothers College students and teachers runs the campaign. Every cent raised here, after card fees, goes to PresLink.</p></div></div>
+      <div class="acc school"><button class="cell" type="button" aria-expanded="false"><span class="school-id"><img src="assets/crest.svg?v=10" alt="">Run by students</span> <span class="chev">›</span></button><div class="acc-body"><p>PresLink is the student-run charity of Presentation Brothers College, Cork. A committee of students and teachers runs the campaign. Every cent raised here, after card fees, goes to PresLink.</p></div></div>
     </div>
-    <button class="btn btn-primary btn-xl page-cta js-play" type="button">Play · €2</button>
+    <div class="card">
+      <button class="cell" type="button" data-sheet="terms">Terms <span class="chev">›</span></button>
+    </div>
   </section>
 
   <!-- ================= YOU ================= -->
@@ -203,9 +206,11 @@
       <div class="card you-empty">
         <p>Play once and your name and code appear here.</p>
         <button class="btn btn-primary btn-xl js-play" type="button">Play · €2</button>
-        <button class="link center" type="button" data-go="signin">Played before? Sign in</button>
       </div>
-      <button class="link center quiet small" type="button" data-go="admin">Committee</button>
+      <div class="card">
+        <button class="cell" type="button" data-go="signin">Played before? Sign in <span class="chev">›</span></button>
+        <button class="cell quiet" type="button" data-go="admin">Committee <span class="chev">›</span></button>
+      </div>
     </div>
     <div id="you-panel" hidden>
       <div class="card profile">
@@ -225,10 +230,10 @@
         <div class="cell"><span>Best light</span><strong id="you-light">–</strong></div>
       </div>
       <form id="edit-form" class="card pad stack" autocomplete="off" novalidate hidden>
-        <label class="initials" for="edit-initials">
-          <input id="edit-initials" inputmode="text" autocapitalize="characters" autocorrect="off" spellcheck="false" autocomplete="off" maxlength="3" aria-label="Your letters, two or three">
-          <span class="box"></span><span class="box"></span><span class="box opt"></span>
-        </label>
+        <div class="initials" id="edit-initials" role="group" aria-label="Your letters, two or three">
+          <button class="box" type="button" aria-label="Letter 1"></button><button class="box" type="button" aria-label="Letter 2"></button><button class="box opt" type="button" aria-label="Letter 3, optional"></button>
+        </div>
+        <div class="letterpad" aria-label="Letters"></div>
         <p class="field-error" id="edit-error" role="alert" hidden></p>
         <div class="grid-2"><button class="btn" type="button" id="edit-cancel">Cancel</button><button class="btn btn-primary" type="submit" id="edit-save">Save</button></div>
       </form>
@@ -238,13 +243,15 @@
         <button class="cell" type="button" data-go="signin">Sign in as someone else <span class="chev">›</span></button>
         <button class="cell danger" type="button" id="you-signout">Sign out on this device</button>
       </div>
-      <button class="link center quiet small" type="button" data-go="admin">Committee</button>
+      <div class="card">
+        <button class="cell quiet" type="button" data-go="admin">Committee <span class="chev">›</span></button>
+      </div>
     </div>
   </section>
 
   <!-- ================= SIGN IN ================= -->
   <section class="screen" data-screen="signin" hidden>
-    <div class="title"><h1>Sign in</h1><p class="subtitle">Your letters and your four-digit code.</p></div>
+    <div class="title"><h1>Sign in</h1></div>
     <form id="signin-form" autocomplete="off" novalidate>
       <div class="card">
         <label class="field"><span>Letters</span><input id="signin-name" autocapitalize="characters" autocorrect="off" spellcheck="false" maxlength="7" placeholder="JAK or JAK#2" autocomplete="off"></label>
@@ -253,7 +260,7 @@
       <p class="field-error" id="signin-error" role="alert" hidden></p>
       <button class="btn btn-primary btn-xl page-cta" type="submit" id="signin-submit">Sign in</button>
     </form>
-    <p class="fineprint">Lost your code? Ask the committee.</p>
+    <div class="card"><div class="cell quiet"><span>Lost your code? Ask the committee.</span></div></div>
   </section>
 
   <!-- ================= ADMIN ================= -->
@@ -362,10 +369,10 @@
 <div class="sheet" id="sheet-name" role="dialog" aria-modal="true" aria-labelledby="name-title" hidden>
   <div class="sheet-head"><h2 id="name-title">Your letters</h2><button class="close" type="button" data-close aria-label="Close">×</button></div>
   <form class="sheet-body stack" id="name-form" autocomplete="off" novalidate>
-    <label class="initials" for="name-initials">
-      <input id="name-initials" inputmode="text" autocapitalize="characters" autocorrect="off" spellcheck="false" autocomplete="off" maxlength="3" aria-label="Your letters, two or three">
-      <span class="box"></span><span class="box"></span><span class="box opt"></span>
-    </label>
+    <div class="initials" id="name-initials" role="group" aria-label="Your letters, two or three">
+      <button class="box" type="button" aria-label="Letter 1"></button><button class="box" type="button" aria-label="Letter 2"></button><button class="box opt" type="button" aria-label="Letter 3, optional"></button>
+    </div>
+    <div class="letterpad" aria-label="Letters"></div>
     <p class="field-error" id="name-error" role="alert" hidden></p>
     <button class="btn btn-primary btn-xl" type="submit" id="name-submit">Play</button>
   </form>
@@ -446,7 +453,7 @@
 <div class="overlay" id="overlay" hidden><div class="overlay-card"><div class="spinner" aria-hidden="true"></div><p id="overlay-text">One moment</p></div></div>
 
 <script src="config.js"></script>
-<script src="mock.js?v=10"></script>
-<script src="app.js?v=10"></script>
+<script src="mock.js?v=12"></script>
+<script src="app.js?v=12"></script>
 </body>
 </html>

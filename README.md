@@ -7,7 +7,8 @@ One campaign, three boards (Everyone, Students, Teachers) and prizes at the end,
 (best single light, most plays). Every payment goes to PresLink.
 
 There is no sign-up. On the first tap a small sheet asks for two or three letters (your initials),
-then goes straight to payment. After the first play a sheet shows the player's **name and four-digit
+picked on an on-screen letter pad (tap a box to clear that letter), so the phone keyboard never covers
+the boxes; then it goes straight to payment. After the first play a sheet shows the player's **name and four-digit
 code** with Save image and Copy, because those two things collect a prize; the code is also on the
 **You** tab on that device and signs them in anywhere. Everyone is on the Everyone board. People at
 Presentation Brothers College can optionally give their school email to join the Students board
@@ -182,7 +183,7 @@ hash in the database and locks for 15 minutes after 8 wrong tries. From there th
 
 ## Names, codes and signing back in
 
-- Two or three letters, chosen on the first tap. Duplicates get a tag (JAK#2) instead of a refusal, so
+- Two or three letters, picked on the letter pad on the first tap. Duplicates get a tag (JAK#2) instead of a refusal, so
   the real initials always work. Offensive letters are refused; the built-in list is in
   `0002_names_signin_admin.sql` (table `blocked_initials`), the committee can add more, and can reset a
   player's name to a random one.

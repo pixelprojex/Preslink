@@ -137,7 +137,7 @@
     showError('name-error', '');
     nameInitials.set('');
     openSheet('name');
-    setTimeout(() => nameInitials.input.focus(), 80);
+    nameInitials.focus();
     return false;
   }
 
@@ -740,7 +740,8 @@
     kicker.textContent = newBest ? 'New best' : movedUp ? `Up ${prevRank - rank} ${prevRank - rank === 1 ? 'place' : 'places'}` : titleFor(score);
     if (r) { store.set('preslink.prevBest', best); if (rank != null) store.set('preslink.prevRank', rank); }
     $('#result-score').textContent = score;
-    $('#result-rounds').innerHTML = '<span class="lbl">3 lights</span>' + game.scores.map((s) => `<span class="${s >= 850 ? 'top' : ''}">${s}</span>`).join('');
+    const bestRound = Math.max(...game.scores);
+    $('#result-rounds').innerHTML = '<span class="lbl">3 lights</span>' + game.scores.map((s) => `<span class="chip${s === bestRound ? ' top' : ''}">${s}</span>`).join('');
     $('#result-best').textContent = r && best != null ? best : '–';
     $('#result-best-sub').textContent = r && r.best_light != null ? `best light ${r.best_light}` : '';
     $('#result-rank').textContent = rank ? '#' + rank : '–';
@@ -937,32 +938,62 @@
   // ---------------------------------------------------------------------------
   // You: letters, board, code
   // ---------------------------------------------------------------------------
-  function initialsField(inputId) {
-    const input = $('#' + inputId);
-    const label = input.closest('.initials');
-    const boxes = $$('.box', label);
-    const sync = () => {
-      const v = input.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
-      if (v !== input.value) input.value = v;
-      boxes.forEach((b, i) => {
-        b.textContent = v[i] || '';
-        b.classList.toggle('active', document.activeElement === input && i === Math.min(v.length, 2));
-        b.classList.toggle('filled', !!v[i]);
-      });
+  // Letters are picked on an on-screen pad, so no system keyboard ever covers the boxes. Tap a box to
+  // clear that letter (the next letter goes there); a hardware keyboard works too.
+  let liveLetters = null;
+  function initialsField(id) {
+    const root = $('#' + id);
+    const boxes = $$('.box', root);
+    const pad = root.parentElement.querySelector('.letterpad');
+    const letters = ['', '', ''];
+    let active = 0;
+    pad.innerHTML = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((ch) => `<button class="key" type="button" data-key="${ch}">${ch}</button>`).join('')
+      + '<button class="key back" type="button" data-key="back" aria-label="Delete"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><path d="m18 9-6 6M12 9l6 6"/></svg></button>';
+    const firstEmpty = () => letters.findIndex((l) => !l);
+    const paint = () => {
+      boxes.forEach((b, i) => { b.textContent = letters[i]; b.classList.toggle('filled', !!letters[i]); b.classList.toggle('active', i === active); });
+      pad.classList.toggle('full', active < 0);
     };
-    input.addEventListener('input', () => { sync(); const err = label.parentElement.querySelector('.field-error'); if (err) err.hidden = true; });
-    input.addEventListener('focus', sync);
-    input.addEventListener('blur', sync);
-    label.addEventListener('click', () => input.focus());
-    sync();
-    return { input, value: () => input.value.toUpperCase(), set: (v) => { input.value = v || ''; sync(); } };
+    const clearError = () => { const err = root.parentElement.querySelector('.field-error'); if (err) err.hidden = true; };
+    const type = (ch) => { if (active < 0) return; letters[active] = ch; active = firstEmpty(); paint(); clearError(); };
+    const back = () => { let i = 2; while (i >= 0 && !letters[i]) i--; if (i < 0) return; letters[i] = ''; active = i; paint(); };
+    boxes.forEach((b, i) => b.addEventListener('click', () => { letters[i] = ''; active = i; paint(); }));
+    pad.addEventListener('click', (e) => {
+      const k = e.target.closest('.key'); if (!k) return;
+      if (k.dataset.key === 'back') back(); else type(k.dataset.key);
+    });
+    const field = {
+      type, back,
+      value: () => letters.join(''),
+      set: (v) => { const s = (v || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3); for (let i = 0; i < 3; i++) letters[i] = s[i] || ''; active = firstEmpty(); paint(); },
+      focus: () => { liveLetters = field; },
+      visible: () => root.getClientRects().length > 0,
+    };
+    paint();
+    return field;
   }
+  document.addEventListener('keydown', (e) => {
+    const f = liveLetters;
+    if (!f || !f.visible() || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (/^(input|textarea|select)$/i.test(e.target.tagName)) return;
+    if (/^[a-z]$/i.test(e.key)) { e.preventDefault(); f.type(e.key.toUpperCase()); }
+    else if (e.key === 'Backspace') { e.preventDefault(); f.back(); }
+  });
+  // Sheets with a text field (school email) sit above the keyboard: iOS keeps the layout viewport
+  // and shrinks the visual one, so the gap between them is the keyboard height.
+  const vv = window.visualViewport;
+  function fitSheets() {
+    if (!vv) return;
+    const lift = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+    document.documentElement.style.setProperty('--kb', lift + 'px');
+  }
+  if (vv) { vv.addEventListener('resize', fitSheets); vv.addEventListener('scroll', fitSheets); }
   const editInitials = initialsField('edit-initials');
   const nameInitials = initialsField('name-initials');
   $('#name-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const initials = nameInitials.value();
-    if (!/^[A-Z]{2,3}$/.test(initials)) { showError('name-error', MESSAGES.BAD_INITIALS); nameInitials.input.focus(); return; }
+    if (!/^[A-Z]{2,3}$/.test(initials)) { showError('name-error', MESSAGES.BAD_INITIALS); return; }
     const btn = $('#name-submit');
     btn.disabled = true;
     try {
@@ -1001,7 +1032,7 @@
     if (!f.hidden) {
       editInitials.set(player.initials);
       showError('edit-error', '');
-      setTimeout(() => editInitials.input.focus(), 50);
+      editInitials.focus();
     }
   });
   $('#edit-cancel').addEventListener('click', () => { $('#edit-form').hidden = true; });
