@@ -272,6 +272,8 @@
     window.scrollTo(0, 0);
     const tab = { home: 'play', cabinet: 'play', play: 'play', signin: 'play', board: 'board', prize: 'board', about: 'about', you: 'you' }[name];
     $$('#tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
+    const ti = ['play', 'board', 'about', 'you'].indexOf(tab);
+    if (ti >= 0) $('#tabbar').style.setProperty('--i', ti);
     $('#tabbar').hidden = name === 'play' || name === 'admin' || name === 'cabinet';
     if (name !== 'play' && game.state !== 'idle' && game.state !== 'done') abandonGame();
     if (name === 'home') { renderHome(); refreshStats(); refreshMe(); }
@@ -340,20 +342,38 @@
     });
     el.setAttribute('aria-label', text);
   }
-  function tickTo(el, from, to, fmt, dur) {
+  // Rolls like a mechanical counter: the digits slide to a stop, rest, slide again. At most eight
+  // stops, and the rests get a little longer towards the end so the last digit settles.
+  function tickTo(el, from, to, fmt) {
     return new Promise((resolve) => {
+      clearTimeout(el._tick);
       if (reduceMotion() || to === from) { setOdometer(el, fmt(to)); resolve(); return; }
-      clearInterval(el._tick);
-      const steps = Math.min(14, Math.max(4, Math.abs(to - from)));
+      const delta = to - from;
+      const n = Math.min(8, Math.abs(delta));
+      const vals = [];
+      for (let i = 1; i <= n; i++) vals.push(Math.round(from + delta * (i / n)));
       let i = 0;
-      const t = setInterval(() => {
+      const step = () => {
+        setOdometer(el, fmt(vals[i]));
         i++;
-        const k = 1 - Math.pow(1 - i / steps, 2);
-        setOdometer(el, fmt(Math.round(from + (to - from) * k)));
-        if (i >= steps) { clearInterval(t); setOdometer(el, fmt(to)); resolve(); }
-      }, dur / steps);
-      el._tick = t;
+        if (i >= n) { resolve(); return; }
+        const k = i / n;
+        el._tick = setTimeout(step, 460 + 300 * k * k);
+      };
+      el._tick = setTimeout(step, 140);
     });
+  }
+  // A plain count-up for the big score on the result screen.
+  function countUp(el, to, ms) {
+    if (reduceMotion()) { el.textContent = to; return; }
+    const t0 = performance.now();
+    const frame = (now) => {
+      const k = Math.min(1, (now - t0) / ms);
+      const e = 1 - Math.pow(1 - k, 3);
+      el.textContent = Math.round(to * e);
+      if (k < 1) requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
   }
   let shownRaised = null; // whole euro shown in the app bar
   function showRing(cents, goalCents) {
@@ -369,9 +389,9 @@
     const fmt = (n) => '€' + n.toLocaleString('en-IE');
     const from = shownRaised;
     shownRaised = target;
-    if (from === null) { tickTo(el, 0, target, fmt, target > 0 ? 1500 : 0); return; }
+    if (from === null) { tickTo(el, 0, target, fmt); return; }
     if (target === from) return;
-    if (target > from) tickTo(el, from, target, fmt, 1600);
+    if (target > from) tickTo(el, from, target, fmt);
     else setOdometer(el, fmt(target));
   }
   // Live total: every open page asks for the total every few seconds, so a payment anywhere rolls
@@ -539,6 +559,7 @@
   function renderDots() {
     $$('#rounds .dot').forEach((d, i) => {
       d.className = 'dot';
+      d.textContent = i < game.scores.length ? game.scores[i] : i + 1;
       if (i < game.scores.length) d.classList.add('done', game.scores[i] < 850 ? 'low' : 'high');
       else if (i === game.round && (game.state === 'sweeping' || game.state === 'countdown')) d.classList.add('live');
     });
@@ -549,7 +570,7 @@
     $('#game').classList.remove('done');
     $('#game-msg').textContent = 'Ready';
     $('#game-msg').classList.remove('go');
-    $('#score-value').textContent = '0';
+    $('#score-value').textContent = '';
     $('.score').classList.remove('pop');
     $('#verdict').textContent = '';
     $('#verdict').classList.remove('miss');
@@ -677,7 +698,7 @@
     if (game.state !== 'between') return;
     if (game.round < ROUNDS - 1) {
       v.textContent = '';
-      $('#score-value').textContent = '0';
+      $('#score-value').textContent = '';
       $('.score').classList.remove('pop');
       beginRound(game.round + 1);
     } else {
@@ -741,7 +762,7 @@
     kicker.className = 'result-kicker' + (newBest ? ' best' : movedUp ? ' up' : '');
     kicker.textContent = newBest ? 'New best' : movedUp ? `Up ${prevRank - rank} ${prevRank - rank === 1 ? 'place' : 'places'}` : titleFor(score);
     if (r) { store.set('preslink.prevBest', best); if (rank != null) store.set('preslink.prevRank', rank); }
-    $('#result-score').textContent = score;
+    countUp($('#result-score'), score, 900);
     const bestRound = Math.max(...game.scores);
     $('#result-rounds').innerHTML = '<span class="lbl">3 lights</span>' + game.scores.map((s) => `<span class="chip${s === bestRound ? ' top' : ''}">${s}</span>`).join('');
     $('#result-best').textContent = r && best != null ? best : '–';
@@ -909,6 +930,16 @@
   // Leaderboard and prizes
   // ---------------------------------------------------------------------------
   $$('[data-screen="board"] .tab').forEach((t) => t.addEventListener('click', () => { boardRole = t.dataset.role; boardTouched = true; loadBoard(); }));
+  // A white thumb slides under the active tab instead of each tab repainting.
+  $$('.segmented').forEach((seg) => {
+    const tabs = $$('.tab, button', seg).filter((b) => !b.classList.contains('thumb'));
+    if (!tabs.length) return;
+    const thumb = document.createElement('span'); thumb.className = 'thumb'; thumb.setAttribute('aria-hidden', 'true'); seg.prepend(thumb);
+    seg.style.setProperty('--n', tabs.length);
+    const place = () => { const i = Math.max(0, tabs.findIndex((b) => b.classList.contains('active') || b.classList.contains('on'))); seg.style.setProperty('--i', i); };
+    place();
+    new MutationObserver(place).observe(seg, { attributes: true, subtree: true, attributeFilter: ['class'] });
+  });
   function fmtWhen(iso) {
     const d = new Date(iso);
     return d.toLocaleDateString('en-IE', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('en-IE', { hour: '2-digit', minute: '2-digit' });
@@ -944,7 +975,7 @@
       li.className = (me ? 'me ' : '') + (r.rank <= 3 ? 'r' + r.rank : '');
       const badges = [r.tag === lightTag ? ['i-flash', 'Best light', 'light'] : null, r.tag === playsTag ? ['i-repeat', 'Most plays', 'plays'] : null].filter(Boolean)
         .map(([i, t, k]) => `<button class="badge ${k}" type="button" data-badge="${k}" title="${t}" aria-label="${t}"><svg><use href="#${i}"/></svg></button>`).join('');
-      li.innerHTML = `<span class="rank">${r.rank}</span>${avatarHtml(r.initials)}
+      li.innerHTML = `<span class="rank${r.rank <= 3 ? ' r' + r.rank : ''}">${r.rank}</span>${avatarHtml(r.initials)}
         <span class="name"><span class="badges">${badges}${me ? '<span class="youtag">You</span>' : ''}</span><span class="meta">${r.plays} ${Number(r.plays) === 1 ? 'play' : 'plays'}</span></span>
         <span class="pts">${r.score}</span>`;
       list.appendChild(li);
