@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
   <title>PresLink Arcade poster</title>
-  <meta name="description" content="Print-ready A3 poster with a QR code for PresLink Arcade.">
+  <meta name="description" content="A3 poster with a QR code for PresLink Arcade. Save as PDF downloads the print file.">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -118,7 +118,7 @@
       position: relative;
       width: 180mm;
       height: 13mm;
-      margin: 19mm auto 0;
+      margin: 12mm auto 0;
       border-radius: 99mm;
       background: linear-gradient(90deg, #fff3c4 0%, #ffd766 45%, #ffab45 75%, #f26a1b 100%);
     }
@@ -143,42 +143,6 @@
       background: #fff;
       border: 1.1mm solid var(--ink);
     }
-    .bar .tap {
-      position: absolute;
-      left: 63%;
-      top: -15mm;
-      transform: translateX(-50%);
-      padding: 1.6mm 4mm;
-      border-radius: 99mm;
-      background: var(--ink);
-      color: #fff;
-      font-weight: 800;
-      font-size: 4.6mm;
-      line-height: 1;
-      letter-spacing: 0.02em;
-      white-space: nowrap;
-    }
-    .bar .tap::after {
-      content: '';
-      position: absolute;
-      left: 50%;
-      bottom: -1.6mm;
-      width: 3.2mm;
-      height: 3.2mm;
-      margin-left: -1.6mm;
-      background: var(--ink);
-      transform: rotate(45deg);
-      border-radius: 0.5mm;
-    }
-    .lede {
-      margin: 8mm 0 0;
-      color: var(--ink);
-      font-weight: 600;
-      font-size: 5.8mm;
-      line-height: 1.25;
-      letter-spacing: -0.012em;
-    }
-    .lede b { font-weight: 800; }
 
     /* c. QR */
     .scan { display: flex; flex-direction: column; align-items: center; }
@@ -190,7 +154,7 @@
       text-transform: uppercase;
       color: var(--green);
     }
-    .qr { width: 126mm; height: 126mm; }
+    .qr { width: 140mm; height: 140mm; }
     .qr svg { width: 100%; height: 100%; display: block; }
     .url {
       margin: 4mm 0 0;
@@ -211,7 +175,7 @@
     .stories figure { margin: 0; min-width: 0; }
     .stories img {
       width: 100%;
-      aspect-ratio: 3 / 2;
+      aspect-ratio: 4 / 3;
       object-fit: cover;
       display: block;
       border-radius: 6mm;
@@ -260,7 +224,9 @@
       align-items: center;
       gap: 8px;
     }
-    .tools button {
+    .tools .save {
+      text-decoration: none;
+      display: inline-block;
       font: inherit;
       font-weight: 700;
       font-size: 14px;
@@ -272,17 +238,7 @@
       color: #fff;
       cursor: pointer;
     }
-    .tools button:hover { background: #000; }
-    .tools .hint {
-      font-size: 12px;
-      font-weight: 600;
-      line-height: 1;
-      color: var(--muted);
-      background: #fff;
-      border: 1px solid var(--rule);
-      border-radius: 999px;
-      padding: 11px 14px;
-    }
+    .tools .save:hover { background: #000; }
 
     /* ---------- Print ---------- */
     @page { size: A3; margin: 0; }
@@ -298,8 +254,7 @@
 </head>
 <body>
   <div class="tools">
-    <span class="hint">Set paper size to A3, margins none</span>
-    <button type="button" id="print">Print / Save as PDF</button>
+    <a class="save" href="poster.pdf" download="PresLink-Arcade-poster-A3.pdf">Save as PDF</a>
   </div>
 
   <div class="stage">
@@ -320,8 +275,7 @@
         <section class="hero">
           <p class="kicker">€2 a go <i>·</i> 3 for €5 <i>·</i> 7 for €10</p>
           <h1>Play. Win prizes.<br><span>Fund a school.</span></h1>
-          <div class="bar" aria-hidden="true"><span class="tap">Tap!</span><span class="pin"></span><span class="light"></span></div>
-          <p class="lede">Stop the light on the mark. Three lights a go.<br>Prizes for the <b>top student</b>, <b>top teacher</b> and <b>top player</b>.</p>
+          <div class="bar" aria-hidden="true"><span class="pin"></span><span class="light"></span></div>
         </section>
 
         <section class="scan">
@@ -447,7 +401,6 @@
       window.addEventListener('beforeprint', function () { sheet.style.transform = ''; frame.style.width = ''; frame.style.height = ''; });
       window.addEventListener('afterprint', fit);
 
-      document.getElementById('print').addEventListener('click', function () { window.print(); });
     })();
   </script>
 </body>

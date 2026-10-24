@@ -8,6 +8,7 @@
   --ink: #1c1c1e;
   --text: #48484a;
   --muted: #8e8e93;
+  --muted-d: #6e6e73; /* muted text that still passes 4.5:1 on white */
   --muted-2: #c7c7cc;
   --sep: #e5e5ea;
   --fill: #ececf0;
@@ -58,9 +59,9 @@ h1, h2, h3 { margin: 0; line-height: 1.15; color: var(--ink); font-weight: 700; 
 .home-links { margin-top: 14px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .section { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin: 28px 16px 10px; }
-.card-h { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin: 0; padding: 16px 18px 2px; }
+.card-h { font-size: 12px; font-weight: 700; color: var(--muted-d); text-transform: uppercase; letter-spacing: .08em; margin: 0; padding: 16px 18px 2px; }
 .card-h.foot { padding: 12px 18px 14px; text-transform: none; letter-spacing: 0; font-size: 14px; font-weight: 600; }
-.cell.quiet { color: var(--muted); }
+.cell.quiet { color: var(--muted-d); }
 .card-h + .cell, .card-h + .acc { position: static; } .card-h + .cell::before, .card-h + .acc::before { display: none; }
 .section:first-child { margin-top: 8px; }
 .school-id { display: inline-flex; align-items: center; gap: 8px; color: var(--purple); font-weight: 600; font-size: 13px; }
@@ -156,13 +157,15 @@ button.cell:active { background: var(--fill); }
 .box { position: relative; width: 64px; height: 78px; padding: 0; border: 0; border-radius: 16px; background: var(--bg); display: grid; place-items: center; font: inherit; font-size: 34px; font-weight: 700; color: var(--ink); cursor: pointer; transition: background .15s, outline-color .15s, transform .1s; }
 .box:active { transform: scale(.96); }
 .box, .key { touch-action: manipulation; -webkit-user-select: none; user-select: none; }
-.box.filled::after { content: '×'; position: absolute; top: 2px; right: 8px; font-size: 14px; font-weight: 600; color: var(--muted-2); line-height: 1; }
+.box.filled::after { content: '×'; position: absolute; top: 4px; right: 8px; font-size: 17px; font-weight: 700; color: var(--text); line-height: 1; }
 .letterpad { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 14px; }
 .key { min-height: 46px; padding: 0; border: 0; border-radius: 10px; background: var(--bg); color: var(--ink); font: inherit; font-size: 18px; font-weight: 700; cursor: pointer; display: grid; place-items: center; transition: transform .08s, background .12s, opacity .2s; }
 .key:active { transform: scale(.92); background: var(--fill-2); }
 .key.back { grid-column: span 2; color: var(--muted); }
 .letterpad.full .key:not(.back) { opacity: .45; }
 .card .letterpad .key { background: var(--bg); }
+#edit-form .letterpad { margin-left: -6px; margin-right: -6px; }
+@media (max-width: 374px) { .letterpad { grid-template-columns: repeat(6, 1fr); gap: 5px; } .key.back { grid-column: span 4; } }
 .box.active { outline: 2px solid var(--green); outline-offset: 0; }
 .box.opt { background: transparent; outline: 2px dashed var(--fill-2); outline-offset: -2px; }
 .box.opt.active { outline: 2px solid var(--green); }
@@ -316,10 +319,10 @@ button.cell:active { background: var(--fill); }
 .stat small.good { color: var(--green-d); font-weight: 600; }
 .result-score { font-size: 84px; font-weight: 800; color: var(--ink); line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.04em; }
 .result-score small { font-size: 22px; font-weight: 600; color: var(--muted); letter-spacing: 0; margin-left: 4px; }
-.result-rounds .lbl { color: var(--muted); font-weight: 500; }
+.result-rounds .lbl { color: var(--text); font-weight: 500; }
 .result-rounds { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 14px 0 0; color: var(--muted); font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums; }
 .result-rounds .chip { background: var(--bg); color: var(--ink); border-radius: 999px; padding: 4px 11px; font-weight: 700; }
-.result-rounds .chip.top { background: var(--green-l); color: var(--green-d); }
+.result-rounds .chip.top { background: var(--green-l); color: #146f3f; }
 .stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 0 10px; }
 .stat-row-4 { grid-template-columns: repeat(4, 1fr); }
 .stat { background: var(--surface); border-radius: var(--r); padding: 14px 12px; display: grid; gap: 4px; }

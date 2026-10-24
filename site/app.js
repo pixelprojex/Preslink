@@ -983,6 +983,7 @@
         b.setAttribute('aria-label', letters[i] ? `Letter ${i + 1}: ${letters[i]}. Tap to clear` : `Letter ${i + 1}${i === 2 ? ', optional' : ''}, empty`);
       });
       pad.classList.toggle('full', active < 0);
+      $$('.key:not(.back)', pad).forEach((k) => k.setAttribute('aria-disabled', active < 0 ? 'true' : 'false'));
     };
     const clearError = () => { const err = root.parentElement.querySelector('.field-error'); if (err) err.hidden = true; };
     const type = (ch) => { if (active < 0) return; letters[active] = ch; active = firstEmpty(); paint(); clearError(); };
@@ -996,7 +997,7 @@
       type, back,
       value: () => letters.map((l) => l || ' ').join('').trimEnd(), // an empty middle box stays visible to the validator
       set: (v) => { const s = (v || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3); for (let i = 0; i < 3; i++) letters[i] = s[i] || ''; active = firstEmpty(); paint(); },
-      focus: () => { liveLetters = field; },
+      focus: () => { liveLetters = field; setTimeout(() => { const b = boxes[Math.max(active, 0)]; if (b && b.getClientRects().length) b.focus({ preventScroll: true }); }, 80); },
       visible: () => root.getClientRects().length > 0,
       el: root,
     };
