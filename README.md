@@ -205,8 +205,8 @@ hash in the database and locks for 15 minutes after 8 wrong tries. From there th
   the real initials always work. Offensive letters are refused; the built-in list is in
   `0002_names_signin_admin.sql` (table `blocked_initials`), the committee can add more, and can reset a
   player's name to a random one.
-- The game: a play is three lights. Each light sweeps the bar at its own random speed (about a second per
-  pass) and has its own mark; you tap when the light is on the mark. The score for a light is a bell over the timing error in milliseconds, 50 + 950 × e^−(error ÷ 40 ms)²: 10 ms off is 942,
+- The game: a play is three lights. Each light sweeps the bar once a second and has its own mark and starting
+  point; you tap when the light is on the mark. The score for a light is a bell over the timing error in milliseconds, 50 + 950 × e^−(error ÷ 40 ms)²: 10 ms off is 942,
   20 ms 790, 30 ms 591, 40 ms 399, 60 ms 150, and a wild tap still scores 50, never zero. The curve is flat near the
   mark (5 ms is still 985), so a good tap is not a coin flip, and the play's score is the average of the three. Most
   plays land between 300 and 800; a play above 900 needs three taps inside about 13 ms. The sweep is a fixed second
