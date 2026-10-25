@@ -204,7 +204,7 @@
       obs.observe(sheet, { attributes: true, attributeFilter: ['hidden'] });
     });
   }
-  $('#how-done').addEventListener('click', () => { store.set(HOW_SEEN_KEY, true); closeSheets(); });
+  $('#how-done').addEventListener('click', () => { store.set(HOW_SEEN_KEY, true); sounds.prime(); closeSheets(); });
   // Arcade sounds: a soft tick on each tap, a two-note chime for a good light, a run of notes for a
   // new best. Built with the Web Audio API on the first tap, so nothing plays uninvited.
   let audio = null;
@@ -223,6 +223,8 @@
     } catch (_) { /* no sound on this device */ }
   }
   const sounds = {
+    // Made and woken on the tap that starts a play, so the first light's tap has nothing to set up.
+    prime: () => { try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); } catch (_) { /* no sound on this device */ } },
     tap: () => beep(640, 50, 0.04, 'square', 0),
     good: () => { beep(880, 140, 0.05, 'sine', 0); beep(1320, 220, 0.05, 'sine', 0.11); },
     best: () => [660, 880, 1100, 1320].forEach((f, i) => beep(f, 180, 0.05, 'sine', i * 0.1)),
@@ -369,7 +371,7 @@
   }
   $('#home-play').addEventListener('click', playOrBuy);
   let wantGame = false;
-  function startPlay() { wantGame = true; if (location.hash === '#play') { wantGame = false; game.state = 'idle'; startGame(); } else go('play'); }
+  function startPlay() { sounds.prime(); wantGame = true; if (location.hash === '#play') { wantGame = false; game.state = 'idle'; startGame(); } else go('play'); }
   function playOrBuy() {
     if (player && (credits > 0 || openPlay)) startPlay();
     else buy('single');
@@ -691,6 +693,7 @@
     $('#game').classList.add('sweeping');
     renderDots();
     game.sweepStart = performance.now();
+    game.frames = [];
     setMarker(posAt(0, r.phase, game.play.speed_ms));
     game.raf = requestAnimationFrame(loop);
   }
@@ -698,6 +701,8 @@
     if (game.state !== 'sweeping') return;
     const r = game.play.rounds[game.round];
     setMarker(posAt(now - game.sweepStart, r.phase, game.play.speed_ms));
+    game.frames.push(now); // when each frame was drawn, so a tap can be matched to the frame that was on the glass
+    if (game.frames.length > 12) game.frames.shift();
     game.raf = requestAnimationFrame(loop);
   }
   function abandonGame() {
@@ -721,39 +726,49 @@
     if (a < 40) return err > 0 ? 'A touch late' : 'A touch early';
     return err > 0 ? 'Late · tap a bit sooner' : 'Early · tap a bit later';
   }
+  // A tap counts at the moment the finger touched the glass, not when the browser got round to telling
+  // the page (on a phone that is 20 to 50 ms later, during which the light has moved on). The event's own
+  // timestamp is that moment where the browser gives a sane one. The frame on the glass then was the last
+  // one drawn at least a refresh before it, so the light is put back to that frame and scored there: it
+  // stops where it was seen, never ahead of the finger.
+  const DISPLAY_LAG_MS = 16;
+  function touchTime(e) {
+    const now = performance.now();
+    const ts = e && Number.isFinite(e.timeStamp) ? e.timeStamp : NaN;
+    return ts > 0 && ts <= now + 5 && ts > now - 400 ? ts : now;
+  }
+  function frameSeenAt(t) {
+    const fs = game.frames;
+    for (let i = fs.length - 1; i >= 0; i--) if (fs[i] <= t - DISPLAY_LAG_MS) return fs[i];
+    return fs.length ? fs[0] : t;
+  }
   function onTap(e) {
     if (game.state !== 'sweeping') return;
-    const ms = Math.round(performance.now() - game.sweepStart);
+    const ms = Math.round(frameSeenAt(touchTime(e)) - game.sweepStart);
     if (ms < SWEEP_GUARD_MS) return;
     if (e.cancelable) e.preventDefault();
+    cancelAnimationFrame(game.raf);
     game.state = 'between';
     $('#game').classList.remove('sweeping');
-    sounds.tap();
     const r = game.play.rounds[game.round];
     const pos = posAt(ms, r.phase, game.play.speed_ms);
     const s = roundScore(pos, r.target, game.play.speed_ms);
-    cancelAnimationFrame(game.raf);
-    setMarker(pos);
+    setMarker(pos); // the light stops, this frame, where it was when the finger landed
+    marker.classList.add(s >= 550 ? 'hit' : 'miss');
+    sounds.tap();
     game.taps.push(ms);
     game.scores.push(s);
-    afterRound(s, signedError(ms, r));
+    requestAnimationFrame(() => afterRound(s, signedError(ms, r))); // the score and the rest follow a frame later
   }
   $('#game').addEventListener('pointerdown', onTap);
   document.addEventListener('keydown', (e) => {
     if ((e.code === 'Space' || e.code === 'Enter') && game.state === 'sweeping') onTap(e);
   });
 
+  // After the stop: the light's number under the bar, a verdict, a line of coaching; then the next light.
   async function afterRound(s, err) {
-    const g = $('#game');
-    g.classList.remove('flash'); void g.offsetWidth; g.classList.add('flash');
-    marker.classList.add(s >= 550 ? 'hit' : 'miss');
-    const pop = document.createElement('span');
-    pop.className = 'light-pop' + (s >= 750 ? ' top' : '');
+    if (game.state !== 'between') return;
     if (s >= 750) sounds.good();
-    pop.textContent = '+' + s;
-    pop.style.left = marker.style.transform.replace(/[^0-9.]/g, '') + 'px';
-    track.appendChild(pop);
-    setTimeout(() => pop.remove(), 1200);
     vibrate(s >= 900 ? [20, 30, 20] : 25);
     renderDots();
     const el = $('#score-value');
@@ -762,9 +777,9 @@
     const v = $('#verdict');
     v.textContent = verdictFor(s);
     v.classList.toggle('miss', s < 550);
-    $('#game-msg').textContent = ''; // the light's own pop floats here; the coaching sits under the verdict
+    $('#game-msg').textContent = '';
     $('#coach').textContent = coachFor(s, err);
-    await wait(1150);
+    await wait(850);
     if (game.state !== 'between') return;
     if (game.round < ROUNDS - 1) {
       v.textContent = '';
@@ -772,7 +787,7 @@
       $('#score-value').textContent = '';
       $('.score').classList.remove('pop');
       marker.classList.add('hide'); // the light blinks off, then reappears at the next start, already moving
-      await wait(170);
+      await wait(150);
       if (game.state !== 'between') return;
       beginRound(game.round + 1);
     } else {

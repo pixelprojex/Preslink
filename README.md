@@ -221,10 +221,14 @@ hash in the database and locks for 15 minutes after 8 wrong tries. From there th
   the bar 50, never zero. Taps are whole milliseconds and the line is a random fraction, so a 999 needs the tap within
   a few microseconds of the line, which keeps the top of the board to one person (equal scores: the earlier one wins).
   The play's score is the average of the three lights. The sweep is a fixed second
-  per pass. The light is drawn by the first game's frame loop: each light notes the moment it starts, every frame
-  places the light at the position for the time since then, and a tap is timed by that same clock. The play itself
-  (its marks and starting points) is fetched before the tap on Play or Start, so the light is already moving in the
-  first frame of the game screen. After each light the screen says early or late so the next one can be better. The
+  per pass. The light is drawn by the first game's frame loop: each light notes the moment it starts and every frame
+  places the light at the position for the time since then. A tap counts at the moment the finger touched the glass
+  (the event's own timestamp, where the browser gives a sane one; on a phone the page hears about a touch 20 to 50 ms
+  after it happened), and it is matched to the frame that was on the glass then: the last frame drawn at least one
+  refresh earlier. The light is put back to that frame and scored there, so it stops where it was seen and never runs
+  on ahead of the finger. The play itself (its marks and starting points) is fetched before the tap on Play or Start,
+  so the light is already moving in the first frame of the game screen. After each light the number sits under the
+  bar with a verdict and a line of coaching (early or late) for about a second, then the next light starts. The
   server recomputes every light from the taps and stores its own number; the browser's score is only what it shows
   while the answer is on its way.
 - Everyone starts on the Everyone board. After the first play the Keep your details sheet asks for an email (so a
