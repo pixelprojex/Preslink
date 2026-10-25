@@ -1,5 +1,8 @@
-/* PresLink Arcade: the committee console. No framework, no build step. Talks to the same API as the
-   arcade (action "admin" with the committee code) or to the demo backend when config.js is empty. */
+/* PresLink Arcade: the committee console. It is read-only: the money, the payments, the players and the
+   leaders, with searches and CSV downloads, and nothing that changes the site or the data. Everything
+   that changes anything is the owner's, through the API with the owner code. No framework, no build
+   step; talks to the same API as the arcade (action "admin" with the committee code) or to the demo
+   backend when config.js is empty. */
 (() => {
   'use strict';
 
@@ -18,17 +21,7 @@
     BAD_ADMIN: 'Wrong committee code.',
     LOCKED: 'Too many wrong codes. Try again in 15 minutes.',
     ADMIN_NOT_SET: 'No committee code has been set yet.',
-    CODE_TOO_SHORT: 'Use at least 6 characters.',
-    BAD_DATE: 'Use a date like 2026-12-12.',
-    BAD_GOAL: 'The goal must be a whole number of euro.',
-    BAD_STRIPE_KEY: 'That is not a Stripe secret key (it starts with sk_live_ or sk_test_).',
-    STRIPE_KEY_REJECTED: 'Stripe did not accept that key.',
     PLAYER_NOT_FOUND: 'No player with that name.',
-    BAD_INITIALS: 'Three letters, A to Z.',
-    BAD_IMAGE: 'That file is not a photo we can use (JPEG, PNG or WebP).',
-    IMAGE_TOO_BIG: 'That photo is too big.',
-    UPLOAD_FAILED: 'The photo could not be stored. Try again.',
-    CONTENT_TOO_BIG: 'That is too much content. Shorten the text or remove a story.',
     SERVER_ERROR: 'Something went wrong. Try again.',
   };
   const msg = (e) => MESSAGES[e && e.code] || MESSAGES.SERVER_ERROR;
@@ -65,7 +58,6 @@
     t.textContent = text; t.classList.toggle('error', isError); t.hidden = false;
     clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, isError ? 5000 : 2600);
   }
-  const status = (id, text) => { const el = $('#' + id); if (!el) return; el.textContent = text; clearTimeout(el._t); el._t = setTimeout(() => { el.textContent = ''; }, 3000); };
   // A failed call that means the code no longer works sends the committee back to the sign-in.
   async function guarded(fn) {
     try { return await fn(); }
@@ -76,7 +68,7 @@
   }
 
   // ---------------------------------------------------------------------------
-  // The eye on every secret field
+  // The eye on the code field
   // ---------------------------------------------------------------------------
   document.addEventListener('click', (e) => {
     const b = e.target.closest('.eye');
@@ -105,7 +97,8 @@
   function signOut(error) { session.del(); overview = null; showLogin(error); }
   $('#login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    let code = $('#login-code').value.trim().replace(/[\u2010-\u2015\u2212]/g, '-').replace(/\s+/g, '');
+    // Tidy what was typed or pasted: spaces, long or curly dashes, and the case of a PRES- code.
+    let code = $('#login-code').value.trim().replace(/[‐-―−]/g, '-').replace(/\s+/g, '');
     if (/^pres-[a-z]{3}[#$%&*!]-\d{4}-\d{4}$/i.test(code)) code = code.toUpperCase();
     const btn = $('#login-submit');
     if (!code) { showLogin('Type the committee code.'); return; }
@@ -121,11 +114,12 @@
     finally { btn.disabled = false; }
   });
   $('#signout').addEventListener('click', () => signOut());
+  function renderStripePill(s) { $('#top-stripe').textContent = !s || !s.connected ? 'Stripe not connected' : (s.mode === 'live' ? 'Stripe live' : 'Stripe test mode'); }
 
   // ---------------------------------------------------------------------------
   // Pages
   // ---------------------------------------------------------------------------
-  const PAGES = ['overview', 'payments', 'players', 'prizes', 'content', 'campaign', 'stripe', 'names', 'security'];
+  const PAGES = ['overview', 'payments', 'players'];
   const loaders = {};
   function route() {
     let page = location.hash.slice(1) || 'overview';
@@ -252,7 +246,7 @@
     pl.rows.forEach((p) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `<td><b>${esc(p.initials)}</b>${p.banned ? ' <span class="muted">(banned)</span>' : ''}</td><td>${esc(BOARD[p.role] || p.role)}</td><td>${esc(p.claim_code)}</td><td>${esc(p.contact_email || '')}</td><td>${esc(p.school_email || '')}</td><td class="num">${p.plays || 0}</td><td class="num">${p.best == null ? '–' : p.best}</td><td class="num">${euro(p.paid_cents)}</td><td>${esc(when(p.last_seen_at))}</td>
-        <td><button class="mini" data-view="${esc(p.initials)}">View</button> <button class="mini ${p.banned ? '' : 'danger'}" data-ban="${esc(p.id)}" data-banned="${p.banned ? '1' : ''}">${p.banned ? 'Unban' : 'Ban'}</button></td>`;
+        <td><button class="mini" data-view="${esc(p.initials)}">View</button></td>`;
       tb.appendChild(tr);
     });
     if (!tb.children.length) tb.innerHTML = '<tr><td colspan="10" class="muted">Nothing matches.</td></tr>';
@@ -282,26 +276,9 @@
     location.hash = 'players';
     loadPlayers().then(() => viewPlayer(a.dataset.player));
   });
-  $('main > section[data-page="players"]').addEventListener('click', async (e) => {
-    const v = e.target.closest('[data-view]'); const b = e.target.closest('[data-ban]'); const r = e.target.closest('[data-reset]'); const vo = e.target.closest('[data-void]'); const uv = e.target.closest('[data-unvoid]');
-    if (v) { viewPlayer(v.dataset.view); return; }
-    if (b) {
-      const banned = !b.dataset.banned;
-      if (banned && !confirm('Ban this player? They cannot play and their scores leave the boards.')) return;
-      if (await guarded(() => call('ban', { player_id: b.dataset.ban, banned }))) { toast(banned ? 'Banned' : 'Unbanned'); loadPlayers(); if (!$('#pl-detail').hidden) viewPlayer($('#pl-detail').dataset.initials); }
-      return;
-    }
-    if (r) {
-      if (!confirm('Give this player a new random name?')) return;
-      const res = await guarded(() => call('reset_name', { player_id: r.dataset.reset }));
-      if (res) { toast(`Renamed to ${res.initials}`); loadPlayers(); viewPlayer(res.initials); }
-      return;
-    }
-    if (vo || uv) {
-      const id = vo ? vo.dataset.void : uv.dataset.unvoid;
-      if (vo && !confirm('Void this score? It leaves the leaderboard.')) return;
-      if (await guarded(() => call('void', { play_id: id, voided: !!vo, reason: 'committee' }))) { toast(vo ? 'Voided' : 'Restored'); viewPlayer($('#pl-detail').dataset.initials); }
-    }
+  $('main > section[data-page="players"]').addEventListener('click', (e) => {
+    const v = e.target.closest('[data-view]');
+    if (v) viewPlayer(v.dataset.view);
   });
   async function viewPlayer(initials) {
     const box = $('#pl-detail');
@@ -309,230 +286,16 @@
     if (!res) { box.hidden = true; return; }
     const p = res.player;
     box.dataset.initials = p.initials;
-    box.innerHTML = `<div class="head"><h3 style="margin:0">${esc(p.initials)}${p.banned ? ' <span class="muted">(banned)</span>' : ''}</h3><div class="actions" style="margin:0"><button class="mini" data-reset="${esc(p.id)}">New random name</button><button class="mini ${p.banned ? '' : 'danger'}" data-ban="${esc(p.id)}" data-banned="${p.banned ? '1' : ''}">${p.banned ? 'Unban' : 'Ban'}</button><button class="mini" type="button" id="pl-close">Close</button></div></div>
+    box.innerHTML = `<div class="head"><h3 style="margin:0">${esc(p.initials)}${p.banned ? ' <span class="muted">(banned)</span>' : ''}</h3><div class="actions" style="margin:0"><button class="mini" type="button" id="pl-close">Close</button></div></div>
       <dl><dt>Board</dt><dd>${esc(BOARD[p.role] || p.role)}</dd><dt>Code</dt><dd>${esc(p.claim_code)}</dd><dt>Email</dt><dd>${esc(p.contact_email || '–')}</dd><dt>School email</dt><dd>${esc(p.school_email || '–')}</dd><dt>Plays left</dt><dd>${p.credits}</dd><dt>First seen</dt><dd>${esc(when(p.created_at))}</dd><dt>Last seen</dt><dd>${esc(when(p.last_seen_at))}</dd>${(res.others || []).length ? `<dt>Same letters</dt><dd>${res.others.map(esc).join(', ')}</dd>` : ''}</dl>
       <h4>Plays</h4>
-      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Started</th><th>Score</th><th>Best light</th><th></th></tr></thead><tbody>${(res.plays || []).map((x) => `<tr><td>${esc(when(x.started_at))}</td><td class="num">${x.score == null ? 'unfinished' : x.score}${x.voided ? ' <span class="muted">(voided)</span>' : ''}</td><td class="num">${x.best_light == null ? '–' : x.best_light}</td><td>${x.score == null ? '' : (x.voided ? `<button class="mini" data-unvoid="${esc(x.play_id)}">Restore</button>` : `<button class="mini danger" data-void="${esc(x.play_id)}">Void</button>`)}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">No plays.</td></tr>'}</tbody></table></div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Started</th><th>Score</th><th>Best light</th></tr></thead><tbody>${(res.plays || []).map((x) => `<tr><td>${esc(when(x.started_at))}</td><td class="num">${x.score == null ? 'unfinished' : x.score}${x.voided ? ' <span class="muted">(voided)</span>' : ''}</td><td class="num">${x.best_light == null ? '–' : x.best_light}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">No plays.</td></tr>'}</tbody></table></div>
       <h4>Payments</h4>
       <div class="tbl-wrap"><table class="tbl"><thead><tr><th>When</th><th>Bundle</th><th>Plays</th><th>Amount</th><th>Stripe session</th></tr></thead><tbody>${(res.payments || []).map((x) => `<tr><td>${esc(when(x.created_at))}</td><td>${esc(x.bundle)}</td><td class="num">${x.credits}</td><td class="num">${euro(x.amount_cents)}</td><td class="muted small">${esc(x.stripe_session_id || '')}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">No payments.</td></tr>'}</tbody></table></div>`;
     box.hidden = false;
     $('#pl-close').addEventListener('click', () => { box.hidden = true; });
     box.scrollIntoView({ block: 'nearest' });
   }
-
-  // Prizes ---------------------------------------------------------------------
-  const PRIZES = ['everyone', 'students', 'teachers', 'best_light', 'most_plays'];
-  let prizePhotos = {};
-  loaders.prizes = async () => {
-    await refreshOverview();
-    const s = (overview || {}).stats || {};
-    const pz = s.prizes || {};
-    PRIZES.forEach((k) => { $('#pz-' + k).value = pz[k] || ''; });
-    prizePhotos = Object.assign({}, (s.content || {}).prize_photos || {});
-    renderPrizePhotos();
-  };
-  function renderPrizePhotos() {
-    $$('#prize-form .prize-row').forEach((row) => {
-      const src = prizePhotos[row.dataset.key] || '', img = row.querySelector('img');
-      if (src) img.src = src; else img.removeAttribute('src');
-      row.querySelector('[data-clear]').hidden = !src;
-    });
-  }
-  // The texts live in the settings, the photos in the site content document with everything else the committee writes.
-  $('#prize-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const prizes = {}; PRIZES.forEach((k) => { prizes[k] = $('#pz-' + k).value.trim(); });
-    if (!await guarded(() => call('settings', { prizes }))) return;
-    const base = (((await refreshOverview()) || {}).stats || {}).content || {};
-    const content = Object.assign({}, base, { prize_photos: prizePhotos });
-    if (await guarded(() => call('set_content', { content }))) { status('prize-status', 'Saved · live on the site'); overview = null; }
-  });
-  $('#prize-form').addEventListener('change', async (e) => {
-    const inp = e.target.closest('input[type="file"]'); if (!inp || !inp.files || !inp.files[0]) return;
-    const row = inp.closest('.prize-row'), note = row.querySelector('.uploading');
-    note.textContent = 'Uploading…';
-    try { prizePhotos[row.dataset.key] = await uploadPhoto(inp.files[0]); renderPrizePhotos(); note.textContent = 'Uploaded · save to publish'; }
-    catch (ex) { note.textContent = ''; toast(msg(ex), true); }
-    inp.value = '';
-  });
-  $('#prize-form').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-clear]'); if (!b) return;
-    const row = b.closest('.prize-row'); delete prizePhotos[row.dataset.key]; row.querySelector('.uploading').textContent = ''; renderPrizePhotos();
-  });
-  async function uploadPhoto(file) { const { type, data } = await shrinkImage(file); const res = await call('upload_image', { type, data }); return res.url; }
-
-  // Site content ---------------------------------------------------------------
-  let stories = [];
-  let introImage = '';
-  loaders.content = async () => {
-    await refreshOverview();
-    const c = ((overview || {}).stats || {}).content || {};
-    const hero = c.hero || {}, about = c.about || {}, contact = c.contact || {};
-    $('#ct-hero-title').value = hero.title || ''; $('#ct-hero-sub').value = hero.subtitle || ''; $('#ct-notice').value = c.notice || '';
-    $('#ct-intro-title').value = about.intro_title || ''; $('#ct-intro-text').value = about.intro_text || '';
-    introImage = about.intro_image || ''; renderIntroPhoto();
-    stories = Array.isArray(about.stories) ? about.stories.map((s) => ({ id: s.id || uid(), image: s.image || '', title: s.title || '', text: s.text || '' })) : [];
-    renderStories();
-    $('#ct-email').value = contact.email || ''; $('#ct-phone').value = contact.phone || ''; $('#ct-instagram').value = contact.instagram || ''; $('#ct-website').value = contact.website || '';
-  };
-  const uid = () => Math.random().toString(36).slice(2, 10);
-  function renderIntroPhoto() { const img = $('#ct-intro-photo'); if (introImage) img.src = introImage; else img.removeAttribute('src'); $('#ct-intro-clear').hidden = !introImage; }
-  $('#ct-intro-file').addEventListener('change', async (e) => {
-    const inp = e.target; if (!inp.files || !inp.files[0]) return;
-    const note = $('#ct-intro-up'); note.textContent = 'Uploading…';
-    try { introImage = await uploadPhoto(inp.files[0]); renderIntroPhoto(); note.textContent = 'Uploaded · save to publish'; }
-    catch (ex) { note.textContent = ''; toast(msg(ex), true); }
-    inp.value = '';
-  });
-  $('#ct-intro-clear').addEventListener('click', () => { introImage = ''; $('#ct-intro-up').textContent = ''; renderIntroPhoto(); });
-  function renderStories() {
-    const box = $('#ct-stories'); box.innerHTML = '';
-    stories.forEach((s, i) => {
-      const el = document.createElement('div');
-      el.className = 'story'; el.dataset.i = i;
-      el.innerHTML = `<div><img src="${esc(s.image || '')}" alt=""><label class="btn small pick">Choose photo<input type="file" accept="image/*"></label> <span class="uploading"></span></div>
-        <div class="story-fields"><input placeholder="Heading" maxlength="80" value="${esc(s.title)}" data-field="title"><textarea rows="2" maxlength="300" placeholder="A line about it" data-field="text">${esc(s.text)}</textarea>
-        <div class="story-tools"><button type="button" class="mini" data-up ${i === 0 ? 'disabled' : ''}>Up</button><button type="button" class="mini" data-down ${i === stories.length - 1 ? 'disabled' : ''}>Down</button><button type="button" class="mini danger" data-remove>Remove</button></div></div>`;
-      box.appendChild(el);
-    });
-  }
-  $('#ct-add-story').addEventListener('click', () => { stories.push({ id: uid(), image: '', title: '', text: '' }); renderStories(); const last = $$('#ct-stories .story').pop(); if (last) last.querySelector('input[data-field]').focus(); });
-  $('#ct-stories').addEventListener('input', (e) => { const f = e.target.closest('[data-field]'); if (!f) return; const i = Number(f.closest('.story').dataset.i); stories[i][f.dataset.field] = f.value; });
-  $('#ct-stories').addEventListener('click', (e) => {
-    const el = e.target.closest('.story'); if (!el) return;
-    const i = Number(el.dataset.i);
-    if (e.target.closest('[data-remove]')) { if (stories[i].image || stories[i].title ? confirm('Remove this story?') : true) { stories.splice(i, 1); renderStories(); } }
-    else if (e.target.closest('[data-up]') && i > 0) { [stories[i - 1], stories[i]] = [stories[i], stories[i - 1]]; renderStories(); }
-    else if (e.target.closest('[data-down]') && i < stories.length - 1) { [stories[i + 1], stories[i]] = [stories[i], stories[i + 1]]; renderStories(); }
-  });
-  $('#ct-stories').addEventListener('change', async (e) => {
-    const inp = e.target.closest('input[type="file"]'); if (!inp || !inp.files || !inp.files[0]) return;
-    const el = inp.closest('.story'); const i = Number(el.dataset.i); const note = el.querySelector('.uploading');
-    note.textContent = 'Uploading…';
-    try {
-      const { type, data } = await shrinkImage(inp.files[0]);
-      const res = await call('upload_image', { type, data });
-      stories[i].image = res.url;
-      el.querySelector('img').src = res.url;
-      note.textContent = 'Uploaded';
-    } catch (ex) { note.textContent = ''; toast(msg(ex), true); }
-    inp.value = '';
-  });
-  // Photos are shrunk in the browser: at most 1600 px on the long side, JPEG, before they go up.
-  async function shrinkImage(file) {
-    const img = await new Promise((resolve, reject) => { const i = new Image(); i.onload = () => resolve(i); i.onerror = () => reject(new ApiError('BAD_IMAGE', 0)); i.src = URL.createObjectURL(file); });
-    const scale = Math.min(1, 1600 / img.naturalWidth, 1600 / img.naturalHeight);
-    const c = document.createElement('canvas');
-    c.width = Math.max(1, Math.round(img.naturalWidth * scale)); c.height = Math.max(1, Math.round(img.naturalHeight * scale));
-    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-    URL.revokeObjectURL(img.src);
-    const blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.85));
-    if (!blob) throw new ApiError('BAD_IMAGE', 0);
-    const data = await new Promise((r) => { const fr = new FileReader(); fr.onload = () => r(String(fr.result).split(',')[1]); fr.readAsDataURL(blob); });
-    return { type: 'image/jpeg', data };
-  }
-  $('#content-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const base = (((await refreshOverview()) || {}).stats || {}).content || {};
-    const content = Object.assign({}, base, {
-      hero: { title: $('#ct-hero-title').value.trim(), subtitle: $('#ct-hero-sub').value.trim() },
-      notice: $('#ct-notice').value.trim(),
-      about: { intro_title: $('#ct-intro-title').value.trim(), intro_text: $('#ct-intro-text').value.trim(), intro_image: introImage, stories: stories.filter((s) => s.image || s.title || s.text).map((s) => ({ id: s.id, image: s.image, title: s.title.trim(), text: s.text.trim() })) },
-      contact: { email: $('#ct-email').value.trim(), phone: $('#ct-phone').value.trim(), instagram: $('#ct-instagram').value.trim().replace(/^@/, ''), website: $('#ct-website').value.trim() },
-    });
-    if (await guarded(() => call('set_content', { content }))) { status('content-status', 'Saved · live on the site'); overview = null; }
-  });
-
-  // Campaign -------------------------------------------------------------------
-  loaders.campaign = async () => {
-    await refreshOverview();
-    const s = ((overview || {}).stats || {});
-    $('#camp-goal').value = Math.round((s.goal_cents || 0) / 100);
-    $('#camp-ends').value = s.ends_on || '';
-    const goal = Number(s.goal_cents || 0);
-    $('#camp-progress').textContent = goal > 0 ? `${whole(s.total_raised_cents)} raised so far, ${Math.round((Number(s.total_raised_cents || 0) / goal) * 100)}% of the goal.` : `${whole(s.total_raised_cents)} raised so far.`;
-  };
-  $('#camp-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const goalEuro = Number(String($('#camp-goal').value || '0').replace(/[^\d.]/g, ''));
-    if (!Number.isFinite(goalEuro) || goalEuro < 0 || goalEuro > 1000000) { toast(MESSAGES.BAD_GOAL, true); return; }
-    if (await guarded(() => call('settings', { goal_cents: Math.round(goalEuro * 100), ends_on: $('#camp-ends').value || '' }))) { status('camp-status', 'Saved'); overview = null; loaders.campaign(); }
-  });
-
-  // Stripe ---------------------------------------------------------------------
-  loaders.stripe = async () => { const s = await guarded(() => call('stripe_status')); if (s) { renderStripe(s); renderStripePill(s); } };
-  function stripeText(s) {
-    if (!s || !s.connected) return 'Not connected. Plays are free demo plays until a key is connected.';
-    return (s.mode === 'live' ? 'Connected, live payments' : 'Connected, test mode') + (s.account ? ' · ' + s.account : '') + (s.webhook ? '' : ' · no webhook') + (s.from_env ? ' · key set in Supabase' : '');
-  }
-  function renderStripe(s) {
-    $('#st-status').textContent = stripeText(s);
-    $('#st-disconnect').hidden = !(s && s.connected && !s.from_env);
-    $('#st-form').querySelector('label').hidden = !!(s && s.from_env);
-  }
-  function renderStripePill(s) { $('#top-stripe').textContent = !s || !s.connected ? 'Stripe not connected' : (s.mode === 'live' ? 'Stripe live' : 'Stripe test mode'); }
-  $('#st-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const key = $('#st-key').value.trim();
-    if (!/^sk_(live|test)_[A-Za-z0-9]{16,}$/.test(key)) { toast(MESSAGES.BAD_STRIPE_KEY, true); return; }
-    const btn = $('#st-connect'); btn.disabled = true; btn.textContent = 'Checking with Stripe…';
-    const s = await guarded(() => call('stripe_connect', { secret_key: key }));
-    btn.disabled = false; btn.textContent = 'Connect';
-    if (s) { $('#st-key').value = ''; renderStripe(s); renderStripePill(s); toast('Connected. Payments are live.'); }
-  });
-  $('#st-disconnect').addEventListener('click', async () => {
-    if (!confirm('Disconnect Stripe? Plays become free demo plays until it is connected again.')) return;
-    const s = await guarded(() => call('stripe_disconnect'));
-    if (s) { renderStripe(s); renderStripePill(s); toast('Disconnected'); }
-  });
-
-  // Names ----------------------------------------------------------------------
-  loaders.names = async () => { await refreshOverview(); renderNames(); };
-  function renderNames() {
-    const d = overview; if (!d) return;
-    const blocked = d.blocked_by_committee || [];
-    $('#blocked-list').innerHTML = blocked.length ? blocked.map((b) => `<button class="mini" data-unblock="${esc(b)}" title="Allow again">${esc(b)} ×</button>`).join(' ') : 'None added by the committee.';
-    const tb = $('#banned-table tbody'); tb.innerHTML = '';
-    (d.banned || []).forEach((p) => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${esc(p.initials)}</td><td>${esc(p.claim_code)}</td><td><button class="mini" data-ban="${esc(p.player_id)}" data-banned="1">Unban</button></td>`; tb.appendChild(tr); });
-    if (!tb.children.length) tb.innerHTML = '<tr><td colspan="3" class="muted">Nobody is banned.</td></tr>';
-  }
-  $('#block-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const initials = $('#block-initials').value.toUpperCase().trim();
-    if (!/^[A-Z]{3}$/.test(initials)) { toast(MESSAGES.BAD_INITIALS, true); return; }
-    if (await guarded(() => call('block', { initials, block: true }))) { $('#block-initials').value = ''; toast(`${initials} blocked`); await refreshOverview(); renderNames(); }
-  });
-  $('main > section[data-page="names"]').addEventListener('click', async (e) => {
-    const u = e.target.closest('[data-unblock]'); const b = e.target.closest('[data-ban]');
-    if (u) { if (await guarded(() => call('block', { initials: u.dataset.unblock, block: false }))) { toast('Allowed again'); await refreshOverview(); renderNames(); } }
-    else if (b) { if (await guarded(() => call('ban', { player_id: b.dataset.ban, banned: false }))) { toast('Unbanned'); await refreshOverview(); renderNames(); } }
-  });
-
-  // Committee code -------------------------------------------------------------
-  // PRES-, three letters and a symbol, then two groups of four digits: PRES-KQX#-4821-9930.
-  function newCode() {
-    const L = 'ABCDEFGHJKLMNPQRSTUVWXYZ', S = '#$%&*!';
-    const rnd = (n) => Array.from(crypto.getRandomValues(new Uint32Array(n)));
-    const pick = (set, n) => rnd(n).map((x) => set[x % set.length]).join('');
-    const digits = (n) => rnd(n).map((x) => String(x % 10)).join('');
-    return `PRES-${pick(L, 3)}${pick(S, 1)}-${digits(4)}-${digits(4)}`;
-  }
-  loaders.security = () => { $('#gen-code').value = ''; $('#gen-copy').disabled = true; $('#gen-use').disabled = true; };
-  $('#gen-new').addEventListener('click', () => { $('#gen-code').value = newCode(); $('#gen-copy').disabled = false; $('#gen-use').disabled = false; });
-  $('#gen-copy').addEventListener('click', async () => { try { await navigator.clipboard.writeText($('#gen-code').value); toast('Copied'); } catch (_) { $('#gen-code').type = 'text'; $('#gen-code').select(); } });
-  $('#gen-use').addEventListener('click', async () => {
-    const code = $('#gen-code').value;
-    if (!code) return;
-    if (!confirm('Use this code from now on? The old one stops working at once. Make sure it is written down.')) return;
-    if (await guarded(() => call('set_code', { new_code: code }))) { session.set(code); toast('The committee code has changed'); }
-  });
-  $('#own-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const code = $('#own-code').value;
-    if (code.length < 6) { toast(MESSAGES.CODE_TOO_SHORT, true); return; }
-    if (!confirm('Change the committee code? The old one stops working at once.')) return;
-    if (await guarded(() => call('set_code', { new_code: code }))) { session.set(code); $('#own-code').value = ''; status('own-status', 'Changed'); toast('The committee code has changed'); }
-  });
 
   // ---------------------------------------------------------------------------
   // Boot

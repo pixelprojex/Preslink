@@ -6,14 +6,14 @@
   <meta name="robots" content="noindex, nofollow">
   <title>Committee · PresLink Arcade</title>
   <link rel="icon" href="assets/cross.svg?v=10">
-  <link rel="stylesheet" href="admin.css?v=2">
+  <link rel="stylesheet" href="admin.css?v=3">
 </head>
 <body>
 
 <div id="login" class="login" hidden>
   <form id="login-form" class="login-card" autocomplete="off" novalidate>
     <h1>Committee</h1>
-    <p class="muted">PresLink Arcade console</p>
+    <p class="muted">PresLink Arcade console · read-only</p>
     <label class="lbl" for="login-code">Committee code</label>
     <div class="pw">
       <input id="login-code" type="password" autocomplete="current-password" spellcheck="false" autocapitalize="none" autocorrect="off">
@@ -34,12 +34,6 @@
     <a href="#overview" data-page="overview">Overview</a>
     <a href="#payments" data-page="payments">Payments</a>
     <a href="#players" data-page="players">Players</a>
-    <a href="#prizes" data-page="prizes">Prizes</a>
-    <a href="#content" data-page="content">Site content</a>
-    <a href="#campaign" data-page="campaign">Campaign</a>
-    <a href="#stripe" data-page="stripe">Stripe</a>
-    <a href="#names" data-page="names">Names</a>
-    <a href="#security" data-page="security">Committee code</a>
   </nav>
   <main class="main">
 
@@ -86,93 +80,11 @@
       <div class="detail" id="pl-detail" hidden></div>
     </section>
 
-    <section data-page="prizes" hidden>
-      <div class="head"><h2>Prizes</h2><a class="btn small" href="index.html#prize" target="_blank" rel="noopener">See the Prizes page</a></div>
-      <p class="muted">What each winner gets, with a photo of it when you have one. Shown on the Prizes page as typed; an empty line shows "To be announced".</p>
-      <form id="prize-form" class="form" autocomplete="off">
-        <div class="story prize-row" data-key="everyone"><div><img alt=""><label class="btn small pick">Choose photo<input type="file" accept="image/*"></label> <button type="button" class="mini" data-clear hidden>Remove</button> <span class="uploading"></span></div><label>Everyone board<input id="pz-everyone" maxlength="200"></label></div>
-        <div class="story prize-row" data-key="students"><div><img alt=""><label class="btn small pick">Choose photo<input type="file" accept="image/*"></label> <button type="button" class="mini" data-clear hidden>Remove</button> <span class="uploading"></span></div><label>Students board<input id="pz-students" maxlength="200"></label></div>
-        <div class="story prize-row" data-key="teachers"><div><img alt=""><label class="btn small pick">Choose photo<input type="file" accept="image/*"></label> <button type="button" class="mini" data-clear hidden>Remove</button> <span class="uploading"></span></div><label>Teachers board<input id="pz-teachers" maxlength="200"></label></div>
-        <div class="story prize-row" data-key="best_light"><div><img alt=""><label class="btn small pick">Choose photo<input type="file" accept="image/*"></label> <button type="button" class="mini" data-clear hidden>Remove</button> <span class="uploading"></span></div><label>Best light<input id="pz-best_light" maxlength="200"></label></div>
-        <div class="story prize-row" data-key="most_plays"><div><img alt=""><label class="btn small pick">Choose photo<input type="file" accept="image/*"></label> <button type="button" class="mini" data-clear hidden>Remove</button> <span class="uploading"></span></div><label>Most plays<input id="pz-most_plays" maxlength="200"></label></div>
-        <div class="actions"><button class="btn primary" type="submit">Save</button><span class="status" id="prize-status"></span></div>
-      </form>
-    </section>
-
-    <section data-page="content" hidden>
-      <h2>Site content</h2>
-      <p class="muted">Everything here appears on the site the moment it is saved. Empty fields fall back to the site's own words.</p>
-      <form id="content-form" class="form" autocomplete="off">
-        <h3>Home</h3>
-        <label>Title<input id="ct-hero-title" maxlength="60" placeholder="Stop the light."></label>
-        <label>Line under the title<input id="ct-hero-sub" maxlength="140" placeholder="Every play funds schools in Ghana and Nigeria."></label>
-        <label>Notice (a line shown on Home while set)<input id="ct-notice" maxlength="140" placeholder="e.g. Last day on Friday"></label>
-        <h3>About</h3>
-        <div class="story"><div><img id="ct-intro-photo" alt=""><label class="btn small pick">Committee photo<input type="file" accept="image/*" id="ct-intro-file"></label> <button type="button" class="mini" id="ct-intro-clear" hidden>Remove</button> <span class="uploading" id="ct-intro-up"></span></div><div class="story-fields">
-        <label>Committee card heading<input id="ct-intro-title" maxlength="60" placeholder="Run by students"></label>
-        <label>Committee card text<textarea id="ct-intro-text" rows="3" maxlength="500" placeholder="PresLink is the student-run charity of Presentation Brothers College, Cork. Every cent raised here, after card fees, goes to PresLink."></textarea></label></div></div>
-        <h3>Stories</h3>
-        <p class="muted small">A photo, a heading and a line each, in this order. With none, the site shows its three built-in stories.</p>
-        <div id="ct-stories"></div>
-        <button class="btn" type="button" id="ct-add-story">Add a story</button>
-        <h3>Contact</h3>
-        <label>Email<input id="ct-email" type="email" placeholder="preslink@pbc-cork.ie"></label>
-        <label>Phone<input id="ct-phone" placeholder="021 …"></label>
-        <label>Instagram<input id="ct-instagram" placeholder="preslink"></label>
-        <label>Website<input id="ct-website" placeholder="https://"></label>
-        <div class="actions"><button class="btn primary" type="submit">Save</button><span class="status" id="content-status"></span></div>
-      </form>
-    </section>
-
-    <section data-page="campaign" hidden>
-      <h2>Campaign</h2>
-      <form id="camp-form" class="form" autocomplete="off">
-        <label>Goal (€)<input id="camp-goal" inputmode="numeric"></label>
-        <label>Closing date<input id="camp-ends" type="date"></label>
-        <p class="muted" id="camp-progress"></p>
-        <div class="actions"><button class="btn primary" type="submit">Save</button><span class="status" id="camp-status"></span></div>
-      </form>
-    </section>
-
-    <section data-page="stripe" hidden>
-      <h2>Stripe</h2>
-      <p id="st-status" class="status-line"></p>
-      <form id="st-form" class="form" autocomplete="off" novalidate>
-        <label>Secret key<div class="pw"><input id="st-key" type="password" placeholder="sk_live_…" autocomplete="off" spellcheck="false"><button type="button" class="eye" data-eye="st-key" aria-label="Show key" title="Show key"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="e" d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12z"/><circle class="e" cx="12" cy="12" r="3"/><path class="x" d="M4 4l16 16"/></svg></button></div></label>
-        <p class="muted small">Stripe dashboard, Developers, API keys. Connecting checks the key with Stripe, creates the webhook and keeps both secrets in the database.</p>
-        <div class="actions"><button class="btn primary" type="submit" id="st-connect">Connect</button><button class="btn danger" type="button" id="st-disconnect" hidden>Disconnect</button><a class="btn" href="https://dashboard.stripe.com/payments" target="_blank" rel="noopener">Open Stripe</a></div>
-      </form>
-    </section>
-
-    <section data-page="names" hidden>
-      <h2>Names</h2>
-      <p class="muted">Initials nobody may use, on top of the built-in list.</p>
-      <form id="block-form" class="filters" autocomplete="off"><input id="block-initials" maxlength="3" placeholder="ABC" autocapitalize="characters" aria-label="Initials to block"><button class="btn" type="submit">Block</button></form>
-      <p class="muted" id="blocked-list"></p>
-      <h3>Banned players</h3>
-      <div class="tbl-wrap"><table class="tbl" id="banned-table"><thead><tr><th>Name</th><th>Code</th><th></th></tr></thead><tbody></tbody></table></div>
-    </section>
-
-    <section data-page="security" hidden>
-      <h2>Committee code</h2>
-      <div class="form">
-        <h3>Generate a new code</h3>
-        <div class="pw"><input id="gen-code" type="password" readonly aria-label="Generated code"><button type="button" class="eye" data-eye="gen-code" aria-label="Show code" title="Show code"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="e" d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12z"/><circle class="e" cx="12" cy="12" r="3"/><path class="x" d="M4 4l16 16"/></svg></button></div>
-        <div class="actions"><button class="btn" type="button" id="gen-new">Generate</button><button class="btn" type="button" id="gen-copy" disabled>Copy</button><button class="btn primary" type="button" id="gen-use" disabled>Use this code</button></div>
-        <h3>Or set your own</h3>
-        <form id="own-form" autocomplete="off" novalidate>
-          <div class="pw"><input id="own-code" type="password" autocomplete="new-password" aria-label="New code"><button type="button" class="eye" data-eye="own-code" aria-label="Show code" title="Show code"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="e" d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12z"/><circle class="e" cx="12" cy="12" r="3"/><path class="x" d="M4 4l16 16"/></svg></button></div>
-          <div class="actions"><button class="btn primary" type="submit">Change code</button><span class="status" id="own-status"></span></div>
-        </form>
-        <p class="muted small">At least 6 characters. Everyone on the committee uses the same code; change it when someone leaves. Write the new one down before using it.</p>
-      </div>
-    </section>
-
   </main>
 </div>
 <div class="toast" id="toast" hidden></div>
 <script src="config.js"></script>
 <script src="mock.js?v=34"></script>
-<script src="admin.js?v=2"></script>
+<script src="admin.js?v=3"></script>
 </body>
 </html>

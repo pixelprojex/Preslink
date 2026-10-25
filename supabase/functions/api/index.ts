@@ -305,6 +305,10 @@ async function signin(body: Body) {
 }
 
 const ADMIN_OPS = new Set(["overview", "emails", "void", "ban", "block", "set_code", "settings", "player", "reset_name", "stripe_status", "stripe_connect", "stripe_disconnect", "payments", "players", "set_content", "upload_image"]);
+// The operations that change anything (the site's words and photos, prizes, the campaign, Stripe, the
+// committee code, bans, voids, blocked names) belong to the site's owner, not the committee: they need the
+// OWNER_CODE secret as well as the committee code. With no OWNER_CODE configured, nothing can be changed.
+const OWNER_OPS = new Set(["void", "ban", "block", "set_code", "settings", "reset_name", "stripe_connect", "stripe_disconnect", "set_content", "upload_image"]);
 
 // The committee code is checked by the database (same lockout as every admin call).
 async function adminVerify(code: string) {
@@ -345,6 +349,10 @@ async function admin(body: Body) {
   const op = String(body.op ?? "");
   if (!code || code.length > 200) throw new HttpError(400, "BAD_ADMIN");
   if (!ADMIN_OPS.has(op)) throw new HttpError(400, "BAD_ADMIN_OP");
+  if (OWNER_OPS.has(op)) {
+    const owner = Deno.env.get("OWNER_CODE") ?? "";
+    if (!owner || String(body.owner_code ?? "") !== owner) throw new HttpError(403, "OWNER_ONLY");
+  }
 
   switch (op) {
     case "overview": {

@@ -201,6 +201,8 @@
       }
       case 'admin': {
         adminCheck(b.code);
+        // The demo's owner code is OWNER; the committee code alone can only read.
+        if (['void', 'ban', 'block', 'set_code', 'settings', 'reset_name', 'stripe_connect', 'stripe_disconnect', 'set_content', 'upload_image'].includes(b.op) && b.owner_code !== 'OWNER') fail('OWNER_ONLY');
         switch (b.op) {
           case 'overview': {
             const wk = b.week || weekStart();

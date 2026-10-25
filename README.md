@@ -64,7 +64,7 @@ counter so the site feels real; clear them before launch (`docs/admin.sql`).
 Optional: in Netlify, **Site configuration → Site details → Change site name** lets you pick a
 nicer address, for example `preslink-arcade`.
 
-The committee console is at your link with `/admin.html` on the end (also the Committee row on the You tab). Use the committee code you were given; the eye on the field shows what you typed.
+The committee console is at your link with `/admin.html` on the end (also the Committee row on the You tab). Use the committee code you were given; the eye on the field shows what you typed. The console is read-only: it shows the money, the payments, the players and the leaders, and it cannot change the site. Prizes, the words and photos, the closing date and goal, Stripe, bans and the committee code are the owner's to change, through the API with the owner code (see "What the owner changes" below).
 
 To take real money later: an adult opens a Stripe account for the charity, then in the console
 under **Stripe** pastes the Stripe secret key and taps **Connect**. The site checks the key
@@ -194,9 +194,9 @@ the request came from.
 
 ### 6. Prizes at the end
 
-1. In the console, **Campaign** sets the closing date and **Prizes** the five prize texts (Everyone, Students,
-   Teachers, Best light, Most plays), each with a photo if you have one. They appear on the Prizes page as
-   typed, one boxed card per prize; an empty line shows "To be announced".
+1. The owner sets the closing date and the five prize texts (Everyone, Students, Teachers, Best light,
+   Most plays), each with a photo if there is one, through the API with the owner code (below). They
+   appear on the Prizes page as typed, one boxed card per prize; an empty line shows "To be announced".
 2. At the end, **Overview** shows the leader of each board and the two spot-prize holders, with their codes
    and emails; **Players** has everyone with a CSV download for the emails.
 3. Announce the letters. A winner shows their **You** tab (or the saved code image): letters and code must match.
@@ -215,9 +215,32 @@ secret field has an eye to show what was typed. The pages:
 - **Players**: everyone, with a search over the name, the emails and the code, a board filter and a banned
   filter; plays, best score and money paid per row; **View** opens the player with every play (void or
   restore) and payment, **Ban**, **Unban** and a **new random name**; CSV download.
-- **Prizes**: five plain text fields and a photo each, shown on the Prizes page as typed (the photos are
+- Nothing else: there is no Prizes, Site content, Campaign, Stripe, Names or Committee code page any more,
+  and no button that changes anything. The sign-in tidies a pasted code (spaces, odd dashes, case).
+
+### What the owner changes
+
+Every change goes through the same API (`action: "admin"`) but needs the owner code as well as the committee
+code: the Edge Function refuses `settings`, `set_content`, `upload_image`, `ban`, `void`, `block`, `reset_name`,
+`set_code`, `stripe_connect` and `stripe_disconnect` with `OWNER_ONLY` unless the request carries
+`owner_code` equal to the function's `OWNER_CODE` secret. Until that secret is set, nothing can be changed
+through the API at all (the database functions still work from the Supabase SQL editor). To enable it:
+Supabase, Edge Functions, Secrets, add `OWNER_CODE`. The demo backend's owner code is `OWNER`. The owner's
+own page for these changes is a later step; until then the calls below do the same thing:
+
+```
+curl -X POST "$SUPABASE_URL/functions/v1/api" -H "Content-Type: application/json" -H "apikey: $SUPABASE_KEY" \
+  -d '{"action":"admin","code":"<committee code>","owner_code":"<owner code>","op":"settings","prizes":{"everyone":"€50 voucher"},"ends_on":"2026-12-12","goal_cents":200000}'
+```
+
+The content document (`set_content`) holds: `hero.title`, `hero.subtitle`, `notice`, `about.intro_title`,
+`about.intro_text`, `about.intro_image`, `about.stories[]` (`image`, `title`, `text`), `contact` (`email`,
+`phone`, `instagram`, `website`) and `prize_photos` (`everyone`, `students`, `teachers`, `best_light`,
+`most_plays`); `upload_image` takes `type` and base64 `data` and returns a public `url` to put in it.
+
+- **Prizes** (owner): five plain text fields and a photo each, shown on the Prizes page as typed (the photos are
   kept in the site content document as `prize_photos`).
-- **Site content**: the home title and the line under it, a notice shown on Home while set, the About page's
+- **Site content** (owner): the home title and the line under it, a notice shown on Home while set, the About page's
   committee card photo, heading and text, the About stories (a photo, a heading and a line each, added, reordered
   or removed; photos are shrunk in the browser and stored in the public `site` bucket) and the contact
   details (email, phone, Instagram, website, shown as a Contact card on About). Saved as one document in

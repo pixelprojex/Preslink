@@ -30,7 +30,7 @@
   const nameHtml = (display) => { const [l, n] = String(display || '').split('#'); return esc(l) + (n ? `<span class="dup inline">${esc(n)}</span>` : ''); };
   // A coloured circle with the letters; the tint comes from the letters so it is stable. The bubble sits on the rim.
   // The leader line on a prize card: the word, the bubble, the name, the score on the right.
-  const leadHtml = (initials, score) => `<span class="lead-k">Leading</span>${avatarHtml(initials)}<span class="lead-n">${nameHtml(initials)}</span><strong>${esc(String(score))}</strong>`;
+  const leadHtml = (initials, score) => `<span class="lead-k">Leading</span>${avatarHtml(initials)}<strong>${esc(String(score))}</strong>`;
   const avatarHtml = (display, big) => { const [l, n] = String(display || '').split('#'); let h = 0; for (const c of l) h = (h * 31 + c.charCodeAt(0)) % 5; return `<span class="avatar c${h + 1}${big ? ' big' : ''}">${esc(l)}${n ? `<span class="dup">${esc(n)}</span>` : ''}</span>`; };
   const boardName = (role) => BOARD_NAMES[role] || 'Everyone';
   const CREST_IMG = '<img class="crest-ic" src="assets/crest.svg?v=10" alt="">';
@@ -386,7 +386,7 @@
       rpc('leaderboard', { p_role: null }).then((r) => { if (seq !== homeTopSeq || boardCache.everyone) return; boardCache.everyone = r; renderHomeTop(); }).catch(() => {});
       return;
     }
-    $('#home-top-list').innerHTML = rows.slice(0, 3).map((r) => `<li class="${player && r.tag === player.tag ? 'me ' : ''}r${r.rank}"><span class="rank r${r.rank}">${r.rank}</span>${avatarHtml(r.initials)}<span class="name">${nameHtml(r.initials)}</span><span class="pts">${r.score}</span></li>`).join('');
+    $('#home-top-list').innerHTML = rows.slice(0, 3).map((r) => `<li class="${player && r.tag === player.tag ? 'me ' : ''}r${r.rank}"><span class="rank r${r.rank}">${r.rank}</span>${avatarHtml(r.initials)}<span class="name"><span class="meta">${r.plays} ${Number(r.plays) === 1 ? 'play' : 'plays'}</span></span><span class="pts">${r.score}</span></li>`).join('');
     $('#home-top-empty').hidden = rows.length > 0;
   }
   $('#home-play').addEventListener('click', playOrBuy);

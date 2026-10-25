@@ -151,7 +151,7 @@
 
   <!-- ================= LEADERBOARD ================= -->
   <section class="screen" data-screen="board" hidden>
-    <div class="title"><h1>Leaderboard</h1></div>
+    <div class="title row"><div><h1>Leaderboard</h1><p class="title-sub" id="board-sub">Prizes at the end</p></div><button class="pill-link" type="button" data-go="prize">Prizes <span class="chev">›</span></button></div>
     <div class="segmented" role="tablist">
       <button role="tab" type="button" class="tab active" data-role="everyone" aria-selected="true">Everyone</button>
       <button role="tab" type="button" class="tab" data-role="student" aria-selected="false"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Students</button>
@@ -165,10 +165,6 @@
       <div class="card"><h2 class="card-h">Everyone</h2><ol class="board" data-role="everyone"></ol><p class="empty" hidden>No scores yet.</p></div>
       <div class="card"><h2 class="card-h pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Students</h2><ol class="board" data-role="student"></ol><p class="empty" hidden>No scores yet.</p></div>
       <div class="card"><h2 class="card-h pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Teachers</h2><ol class="board" data-role="teacher"></ol><p class="empty" hidden>No scores yet.</p></div>
-    </div>
-    <div class="card" id="board-spot">
-      <h2 class="card-h" id="board-sub">Prizes at the end</h2>
-      <button class="cell" type="button" data-go="prize"><span>All prizes</span> <span class="chev">›</span></button>
     </div>
   </section>
 
