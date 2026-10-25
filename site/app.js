@@ -566,15 +566,14 @@
     x = x - 2 * Math.floor(x / 2);
     return x < 1 ? x : 2 - x;
   }
-  // Mirrors round_score() in the database. The whole bar scores: the distance from the light to the
-  // line, as a fraction of the bar, is what counts. On the line 999; the floor of 50 only half a bar
-  // away. A sharp part (closeness^6) makes the top hard, a long part (closeness^1.5) keeps the rest of
-  // the bar alive, and a cusp over the first 3 ms makes 999 itself a one-off. At a one-second sweep:
-  // 10 ms off = 908, 20 ms = 836, 30 ms = 770, 50 ms = 656, 100 ms = 446, 200 ms = 229, 300 ms = 129, 400 ms = 69.
+  // Mirrors round_score() in the database: the first game's curve. The score is the cube of how close
+  // the light stopped to the line, over the whole bar: 999 on the line, 10 ms off 928, 20 ms 872,
+  // 30 ms 818, 50 ms 716, 100 ms 499, 200 ms 204, 300 ms 52, the floor of 50 from about a third of the bar.
+  // A cusp over the first 3 ms keeps 999 itself to one person.
   const roundScore = (pos, target, speed) => {
     const d = Math.abs(pos - target);
     const u = Math.max(0, 1 - d / 0.5);
-    return Math.min(999, Math.max(50, Math.round(50 + 949 * (0.63 * u ** 6 + 0.37 * u ** 1.5) - 12 * Math.sqrt(Math.min(d * speed, 3) / 3))));
+    return Math.min(999, Math.max(50, Math.round(999 * u ** 3 - 12 * Math.sqrt(Math.min(d * speed, 3) / 3))));
   };
   function titleFor(s) {
     if (s >= 850) return 'Outstanding';
@@ -593,9 +592,11 @@
   function setMarker(pos) { marker.style.transform = `translateX(${pos * game.trackW}px)`; }
   function setPin(target) {
     pin.style.left = (target * 100) + '%';
-    swatch.style.background = `color-mix(in srgb, #ffe08a ${Math.round((1 - target) * 100)}%, #f26a1b)`;
   }
-  function measure() { game.trackW = track.clientWidth; marker.style.setProperty('--w', game.trackW + 'px'); }
+  function measure() {
+    game.trackW = track.clientWidth;
+    if (sweep && sweep.effect && sweep.effect.setKeyframes) { try { sweep.effect.setKeyframes(sweepFrames()); } catch (_) { /* keeps the old width until the next light */ } }
+  }
   window.addEventListener('resize', measure);
 
   function renderDots() {
@@ -704,26 +705,32 @@
   // The sweep is a CSS animation: the browser's compositor moves the light on its own thread at the
   // screen's full frame rate, whatever else the page is doing (a fetch, the counter rolling, a slow
   // frame of script). A tap reads the animation's own clock, so the score matches what was drawn.
+  // The sweep is a Web Animation with plain pixel keyframes, which every browser runs on its
+  // compositor thread (CSS variables inside keyframes are not composited in Safari). A tap reads the
+  // animation's own clock. Where animate() is missing, a frame loop draws it, as the first version did.
+  let sweep = null, sweepRaf = 0;
+  const sweepFrames = () => [{ transform: 'translateX(0px)' }, { transform: `translateX(${game.trackW}px)` }, { transform: 'translateX(0px)' }];
   function startSweep(r) {
-    marker.classList.remove('run');
-    void marker.offsetWidth; // a fresh animation, never a resumed one
-    marker.style.setProperty('--cycle', (2 * game.play.speed_ms) + 'ms');
-    marker.style.setProperty('--delay', (-r.phase * game.play.speed_ms) + 'ms');
+    stopSweepAnim();
+    measure();
+    const speed = game.play.speed_ms;
     game.sweepStart = performance.now();
-    marker.classList.add('run');
+    if (marker.animate) {
+      sweep = marker.animate(sweepFrames(), { duration: 2 * speed, iterations: Infinity, delay: -r.phase * speed, easing: 'linear' });
+    } else {
+      const loop = (now) => { if (game.state !== 'sweeping') return; setMarker(posAt(now - game.sweepStart, r.phase, speed)); sweepRaf = requestAnimationFrame(loop); };
+      sweepRaf = requestAnimationFrame(loop);
+    }
   }
-  function sweepAnimation() {
-    try { return (marker.getAnimations ? marker.getAnimations() : []).find((a) => a.animationName === 'sweep') || null; } catch (_) { return null; }
+  function sweepTime() { // ms since the sweep began, on the animation's own clock when there is one
+    return sweep && Number.isFinite(sweep.currentTime) ? sweep.currentTime : performance.now() - game.sweepStart;
   }
-  function stopSweep(pos) {
-    marker.classList.remove('run');
-    setMarker(pos);
+  function stopSweepAnim() {
+    if (sweep) { try { sweep.cancel(); } catch (_) { /* already gone */ } sweep = null; }
+    if (sweepRaf) { cancelAnimationFrame(sweepRaf); sweepRaf = 0; }
   }
-  function abandonGame() {
-    marker.classList.remove('run');
-    $('#game').classList.remove('sweeping');
-    game.state = 'idle';
-  }
+  function stopSweep(pos) { stopSweepAnim(); setMarker(pos); }
+  function abandonGame() { stopSweepAnim(); $('#game').classList.remove('sweeping'); game.state = 'idle'; }
 
   // Time of a tap on the sweep's own clock. The animation's currentTime is what the compositor draws
   // from. The input lag (handler time minus the event's hardware timestamp) and the age of the frame
@@ -733,9 +740,7 @@
     const now = performance.now();
     const ts = e && Number.isFinite(e.timeStamp) ? e.timeStamp : NaN;
     const inputLag = ts > 0 && ts <= now + 5 && ts > now - 400 ? now - ts : 0;
-    const anim = sweepAnimation();
-    const elapsed = anim && Number.isFinite(anim.currentTime) ? anim.currentTime : now - game.sweepStart;
-    return Math.round(elapsed - inputLag - DISPLAY_LAG_MS);
+    return Math.round(sweepTime() - inputLag - DISPLAY_LAG_MS);
   }
   // Signed timing error in ms: positive = late (the light had passed the mark), negative = early.
   function signedError(ms, r) {
@@ -1055,17 +1060,18 @@
   // ---------------------------------------------------------------------------
   // If you win: an email to send the news to. A school email joins the Students or Teachers board.
   // ---------------------------------------------------------------------------
-  const STUDENT_EMAIL = /^[a-z0-9._%+'-]+@pbccork\.ie$/;
-  const TEACHER_EMAIL = /^[a-z0-9._%+'-]+@pbc-cork\.ie$/;
-  const ANY_EMAIL = /^[a-z0-9._%+'-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+  // Whatever comes before the @ is fine; a school address is anything ending in the school's domain.
+  const STUDENT_EMAIL = /^[^\s@]+@pbccork\.ie$/;
+  const TEACHER_EMAIL = /^[^\s@]+@pbc-cork\.ie$/;
+  const ANY_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const isSchoolEmail = (v) => STUDENT_EMAIL.test(v) || TEACHER_EMAIL.test(v);
   function openContact(first) {
     if (!player) return;
     showError('contact-error', '');
     $('#contact-email').value = player.contact_email || '';
     $('#contact-school').value = player.school_email || '';
+    $('#contact-pbc').checked = !!player.school_email;
     $('#contact-school-wrap').hidden = !player.school_email;
-    $('#contact-more').hidden = !!player.school_email;
     $('#contact-close').hidden = !!first;
     $('#contact-code').textContent = player.claim_code;
     renderContactSaved();
@@ -1074,13 +1080,14 @@
     openSheet('contact');
     if (!first) setTimeout(() => $('#contact-email').focus(), 60);
   }
-  $('#contact-more').addEventListener('click', () => { $('#contact-school-wrap').hidden = false; $('#contact-more').hidden = true; setTimeout(() => $('#contact-school').focus(), 60); });
+  $('#contact-pbc').addEventListener('change', (e) => { const on = e.target.checked; $('#contact-school-wrap').hidden = !on; showError('contact-error', ''); if (on) setTimeout(() => $('#contact-school').focus(), 60); });
   $('#contact-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!player) return;
     const email = $('#contact-email').value.trim().toLowerCase();
     if (!ANY_EMAIL.test(email)) { showError('contact-error', MESSAGES.BAD_EMAIL); return; }
-    const school = $('#contact-school-wrap').hidden ? '' : $('#contact-school').value.trim().toLowerCase();
+    const school = $('#contact-pbc').checked ? $('#contact-school').value.trim().toLowerCase() : '';
+    if ($('#contact-pbc').checked && !school) { showError('contact-error', 'Add your school email, or switch that off.'); return; }
     if (school && !isSchoolEmail(school)) { showError('contact-error', 'That is not a school email.'); return; }
     const btn = $('#contact-submit');
     btn.disabled = true;

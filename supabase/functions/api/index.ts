@@ -144,7 +144,7 @@ type Body = Record<string, unknown>;
 const ROLES = new Set(["student", "teacher", "everyone"]);
 // Students end with @pbccork.ie, teachers with @pbc-cork.ie. The database applies the same rule
 // (set_school raises BAD_SCHOOL_EMAIL); checking here first saves a round trip.
-const SCHOOL_EMAIL = /^[a-z0-9._%+'-]+@(pbccork\.ie|pbc-cork\.ie)$/;
+const SCHOOL_EMAIL = /^[^\s@]+@(pbccork\.ie|pbc-cork\.ie)$/; // anything before the @
 
 async function register(body: Body) {
   const role = String(body.role ?? "everyone");
@@ -178,7 +178,7 @@ async function school(body: Body) {
 
 // Where to send the news if they win, plus an optional school email that joins a board. A school
 // address in the first field counts too. Format checks only; the database applies the same rules.
-const ANY_EMAIL = /^[a-z0-9._%+'-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+const ANY_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 async function contact(body: Body) {
   const playerId = requireUuid(body.player_id, "BAD_PLAYER");
   if (typeof body.email !== "string") throw new HttpError(400, "BAD_EMAIL");

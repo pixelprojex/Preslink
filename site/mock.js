@@ -30,7 +30,7 @@
     const pos = x < 1 ? x : 2 - x;
     const d = Math.abs(pos - target);
     const u = Math.max(0, 1 - d / 0.5);
-    return Math.min(999, Math.max(50, Math.round(50 + 949 * (0.63 * u ** 6 + 0.37 * u ** 1.5) - 12 * Math.sqrt(Math.min(d * speedMs, 3) / 3))));
+    return Math.min(999, Math.max(50, Math.round(999 * u ** 3 - 12 * Math.sqrt(Math.min(d * speedMs, 3) / 3))));
   }
   const newRounds = () => Array.from({ length: 3 }, () => ({ phase: Math.random(), target: 0.15 + Math.random() * 0.7 }));
 
@@ -98,7 +98,7 @@
       case 'school': {
         if (!player) fail('PLAYER_NOT_FOUND');
         const email = String(b.email || '').trim().toLowerCase();
-        const m = email.match(/^[a-z0-9._%+'-]+@(pbccork\.ie|pbc-cork\.ie)$/);
+        const m = email.match(/^[^\s@]+@(pbccork\.ie|pbc-cork\.ie)$/);
         if (!m) fail('BAD_SCHOOL_EMAIL');
         player.role = m[1] === 'pbccork.ie' ? 'student' : 'teacher'; player.school_email = email; save(db);
         return me(player);
@@ -106,11 +106,11 @@
       case 'contact': {
         if (!player) fail('PLAYER_NOT_FOUND');
         const email = String(b.email || '').trim().toLowerCase();
-        if (!/^[a-z0-9._%+'-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(email)) fail('BAD_EMAIL');
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) fail('BAD_EMAIL');
         let school = String(b.school_email || '').trim().toLowerCase();
         if (!school && /@(pbccork\.ie|pbc-cork\.ie)$/.test(email)) school = email;
         if (school) {
-          const m = school.match(/^[a-z0-9._%+'-]+@(pbccork\.ie|pbc-cork\.ie)$/);
+          const m = school.match(/^[^\s@]+@(pbccork\.ie|pbc-cork\.ie)$/);
           if (!m) fail('BAD_SCHOOL_EMAIL');
           player.role = m[1] === 'pbccork.ie' ? 'student' : 'teacher'; player.school_email = school;
         }

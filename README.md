@@ -16,7 +16,7 @@ lives on the You tab, where "Save to Photos" keeps it as a ticket picture (on an
 Apple's share sheet, where Save Image is one tap, since a web page cannot write to Photos any other way;
 a plain download elsewhere); winners show the code to collect. The code also signs them in anywhere. Everyone is on the Everyone board. People at
 Presentation Brothers College can optionally give their school email to join the Students board
-(@pbccork.ie) or the Teachers board (@pbc-cork.ie); it is a format check, nothing is sent. If someone
+(@pbccork.ie) or the Teachers board (@pbc-cork.ie); anything before the @ is accepted, nothing is sent. If someone
 already has the same letters you still get them, shown with a small tag (JAK, JAK#2), so nobody is ever refused.
 
 The look follows the conventions of native apps (grouped white cards on a soft grey canvas, large titles,
@@ -96,6 +96,8 @@ server can read them. The free plays switch off by themselves the moment Stripe 
 | `supabase/migrations/0015_tolerant_submit.sql` | The server scores the taps itself and ignores the browser's number, so an older build keeps working when the curve changes; taps count from 60 ms |
 | `supabase/migrations/0016_top_is_999.sql` | 999 is the ceiling; a cusp over the first 3 ms of error makes the top a fine ruler, so the best score is one person's |
 | `supabase/migrations/0017_whole_bar.sql` | The whole bar scores: distance to the line as a fraction of the bar, 999 on the line, the floor only half a bar away |
+| `supabase/migrations/0018_first_curve.sql` | The first game's curve back: the cube of the closeness over the whole bar, 999 ceiling, cusp at the top |
+| `supabase/migrations/0019_any_school_email.sql` | Any local part on a school email; the general email check only asks for something@something.tld |
 | `site/poster.html` | A3 poster preview with a large QR code (vendored encoder in `site/vendor/`); its Save as PDF button downloads the file below |
 | `site/poster.pdf` | The poster rendered to A3 PDF for the printer, QR pointing at preslink.netlify.app (re-render it if the address changes) |
 | `site/assets/` | Logo (`logo.svg`, `cross.svg`), icons, and the photo slots `photo-*.svg` to replace with real photos |
@@ -110,7 +112,7 @@ Do these in order. Steps 1 and 2 are a one-off technical setup; 3 to 6 are the l
 
 ### 1. Supabase (database + functions): already done
 
-The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all seventeen migrations applied,
+The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all nineteen migrations applied,
 both functions deployed, and `site/config.js` points at it. The committee code was set at deployment
 and handed over privately; change it any time from the Committee screen.
 
@@ -209,11 +211,11 @@ hash in the database and locks for 15 minutes after 8 wrong tries. From there th
   `0002_names_signin_admin.sql` (table `blocked_initials`), the committee can add more, and can reset a
   player's name to a random one.
 - The game: a play is three lights. Each light sweeps the bar once a second and has its own mark and starting
-  point; you tap when the light is on the mark. The whole bar scores: what counts is how far the light stopped from the line, as a fraction of the bar.
-  With u = max(0, 1 − distance ÷ half a bar), a light scores 50 + 949 × (0.63 × u⁶ + 0.37 × u^1.5) − 12 × √(min(error, 3 ms) ÷ 3),
-  kept between 50 and 999. 999 is the ceiling (there is no 1,000, though the screen says "out of 1,000"): on the line
-  999, 10 ms off 908, 20 ms 836, 30 ms 770, 50 ms 656, a tenth of the bar 446, a fifth 229, 300 ms 129, and half a bar
-  or more 50, never zero. Taps are whole milliseconds and the line is a random fraction, so a 999 needs the tap within
+  point; you tap when the light is on the mark. The first game's curve: what counts is how far the light stopped from the line, as a fraction of the bar.
+  With u = max(0, 1 − distance ÷ half a bar), a light scores 999 × u³ − 12 × √(min(error, 3 ms) ÷ 3), kept between 50
+  and 999. 999 is the ceiling (there is no 1,000, though the screen says "out of 1,000"): on the line 999, 10 ms off
+  928, 20 ms 872, 30 ms 818, 50 ms 716, a tenth of the bar 499, a fifth 204, a quarter 113, and from about a third of
+  the bar 50, never zero. Taps are whole milliseconds and the line is a random fraction, so a 999 needs the tap within
   a few microseconds of the line, which keeps the top of the board to one person (equal scores: the earlier one wins).
   The play's score is the average of the three lights. The sweep is a fixed second
   per pass. The light is moved by a CSS animation, so the browser's compositor draws it on its own thread at the
