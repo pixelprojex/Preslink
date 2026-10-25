@@ -97,7 +97,7 @@
     switch (action) {
       case 'school': {
         if (!player) fail('PLAYER_NOT_FOUND');
-        const email = String(b.email || '').trim().toLowerCase();
+        const email = String(b.email || '').replace(/\s+/g, '').toLowerCase();
         const m = email.match(/^[^\s@]+@(pbccork\.ie|pbc-cork\.ie)$/);
         if (!m) fail('BAD_SCHOOL_EMAIL');
         player.role = m[1] === 'pbccork.ie' ? 'student' : 'teacher'; player.school_email = email; save(db);
@@ -105,9 +105,9 @@
       }
       case 'contact': {
         if (!player) fail('PLAYER_NOT_FOUND');
-        const email = String(b.email || '').trim().toLowerCase();
+        const email = String(b.email || '').replace(/\s+/g, '').toLowerCase();
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) fail('BAD_EMAIL');
-        let school = String(b.school_email || '').trim().toLowerCase();
+        let school = String(b.school_email || '').replace(/\s+/g, '').toLowerCase();
         if (!school && /@(pbccork\.ie|pbc-cork\.ie)$/.test(email)) school = email;
         if (school) {
           const m = school.match(/^[^\s@]+@(pbccork\.ie|pbc-cork\.ie)$/);

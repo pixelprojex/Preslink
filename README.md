@@ -16,7 +16,7 @@ lives on the You tab, where "Save to Photos" keeps it as a ticket picture (on an
 Apple's share sheet, where Save Image is one tap, since a web page cannot write to Photos any other way;
 a plain download elsewhere); winners show the code to collect. The code also signs them in anywhere. Everyone is on the Everyone board. People at
 Presentation Brothers College can optionally give their school email to join the Students board
-(@pbccork.ie) or the Teachers board (@pbc-cork.ie); anything before the @ is accepted, nothing is sent. If someone
+(@pbccork.ie) or the Teachers board (@pbc-cork.ie); anything before the @ is accepted, capitals and stray spaces are cleaned up rather than refused, nothing is sent. If someone
 already has the same letters you still get them, shown with a small tag (JAK, JAK#2), so nobody is ever refused.
 
 The look follows the conventions of native apps (grouped white cards on a soft grey canvas, large titles,
@@ -98,6 +98,7 @@ server can read them. The free plays switch off by themselves the moment Stripe 
 | `supabase/migrations/0017_whole_bar.sql` | The whole bar scores: distance to the line as a fraction of the bar, 999 on the line, the floor only half a bar away |
 | `supabase/migrations/0018_first_curve.sql` | The first game's curve back: the cube of the closeness over the whole bar, 999 ceiling, cusp at the top |
 | `supabase/migrations/0019_any_school_email.sql` | Any local part on a school email; the general email check only asks for something@something.tld |
+| `supabase/migrations/0020_email_spaces_case.sql` | Emails are lower-cased and stripped of every space before the check, so capitals and stray spaces never turn an address away |
 | `site/poster.html` | A3 poster preview with a large QR code (vendored encoder in `site/vendor/`); its Save as PDF button downloads the file below |
 | `site/poster.pdf` | The poster rendered to A3 PDF for the printer, QR pointing at preslink.netlify.app (re-render it if the address changes) |
 | `site/assets/` | Logo (`logo.svg`, `cross.svg`), icons, and the photo slots `photo-*.svg` to replace with real photos |
@@ -112,7 +113,7 @@ Do these in order. Steps 1 and 2 are a one-off technical setup; 3 to 6 are the l
 
 ### 1. Supabase (database + functions): already done
 
-The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all nineteen migrations applied,
+The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all twenty migrations applied,
 both functions deployed, and `site/config.js` points at it. The committee code was set at deployment
 and handed over privately; change it any time from the Committee screen.
 

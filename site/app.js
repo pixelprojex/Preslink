@@ -1067,6 +1067,7 @@
   const TEACHER_EMAIL = /^[^\s@]+@pbc-cork\.ie$/;
   const ANY_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const isSchoolEmail = (v) => STUDENT_EMAIL.test(v) || TEACHER_EMAIL.test(v);
+  const cleanEmail = (v) => String(v || '').replace(/\s+/g, '').toLowerCase(); // capitals and stray spaces are not mistakes
   function openContact(first) {
     if (!player) return;
     showError('contact-error', '');
@@ -1082,13 +1083,15 @@
     openSheet('contact');
     if (!first) setTimeout(() => $('#contact-email').focus(), 60);
   }
-  $('#contact-pbc').addEventListener('change', (e) => { const on = e.target.checked; $('#contact-school-wrap').hidden = !on; showError('contact-error', ''); if (on) setTimeout(() => $('#contact-school').focus(), 60); });
+  ['#contact-email', '#contact-school'].forEach((sel) => $(sel).addEventListener('input', () => { $('#contact-submit').hidden = false; }));
+  $('#contact-pbc').addEventListener('change', (e) => {
+    $('#contact-submit').hidden = false; const on = e.target.checked; $('#contact-school-wrap').hidden = !on; showError('contact-error', ''); if (on) setTimeout(() => $('#contact-school').focus(), 60); });
   $('#contact-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!player) return;
-    const email = $('#contact-email').value.trim().toLowerCase();
+    const email = cleanEmail($('#contact-email').value);
     if (!ANY_EMAIL.test(email)) { showError('contact-error', MESSAGES.BAD_EMAIL); return; }
-    const school = $('#contact-pbc').checked ? $('#contact-school').value.trim().toLowerCase() : '';
+    const school = $('#contact-pbc').checked ? cleanEmail($('#contact-school').value) : '';
     if ($('#contact-pbc').checked && !school) { showError('contact-error', 'Add your school email, or switch that off.'); return; }
     if (school && !isSchoolEmail(school)) { showError('contact-error', 'That is not a school email.'); return; }
     const btn = $('#contact-submit');
@@ -1111,6 +1114,7 @@
     line.hidden = !on;
     line.textContent = on ? `Saved · ${player.contact_email}` : '';
     $('#contact-submit').textContent = on ? 'Update email' : 'Save email';
+    $('#contact-submit').hidden = on; // comes back the moment something is edited
   }
   $('#contact-save').addEventListener('click', () => saveCodeImage());
   const skipContact = () => { store.set(CONTACT_ASKED_KEY, true); closeSheets(); renderResultEmail(); };

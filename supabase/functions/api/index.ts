@@ -170,7 +170,7 @@ async function update(body: Body) {
 async function school(body: Body) {
   const playerId = requireUuid(body.player_id, "BAD_PLAYER");
   if (typeof body.email !== "string") throw new HttpError(400, "BAD_SCHOOL_EMAIL");
-  const email = body.email.trim().toLowerCase();
+  const email = body.email.replace(/\s+/g, "").toLowerCase(); // capitals and stray spaces are not mistakes
   if (email.length < 6 || email.length > 120 || email.split("@").length !== 2) throw new HttpError(400, "BAD_SCHOOL_EMAIL");
   if (!SCHOOL_EMAIL.test(email)) throw new HttpError(400, "BAD_SCHOOL_EMAIL");
   return await rpc("set_school", { p_id: playerId, p_email: email });
@@ -182,9 +182,9 @@ const ANY_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 async function contact(body: Body) {
   const playerId = requireUuid(body.player_id, "BAD_PLAYER");
   if (typeof body.email !== "string") throw new HttpError(400, "BAD_EMAIL");
-  const email = body.email.trim().toLowerCase();
+  const email = body.email.replace(/\s+/g, "").toLowerCase();
   if (email.length < 6 || email.length > 120 || !ANY_EMAIL.test(email)) throw new HttpError(400, "BAD_EMAIL");
-  const school = body.school_email == null ? "" : String(body.school_email).trim().toLowerCase();
+  const school = body.school_email == null ? "" : String(body.school_email).replace(/\s+/g, "").toLowerCase();
   if (school !== "" && !SCHOOL_EMAIL.test(school)) throw new HttpError(400, "BAD_SCHOOL_EMAIL");
   return await rpc("set_contact", { p_id: playerId, p_email: email, p_school_email: school === "" ? null : school });
 }
