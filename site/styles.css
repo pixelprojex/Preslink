@@ -412,6 +412,16 @@ a.cell { text-decoration: none; }
 .spot-row small { display: block; color: var(--muted); font-size: 13px; }
 .spot-row strong { font-weight: 700; font-variant-numeric: tabular-nums; }
 .empty { color: var(--muted); text-align: center; padding: 22px 16px; margin: 0; font-size: 15px; }
+/* Grey rows that breathe while a board is on its way, so a list never opens empty. */
+.board li.sk { animation: none; pointer-events: none; }
+.board li.sk > * { background: var(--fill); border-radius: 8px; animation: shimmer 1.3s ease-in-out infinite; }
+.board li.sk .rank { width: 28px; height: 28px; border-radius: 50%; }
+.board li.sk .avatar { border-radius: 50%; }
+.board li.sk .name { height: 14px; min-height: 0; width: 55%; }
+.board li.sk .pts { width: 38px; height: 18px; }
+@keyframes shimmer { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+.prize-lead:not(:empty) { cursor: pointer; }
+.home-top, .boards-wide, .side-foot { display: none; }
 .winners { list-style: none; margin: 0; padding: 0; }
 .winners li { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 12px 16px; font-size: 14px; color: var(--muted); position: relative; }
 .winners li + li::before { content: ''; position: absolute; left: 16px; right: 0; top: 0; height: 1px; background: var(--sep); }
@@ -541,43 +551,67 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .splash-mark, .arm, .dots, .splash-word span, .splash-sub, .splash-credit { animation: none; } .splash { transition: opacity .4s ease, visibility .4s; } }
 
 /* iPad and desktop */
-/* Prizes: a boxed card for each prize in its own bright colour: a band with the board, room for a photo, the prize, the leader. */
+/* Prizes: a boxed card per prize. One band of colour across the top; under it the box is plain white, the photo on the left,
+   the prize and how it is won beside it, the leader along the bottom. */
 .title-sub { margin: 2px 0 0; color: var(--muted); font-size: 14px; font-weight: 500; }
 .sec-h { margin: 18px 4px 8px; font-size: 12px; font-weight: 700; color: var(--muted-d); text-transform: uppercase; letter-spacing: .08em; }
 .title + .sec-h { margin-top: 0; }
 .prize-grid { display: grid; gap: 12px; }
 .prize-grid > .card + .card { margin-top: 0; }
-.prize { --pc: #58cc02; --pc-l: #ebf8dc; --pc-d: #46a302; --pc-ink: #fff; display: grid; grid-template-rows: auto auto 1fr; border-color: var(--pc); border-bottom-width: 3px; border-bottom-color: var(--pc-d); }
-.prize[data-prize="students"] { --pc: var(--purple); --pc-l: var(--purple-l); --pc-d: var(--purple-d); }
-.prize[data-prize="teachers"] { --pc: #1cb0f6; --pc-l: #e3f4fd; --pc-d: #1899d6; }
-.prize[data-prize="best_light"] { --pc: #ffc800; --pc-l: #fff6d0; --pc-d: #e5b400; --pc-ink: #5a4300; }
-.prize[data-prize="most_plays"] { --pc: #ff9600; --pc-l: #fff0da; --pc-d: #e68700; }
+.prize { --pc: #58cc02; --pc-ink: #fff; }
+.prize[data-prize="students"] { --pc: var(--purple); }
+.prize[data-prize="teachers"] { --pc: #1cb0f6; }
+.prize[data-prize="best_light"] { --pc: #ffc800; --pc-ink: #5a4300; }
+.prize[data-prize="most_plays"] { --pc: #ff9600; }
 .prize-band { display: flex; align-items: center; gap: 7px; padding: 9px 14px; background: var(--pc); color: var(--pc-ink); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
-.prize-photo { position: relative; aspect-ratio: 2 / 1; background: var(--pc-l); display: grid; place-items: center; }
-.prize-photo svg { width: 46px; height: 46px; color: var(--pc); opacity: .5; }
+.prize-main { display: grid; grid-template-columns: 38% 1fr; grid-template-areas: "photo body" "photo lead"; }
+.prize-photo { grid-area: photo; position: relative; min-height: 124px; background: var(--fill); display: grid; place-items: center; }
+.prize-photo svg { width: 34px; height: 34px; color: var(--muted-2); }
 .prize-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .prize.has-photo .prize-photo svg { display: none; }
-.prize-body { display: grid; grid-template-rows: auto auto 1fr; padding: 12px 14px; }
-.prize-what { margin: 0; font-size: 18px; font-weight: 800; letter-spacing: -.02em; line-height: 1.25; color: var(--ink); }
+.prize-body { grid-area: body; padding: 12px 14px 8px; }
+.prize-what { margin: 0; font-size: 17px; font-weight: 800; letter-spacing: -.02em; line-height: 1.25; color: var(--ink); }
 .prize-what.tba { color: var(--muted); font-weight: 600; }
 .prize-how { margin: 3px 0 0; color: var(--muted); font-size: 13px; font-weight: 500; }
 .prize-how.pres { color: var(--purple); font-weight: 600; }
 .prize-how .crest-ic { display: inline-block; width: 12px; height: 15px; vertical-align: -3px; margin-right: 5px; }
-.prize-lead { display: flex; align-items: center; gap: 8px; align-self: end; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--sep); min-height: 42px; font-size: 15px; font-weight: 700; color: var(--ink); }
+.prize-lead { grid-area: lead; align-self: end; display: flex; align-items: center; gap: 8px; margin: 0 14px 10px; padding-top: 8px; border-top: 1px solid var(--sep); min-height: 40px; font-size: 15px; font-weight: 700; color: var(--ink); }
 .prize-lead .lead-k { color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
-.prize-lead .avatar { width: 30px; height: 30px; font-size: 11px; }
+.prize-lead .avatar { width: 28px; height: 28px; font-size: 11px; }
 .prize-lead strong { margin-left: auto; font-weight: 800; font-size: 17px; font-variant-numeric: tabular-nums; }
 .prize-lead:empty::before { content: 'Nobody yet'; color: var(--muted-2); font-weight: 600; }
 
 @media (min-width: 700px) {
   .shell { max-width: 640px; padding-left: 24px; padding-right: 24px; }
-  .prize-grid.boards { grid-template-columns: repeat(3, 1fr); }
-  .prize-grid.boards .prize-photo { aspect-ratio: 16 / 9; }
-  /* the spot prizes lie sideways: the band across, the photo on the left */
-  .prize-grid.spots { grid-template-columns: 1fr 1fr; }
-  .prize-grid.spots .prize { grid-template-rows: auto 1fr; grid-template-columns: 5fr 7fr; }
-  .prize-grid.spots .prize-band { grid-column: 1 / -1; }
-  .prize-grid.spots .prize-photo { aspect-ratio: auto; min-height: 150px; height: 100%; }
+  /* About: the committee card across the top as photo-beside-text, the stories two across (an odd last one lies sideways across the row), Contact beside Terms */
+  [data-screen="about"] { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; align-items: stretch; }
+  [data-screen="about"] > * { margin-top: 0 !important; }
+  [data-screen="about"] > .title { grid-column: 1 / -1; order: -2; }
+  [data-screen="about"] > .story.school, #about-stories > .card.wide { grid-column: 1 / -1; display: grid; grid-template-columns: 2fr 3fr; }
+  [data-screen="about"] > .story.school { order: -1; }
+  [data-screen="about"] > .story.school .photo, #about-stories > .card.wide .photo { height: 100%; min-height: 200px; aspect-ratio: auto; }
+  [data-screen="about"] > .story.school .story-body, #about-stories > .card.wide .story-body { align-self: center; padding: 22px 26px; }
+  #about-stories { display: contents; }
+  #about-stories > .card { grid-column: span 3; margin-top: 0 !important; }
+  #about-contact, [data-screen="about"] > .card:last-of-type { grid-column: span 3; }
+  #about-contact[hidden] + .card { grid-column: 1 / -1; }
+  [data-screen="about"] > .credit { grid-column: 1 / -1; margin-top: 8px !important; }
+  /* You: the cards share rows and heights */
+  #you-panel, #you-empty { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: stretch; }
+  #you-panel > *, #you-empty > * { margin-top: 0 !important; }
+  #you-panel > .profile, #you-empty > .you-empty { display: grid; align-content: center; }
+  #you-panel > :nth-child(n+3) { grid-column: 1 / -1; }
+  /* the cabinet keeps a cabinet's width whatever the screen (the sidebar widths widen .screen later in the file, hence the heavier selector) */
+  .screen[data-screen="cabinet"] { max-width: 520px; margin-left: auto; margin-right: auto; }
+  /* Home: the top three under the links */
+  .home-top { display: block; }
+  .home-top .board li { padding: 8px 14px; }
+  .home-top .board li + li::before { left: 92px; }
+  /* the photo a fixed width from here up */
+  .prize-main { grid-template-columns: 200px 1fr; }
+  .prize-photo { min-height: 132px; }
+  .prize-body { padding: 14px 16px 8px; }
+  .prize-lead { margin: 0 16px 12px; }
   .appbar { margin: 0 -24px; padding-left: 24px; padding-right: 24px; height: 64px; }
   .tabbar, .sheet { max-width: 640px; }
   .title h1 { font-size: 40px; }
@@ -619,31 +653,43 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
   .sheet { left: var(--side-w); right: 0; bottom: auto; top: 50%; max-width: 520px; border-radius: 24px; padding: 14px 24px 24px; max-height: 86vh; animation: modalin .35s cubic-bezier(.2, .8, .2, 1); transform: translateY(-50%); }
   .sheet::before { display: none; }
   .game { min-height: 600px; }
-  /* About: the committee card across the top, the stories three across, contact beside Terms */
-  [data-screen="about"] { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; align-items: stretch; }
-  [data-screen="about"] > * { margin-top: 0 !important; }
-  [data-screen="about"] > .title { grid-column: 1 / -1; order: -2; }
-  [data-screen="about"] > .story.school { grid-column: 1 / -1; order: -1; display: grid; grid-template-columns: 2fr 3fr; }
-  [data-screen="about"] > .story.school .photo { height: 100%; min-height: 200px; aspect-ratio: auto; }
-  [data-screen="about"] > .story.school .story-body { align-self: center; padding: 22px 26px; }
-  #about-stories { display: contents; }
-  #about-stories > .card { grid-column: span 2; margin-top: 0 !important; }
-  #about-contact, [data-screen="about"] > .card:last-of-type { grid-column: span 3; }
-  #about-contact[hidden] + .card { grid-column: 1 / -1; }
-  [data-screen="about"] > .credit { grid-column: 1 / -1; margin-top: 8px !important; }
-  /* You: the cards share rows and heights */
-  #you-panel, #you-empty { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; }
-  #you-panel > *, #you-empty > * { margin-top: 0 !important; }
-  #you-panel > .profile, #you-empty > .you-empty { display: grid; align-content: center; }
-  #you-panel > :nth-child(n+3) { grid-column: 1 / -1; }
+  [data-screen="about"], #you-panel, #you-empty { gap: 16px; }
+  /* Prizes: the leader as a cluster on the right of the row */
+  .prize-main { grid-template-columns: 220px 1fr auto; grid-template-areas: "photo body lead"; }
+  .prize-body { padding: 16px 18px; align-self: center; }
+  .prize-lead { align-self: center; margin: 14px 18px 14px 0; padding: 6px 0 6px 18px; border-top: 0; border-left: 1px solid var(--sep); min-width: 200px; }
+  /* About: the stories three across beside the sidebar */
+  #about-stories > .card, #about-stories > .card.wide { grid-column: span 2; display: block; }
+  #about-stories > .card.wide .photo { height: auto; min-height: 0; aspect-ratio: 16 / 9; }
+  #about-stories > .card.wide .story-body { padding: 14px 16px 16px; }
+  .tabbar .side-foot { display: flex; align-items: center; gap: 8px; position: absolute; left: 22px; right: 14px; bottom: 26px; color: var(--purple); text-decoration: none; font-weight: 600; font-size: 12px; line-height: 1.3; }
+  .tabbar .side-foot img { width: 18px; height: 22px; flex: none; }
+  [data-screen="signin"] { max-width: 560px; }
 }
 @keyframes modalin { from { opacity: 0; transform: translateY(-50%) scale(.96); } to { opacity: 1; transform: translateY(-50%) scale(1); } }
 @media (min-width: 1100px) {
   .appbar, .screen, .splash-credit { max-width: 900px; }
   .game { max-width: 760px; margin: 0 auto; }
-  /* Home: the hero beside the links */
-  [data-screen="home"] { display: grid; grid-template-columns: 1.25fr 1fr; gap: 16px; align-items: start; }
-  [data-screen="home"] > .hero-card, [data-screen="home"] > .home-links { margin-top: 14px; }
+  /* Home: the hero beside the links, the top three under them */
+  [data-screen="home"] { display: grid; grid-template-columns: 1.25fr 1fr; grid-template-rows: max-content 1fr; grid-template-areas: "hero links" "hero top"; gap: 16px; align-items: start; }
+  [data-screen="home"] > .hero-card { grid-area: hero; margin-top: 14px; padding: 26px 24px 20px; }
+  [data-screen="home"] > .home-links { grid-area: links; margin-top: 14px; }
+  [data-screen="home"] > .home-top { grid-area: top; margin-top: 0; }
+  .hero-h { font-size: 30px; }
+  .demo-track { margin: 30px 10px 28px; }
+  /* Leaderboard: all three boards at once, no tabs */
+  [data-screen="board"] > .segmented, #board-single { display: none; }
+  .boards-wide { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start; }
+  .boards-wide .card + .card { margin-top: 0; }
+  .boards-wide .card-h { padding: 14px 16px 6px; }
+  .boards-wide .card-h.pres { color: var(--purple); }
+  .boards-wide .card-h .crest-ic { display: inline-block; width: 12px; height: 15px; margin: 0 5px 0 0; vertical-align: -3px; }
+  .boards-wide .board li { grid-template-columns: 24px 34px 1fr auto; gap: 8px; padding: 9px 12px; }
+  .boards-wide .board li + li::before { left: 78px; }
+  .boards-wide .board .avatar { width: 34px; height: 34px; font-size: 12px; }
+  .boards-wide .board .name { font-size: 14px; }
+  .boards-wide .board .pts { font-size: 16px; }
+  .boards-wide + #board-spot { margin-top: 16px; }
   /* Result: score across the top, then two columns */
   .result { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
   .result > * { margin: 0 !important; }
@@ -659,6 +705,26 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
   #you-panel > #edit-form { grid-column: 1 / -1; }
   #you-panel > .card:nth-child(5) { grid-column: 1 / 3; }
   #you-panel > .card:last-child { grid-column: 3; align-self: start; }
+}
+
+/* A mouse gets a hover: a lift on the prize cards, a tint on rows and buttons, a slow zoom on a photo. Touch gets none of it. */
+@media (hover: hover) and (pointer: fine) {
+  .btn:not(:disabled):hover { filter: brightness(1.05); }
+  .btn-primary:not(:disabled):hover { background: #23a862; filter: none; }
+  button.cell:hover, a.cell:hover { background: var(--bg); }
+  .board li:not(.sk):hover { background: #f7f7f9; }
+  .board li.me:hover { background: #d9f0e3; }
+  .tabbar button:not(.active):hover { color: var(--ink); }
+  .segmented .tab:not(.active):hover { opacity: .75; }
+  .bundles-line .link:hover { background: var(--fill-2); }
+  .story .photo { transition: transform .5s ease; }
+  .story:hover .photo { transform: scale(1.03); }
+  .prize { transition: transform .18s ease, box-shadow .18s ease; }
+  .prize:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 0, 0, .07); }
+  .prize-lead:not(:empty):hover strong { text-decoration: underline; }
+  .badge:hover { filter: brightness(.95); }
+  .back:hover, .key:hover { background: var(--fill-2); }
+  .side-foot:hover { opacity: .75; }
 }
 
 /* PresLink and the school are purple, with the crest wherever the school itself is meant. */

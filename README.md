@@ -23,8 +23,12 @@ carries a 2), so nobody is ever refused.
 The look follows the conventions of native apps (grouped white cards on a soft grey canvas, large titles,
 segmented controls, avatars, a progress ring) in PresLink's colours: green for actions, orange for the
 light and the ring, the yellow of the Presentation Brothers cross for the logo. The logo and the running
-total raised sit at the top of every screen; there is a tab bar (Play, Board, About, You), a Prize page
-with a photo, and very little text.
+total raised sit at the top of every screen; there is a tab bar (Play, Board, About, You), a Prizes page
+of boxed colour cards with a photo slot each, and very little text. The same pages lay themselves out for
+an iPad (a 640 px column with the tab bar underneath; About and You share rows, Home gets a top-three
+card) and for a desktop (the tab bar becomes a sidebar with the school at its foot, sheets become centred
+modals, Home puts the hero beside the links and the top three, the leaderboard shows all three boards at
+once, a mouse gets hover states that touch never sees, and a keyboard plays the whole game with Space or Enter).
 
 ```
   Device (QR) ──▶  Netlify (static site: site/)

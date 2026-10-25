@@ -326,6 +326,8 @@
 
     if (name !== current) prevScreen = current;
     current = name;
+    const tname = { board: 'Leaderboard', prize: 'Prizes', about: 'About', you: 'You', play: 'Play', signin: 'Sign in' }[name];
+    document.title = tname ? `${tname} · PresLink Arcade` : 'PresLink Arcade';
     closeSheets();
     screens.forEach((s) => { s.hidden = s.dataset.screen !== name; });
     window.scrollTo(0, 0);
@@ -373,6 +375,19 @@
     btn.textContent = canPlay ? `Play · ${credits + (openPlay ? 1 : 0)} left` : 'Play · €2';
     btn.classList.toggle('ready', canPlay);
     if (canPlay) prefetchPlay();
+    renderHomeTop();
+  }
+  // The top three of the Everyone board on Home, from iPad width up (the card is hidden on a phone).
+  let homeTopSeq = 0;
+  function renderHomeTop() {
+    const rows = boardCache.everyone;
+    if (!rows) {
+      const seq = ++homeTopSeq;
+      rpc('leaderboard', { p_role: null }).then((r) => { if (seq !== homeTopSeq || boardCache.everyone) return; boardCache.everyone = r; renderHomeTop(); }).catch(() => {});
+      return;
+    }
+    $('#home-top-list').innerHTML = rows.slice(0, 3).map((r) => `<li class="${player && r.tag === player.tag ? 'me ' : ''}r${r.rank}"><span class="rank r${r.rank}">${r.rank}</span>${avatarHtml(r.initials)}<span class="name">${nameHtml(r.initials)}</span><span class="pts">${r.score}</span></li>`).join('');
+    $('#home-top-empty').hidden = rows.length > 0;
   }
   $('#home-play').addEventListener('click', playOrBuy);
   let wantGame = false;
@@ -418,18 +433,6 @@
     el.querySelectorAll('.strip').forEach((st, i) => { st.style.transitionDuration = ms + 'ms'; st.style.transform = `translateY(-${(turns[i] * 1.1).toFixed(2)}em)`; });
     el._settle = setTimeout(() => odoStatic(el, to, fmt), ms + 80);
   }
-  // A plain count-up for the big score on the result screen.
-  function countUp(el, to, ms) {
-    if (reduceMotion()) { el.textContent = to; return; }
-    const t0 = performance.now();
-    const frame = (now) => {
-      const k = Math.min(1, (now - t0) / ms);
-      const e = 1 - Math.pow(1 - k, 3);
-      el.textContent = Math.round(to * e);
-      if (k < 1) requestAnimationFrame(frame);
-    };
-    requestAnimationFrame(frame);
-  }
   let shownRaised = null; // whole euro shown in the app bar
   function showRing(cents, goalCents) {
     const ring = $('#ring-fg');
@@ -455,6 +458,8 @@
     statsTimer = setTimeout(() => { refreshStats().finally(pollStats); }, STATS_EVERY);
   }
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshStats(); pollStats(); });
+  window.addEventListener('offline', () => toast('No connection', true, 4000));
+  window.addEventListener('online', () => { toast('Back online'); if (game.pending && game.state === 'done') submitPending(game.lastScore); else refreshStats(); });
 
   // The committee's words and photos (the console's Site content page). Empty fields keep the page's own.
   let contentKey = '';
@@ -476,6 +481,8 @@
     box.innerHTML = stories.length
       ? stories.map((x) => `<div class="card story">${x.image ? `<img class="photo" src="${esc(x.image)}" alt="${esc(x.title || '')}" loading="lazy">` : ''}<div class="story-body">${x.title ? `<h2>${esc(x.title)}</h2>` : ''}${x.text ? `<p>${esc(x.text)}</p>` : ''}</div></div>`).join('')
       : box._default;
+    const cards = $$('#about-stories > .card');
+    cards.forEach((el, i) => el.classList.toggle('wide', cards.length % 2 === 1 && i === cards.length - 1));
     const cc = $('#about-contact');
     const rows = [];
     const handle = String(contact.instagram || '').replace(/^@/, '');
@@ -681,7 +688,7 @@
     $('#verdict').textContent = '';
     $('#coach').textContent = '';
     $('#verdict').classList.remove('miss');
-    $('#tap-hint').textContent = 'Tap when the light is on the mark';
+    $('#tap-hint').textContent = tapWord();
     $('#tap-hint').classList.remove('live');
     $('#result-note').hidden = true;
     pin.style.opacity = '';
@@ -817,6 +824,19 @@
   document.addEventListener('keydown', (e) => {
     if ((e.code === 'Space' || e.code === 'Enter') && game.state === 'sweeping') onTap(e);
   });
+  // A keyboard plays the whole game: Space or Enter starts from Home or the cabinet, stops the light
+  // (above), and plays again from the result. Buttons and fields keep their own keys.
+  document.addEventListener('keydown', (e) => {
+    if (e.code !== 'Space' && e.code !== 'Enter') return;
+    if (e.metaKey || e.ctrlKey || e.altKey || /^(input|textarea|select|button|a)$/i.test(e.target.tagName)) return;
+    if ($$('.sheet').some((s) => !s.hidden)) return;
+    if (current === 'home' && player && (credits > 0 || openPlay)) { e.preventDefault(); playOrBuy(); }
+    else if (current === 'cabinet' && !$('#cab-play').hidden) { e.preventDefault(); startPlay(); }
+    else if (current === 'play' && game.state === 'done' && !$('#result').hidden) { e.preventDefault(); $('#result-again').click(); }
+  });
+  const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
+  const tapWord = () => (finePointer.matches ? 'Click or press Space when the light is on the mark' : 'Tap when the light is on the mark');
+  if (finePointer.matches) { const step = $('#how-title').closest('.sheet').querySelector('.steps li'); if (step) step.textContent = 'Click or press Space when the light is on the mark.'; }
 
   // After the stop: the light's number under the bar, a verdict, a line of coaching; then the next light.
   async function afterRound(s, err) {
@@ -856,9 +876,9 @@
     $('#tap-hint').textContent = '';
     $('#tap-hint').classList.remove('live');
     $('#verdict').textContent = '';
-    $('#coach').textContent = '';
+    $('#coach').textContent = 'Average of your 3 lights';
     const el = $('#score-value');
-    await countUp(el, 0, score, 1200, String);
+    await countUp(el, game.scores[ROUNDS - 1], score, 900, String); // from the last light's number, never through zero
     $('.score').classList.add('pop');
     vibrate(score >= 850 ? [30, 40, 30, 40, 60] : 40);
     if (score >= 850) confetti.burst(score >= 950 ? 180 : 110);
@@ -912,7 +932,7 @@
     if (newBest) sounds.best();
     kicker.textContent = newBest ? 'New best' : movedUp ? `Up ${prevRank - rank} ${prevRank - rank === 1 ? 'place' : 'places'}` : titleFor(score);
     if (r) { store.set('preslink.prevBest', best); if (rank != null) store.set('preslink.prevRank', rank); }
-    countUp($('#result-score'), score, 900);
+    countUp($('#result-score'), 0, score, 900, String);
     const bestRound = Math.max(...game.scores);
     $('#result-rounds').innerHTML = '<span class="lbl">3 lights</span>' + game.scores.map((s) => `<span class="chip${s === bestRound ? ' top' : ''}">${s}</span>`).join('');
     $('#result-best').textContent = r && best != null ? best : '–';
@@ -938,6 +958,7 @@
       $('#result-topup').hidden = false;
     }
     $('#result').hidden = false;
+    if (finePointer.matches) again.focus({ preventScroll: true }); // Enter or Space plays again
     // First scored play: ask where to send the news if they win, and nothing on top of it.
     const firstAsk = !!r && !!player && !player.contact_email && !store.get(CONTACT_ASKED_KEY);
     if (r && rank === 1 && !firstAsk) toast('You are top of the board');
@@ -1170,6 +1191,30 @@
   let boardTouched = false;
   let boardSeq = 0;
   let spot = null;
+  // A wide screen shows all three boards side by side; the tabs and one list otherwise.
+  const wideBoards = window.matchMedia('(min-width: 1100px)');
+  const ROLES = ['everyone', 'student', 'teacher'];
+  const boardList = (role) => (role ? $(`#boards-wide .board[data-role="${role}"]`) : $('#board-list'));
+  const skeletonRows = () => Array.from({ length: 5 }, () => '<li class="sk" aria-hidden="true"><span class="rank"></span><span class="avatar"></span><span class="name"></span><span class="pts"></span></li>').join('');
+  function showSkeleton(role) { const list = boardList(role); if (!list.children.length) list.innerHTML = skeletonRows(); }
+  async function loadBoardsWide() {
+    ROLES.forEach((role) => { if (boardCache[role]) renderBoard(boardCache[role], role); else showSkeleton(role); });
+    const seq = ++boardSeq;
+    let lists;
+    try {
+      lists = await Promise.all([...ROLES.map((role) => rpc('leaderboard', { p_role: role === 'everyone' ? null : role })), loadSpot(), refreshStats()]);
+    } catch (ex) { toast(msg(ex), true); return; }
+    if (seq !== boardSeq) return;
+    ROLES.forEach((role, i) => {
+      const rows = lists[i];
+      const same = boardCache[role] && JSON.stringify(boardCache[role]) === JSON.stringify(rows);
+      boardCache[role] = rows;
+      const list = boardList(role);
+      if (!same || !list.children.length || list.querySelector('.sk')) renderBoard(rows, role);
+    });
+  }
+  const onWideChange = () => { if (current === 'board') loadBoard(); };
+  if (wideBoards.addEventListener) wideBoards.addEventListener('change', onWideChange); else wideBoards.addListener(onWideChange);
   async function loadSpot() {
     try { spot = await rpc('spot_prizes'); } catch (_) { spot = null; }
     const l = spot && spot.best_light, p = spot && spot.most_plays;
@@ -1181,7 +1226,8 @@
   async function loadBoard() {
     if (!boardTouched) boardRole = isSchool() ? player.role : 'everyone';
     $$('[data-screen="board"] .tab').forEach((x) => { x.classList.toggle('active', x.dataset.role === boardRole); x.setAttribute('aria-selected', x.dataset.role === boardRole); });
-    if (boardCache[boardRole]) renderBoard(boardCache[boardRole]); // the last known rows at once; fresh ones follow
+    if (wideBoards.matches) return loadBoardsWide();
+    if (boardCache[boardRole]) renderBoard(boardCache[boardRole]); else showSkeleton(); // the last known rows at once; fresh ones follow
     const seq = ++boardSeq;
     let rows = [];
     try {
@@ -1190,7 +1236,7 @@
     if (seq !== boardSeq) return; // a newer tab tap is in flight
     const same = boardCache[boardRole] && JSON.stringify(boardCache[boardRole]) === JSON.stringify(rows);
     boardCache[boardRole] = rows;
-    if (!same || !$('#board-list').children.length) renderBoard(rows);
+    if (!same || !$('#board-list').children.length || $('#board-list .sk')) renderBoard(rows);
   }
   setInterval(() => { if (current === 'board' && !document.hidden) loadBoard(); }, 20000); // the board stays live while it is open
   const boardCache = {};
@@ -1199,10 +1245,11 @@
       if (role) rpc('leaderboard', { p_role: role === 'everyone' ? null : role }).then((rows) => { boardCache[role] = rows; }).catch(() => {});
     }
   }
-  function renderBoard(rows) {
-    const list = $('#board-list');
+  function renderBoard(rows, role) {
+    const list = boardList(role);
+    const empty = role ? list.nextElementSibling : $('#board-empty');
     list.innerHTML = '';
-    $('#board-empty').hidden = rows.length > 0;
+    empty.hidden = rows.length > 0;
     const lightTag = spot && spot.best_light ? spot.best_light.tag : null;
     const playsTag = spot && spot.most_plays ? spot.most_plays.tag : null;
     rows.slice(0, 50).forEach((r) => {
@@ -1217,6 +1264,15 @@
       list.appendChild(li);
     });
   }
+  // The leader on a prize card opens the board it leads.
+  $('[data-screen="prize"]').addEventListener('click', (e) => {
+    const lead = e.target.closest('.prize-lead');
+    if (!lead || !lead.children.length) return;
+    const key = lead.closest('.prize').dataset.prize;
+    boardRole = key === 'students' ? 'student' : key === 'teachers' ? 'teacher' : 'everyone';
+    boardTouched = true;
+    go('board');
+  });
   async function loadPrizes() {
     refreshStats();
     loadSpot();

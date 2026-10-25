@@ -81,6 +81,12 @@
       <button class="cell" type="button" data-go="prize"><span>Prizes<small id="home-ends"></small></span> <span class="chev">›</span></button>
       <button class="cell" type="button" data-sheet="how"><span>How to play</span> <span class="chev">›</span></button>
     </div>
+    <div class="card home-top" id="home-top">
+      <h2 class="card-h">Leading now</h2>
+      <ol class="board" id="home-top-list"></ol>
+      <p class="empty" id="home-top-empty" hidden>No scores yet. Be the first.</p>
+      <button class="cell" type="button" data-go="board"><span>Leaderboard</span> <span class="chev">›</span></button>
+    </div>
   </section>
 
   <!-- ================= CABINET (after a payment) ================= -->
@@ -151,9 +157,14 @@
       <button role="tab" type="button" class="tab" data-role="student" aria-selected="false"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Students</button>
       <button role="tab" type="button" class="tab" data-role="teacher" aria-selected="false"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Teachers</button>
     </div>
-    <div class="card">
+    <div class="card" id="board-single">
       <ol class="board" id="board-list"></ol>
       <p class="empty" id="board-empty" hidden>No scores yet. Be the first.</p>
+    </div>
+    <div class="boards-wide" id="boards-wide">
+      <div class="card"><h2 class="card-h">Everyone</h2><ol class="board" data-role="everyone"></ol><p class="empty" hidden>No scores yet.</p></div>
+      <div class="card"><h2 class="card-h pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Students</h2><ol class="board" data-role="student"></ol><p class="empty" hidden>No scores yet.</p></div>
+      <div class="card"><h2 class="card-h pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Teachers</h2><ol class="board" data-role="teacher"></ol><p class="empty" hidden>No scores yet.</p></div>
     </div>
     <div class="card" id="board-spot">
       <h2 class="card-h" id="board-sub">Prizes at the end</h2>
@@ -168,31 +179,26 @@
     <div class="prize-grid boards">
       <article class="card prize" data-prize="everyone">
         <div class="prize-band">Everyone</div>
-        <div class="prize-photo"><img alt="" hidden><svg aria-hidden="true"><use href="#i-photo"/></svg></div>
-        <div class="prize-body"><p class="prize-what tba" id="prize-everyone">To be announced</p><p class="prize-how">Highest score</p><div class="prize-lead" id="lead-everyone"></div></div>
+        <div class="prize-main"><div class="prize-photo"><img alt="" hidden><svg aria-hidden="true"><use href="#i-photo"/></svg></div><div class="prize-body"><p class="prize-what tba" id="prize-everyone">To be announced</p><p class="prize-how">Highest score</p></div><div class="prize-lead" id="lead-everyone"></div></div>
       </article>
       <article class="card prize" data-prize="students">
         <div class="prize-band">Students</div>
-        <div class="prize-photo"><img alt="" hidden><svg aria-hidden="true"><use href="#i-photo"/></svg></div>
-        <div class="prize-body"><p class="prize-what tba" id="prize-students">To be announced</p><p class="prize-how pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Highest score by a student</p><div class="prize-lead" id="lead-student"></div></div>
+        <div class="prize-main"><div class="prize-photo"><img alt="" hidden><svg aria-hidden="true"><use href="#i-photo"/></svg></div><div class="prize-body"><p class="prize-what tba" id="prize-students">To be announced</p><p class="prize-how pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Highest score by a student</p></div><div class="prize-lead" id="lead-student"></div></div>
       </article>
       <article class="card prize" data-prize="teachers">
         <div class="prize-band">Teachers</div>
-        <div class="prize-photo"><img alt="" hidden><svg aria-hidden="true"><use href="#i-photo"/></svg></div>
-        <div class="prize-body"><p class="prize-what tba" id="prize-teachers">To be announced</p><p class="prize-how pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Highest score by a teacher</p><div class="prize-lead" id="lead-teacher"></div></div>
+        <div class="prize-main"><div class="prize-photo"><img alt="" hidden><svg aria-hidden="true"><use href="#i-photo"/></svg></div><div class="prize-body"><p class="prize-what tba" id="prize-teachers">To be announced</p><p class="prize-how pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Highest score by a teacher</p></div><div class="prize-lead" id="lead-teacher"></div></div>
       </article>
     </div>
     <h2 class="sec-h">Spot prizes</h2>
     <div class="prize-grid spots">
       <article class="card prize" data-prize="best_light">
         <div class="prize-band">Best light</div>
-        <div class="prize-photo"><img alt="" hidden><svg aria-hidden="true"><use href="#i-photo"/></svg></div>
-        <div class="prize-body"><p class="prize-what tba" id="prize-best-light">To be announced</p><p class="prize-how">One light closest to 1,000</p><div class="prize-lead" id="lead-light"></div></div>
+        <div class="prize-main"><div class="prize-photo"><img alt="" hidden><svg aria-hidden="true"><use href="#i-photo"/></svg></div><div class="prize-body"><p class="prize-what tba" id="prize-best-light">To be announced</p><p class="prize-how">One light closest to 1,000</p></div><div class="prize-lead" id="lead-light"></div></div>
       </article>
       <article class="card prize" data-prize="most_plays">
         <div class="prize-band">Most plays</div>
-        <div class="prize-photo"><img alt="" hidden><svg aria-hidden="true"><use href="#i-photo"/></svg></div>
-        <div class="prize-body"><p class="prize-what tba" id="prize-most-plays">To be announced</p><p class="prize-how">The most plays</p><div class="prize-lead" id="lead-plays"></div></div>
+        <div class="prize-main"><div class="prize-photo"><img alt="" hidden><svg aria-hidden="true"><use href="#i-photo"/></svg></div><div class="prize-body"><p class="prize-what tba" id="prize-most-plays">To be announced</p><p class="prize-how">The most plays</p></div><div class="prize-lead" id="lead-plays"></div></div>
       </article>
     </div>
   </section>
@@ -300,6 +306,7 @@
   <button type="button" data-tab="board"><svg><use href="#i-trophy"/></svg><span>Leaderboard</span></button>
   <button type="button" data-tab="about"><svg><use href="#i-heart"/></svg><span>About</span></button>
   <button type="button" data-tab="you"><svg><use href="#i-user"/></svg><span>You</span></button>
+  <a class="side-foot" href="#about" aria-hidden="true" tabindex="-1"><img src="assets/crest.svg?v=10" alt="">Presentation Brothers College, Cork</a>
 </nav>
 
 <div class="sheet-backdrop" id="sheet-backdrop" hidden></div>
