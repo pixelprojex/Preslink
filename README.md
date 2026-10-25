@@ -17,7 +17,8 @@ Apple's share sheet, where Save Image is one tap, since a web page cannot write 
 a plain download elsewhere); winners show the code to collect. The code also signs them in anywhere. Everyone is on the Everyone board. People at
 Presentation Brothers College can optionally give their school email to join the Students board
 (@pbccork.ie) or the Teachers board (@pbc-cork.ie); anything before the @ is accepted, capitals and stray spaces are cleaned up rather than refused, nothing is sent. If someone
-already has the same letters you still get them, shown with a small tag (JAK, JAK#2), so nobody is ever refused.
+already has the same letters you still get them, shown with a small blue numbered bubble on your circle (the second JAK
+carries a 2), so nobody is ever refused.
 
 The look follows the conventions of native apps (grouped white cards on a soft grey canvas, large titles,
 segmented controls, avatars, a progress ring) in PresLink's colours: green for actions, orange for the
@@ -207,8 +208,9 @@ hash in the database and locks for 15 minutes after 8 wrong tries. From there th
 
 ## Names, codes and signing back in
 
-- Two or three letters, picked on the letter pad on the first tap. Duplicates get a tag (JAK#2) instead of a refusal, so
-  the real initials always work. Offensive letters are refused; the built-in list is in
+- Two or three letters, picked on the letter pad on the first tap. Duplicates get a small blue numbered bubble on the
+  rim of their circle (the second JAK shows "JAK" with a 2 on the bubble) instead of a refusal, so the real initials
+  always work. Offensive letters are refused; the built-in list is in
   `0002_names_signin_admin.sql` (table `blocked_initials`), the committee can add more, and can reset a
   player's name to a random one.
 - The game: a play is three lights. Each light sweeps the bar once a second and has its own mark and starting
@@ -219,14 +221,17 @@ hash in the database and locks for 15 minutes after 8 wrong tries. From there th
   the bar 50, never zero. Taps are whole milliseconds and the line is a random fraction, so a 999 needs the tap within
   a few microseconds of the line, which keeps the top of the board to one person (equal scores: the earlier one wins).
   The play's score is the average of the three lights. The sweep is a fixed second
-  per pass. The light is moved by a CSS animation, so the browser's compositor draws it on its own thread at the
-  screen's full frame rate whatever the page is doing, and a tap reads the animation's own clock, with the input
-  lag (handler time minus the touch's hardware timestamp) and the age of the frame on screen taken off. After each
-  light the screen says early or late so the next one can be better. The server recomputes every light from the
-  taps and stores its own number; the browser's score is only what it shows while the answer is on its way.
-- Everyone starts on the Everyone board. The result screen and the You tab offer "At Presentation Brothers
-  College?": a school email ending @pbccork.ie puts the player on the Students board, @pbc-cork.ie on the
-  Teachers board. The address is stored for the committee to check; nothing is emailed.
+  per pass. The light is drawn by the first game's frame loop: each light notes the moment it starts, every frame
+  places the light at the position for the time since then, and a tap is timed by that same clock. The play itself
+  (its marks and starting points) is fetched before the tap on Play or Start, so the light is already moving in the
+  first frame of the game screen. After each light the screen says early or late so the next one can be better. The
+  server recomputes every light from the taps and stores its own number; the browser's score is only what it shows
+  while the answer is on its way.
+- Everyone starts on the Everyone board. After the first play the Keep your details sheet asks for an email (so a
+  winner can be reached on the closing date) and has an "At Presentation Brothers College?" switch; a school email
+  ending @pbccork.ie puts the player on the Students board, @pbc-cork.ie on the Teachers board, whatever is in
+  front of the @ and however it is typed (spaces and capitals are removed first). The same switch is on the You
+  tab. The address is stored for the committee to check and export; nothing is emailed by the site itself.
 - The splash plays once per visit (decided by a tiny script in the page head, before anything loads), so a
   return from payment or a reload in the same tab never flashes it.
 - Every player has a four-digit **code**, shown once after the first play (save the ticket picture, or Copy) and always on

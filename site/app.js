@@ -92,7 +92,16 @@
   let prevScreen = 'home';
 
   const savePlayer = () => store.set(STORAGE_KEY, player);
-  const clearPlayer = () => { player = null; credits = 0; openPlay = null; best = null; bestLight = null; store.del(STORAGE_KEY); store.del(SCHOOL_ASKED_KEY); store.del(CODE_SHOWN_KEY); store.del(CONTACT_ASKED_KEY); store.del('preslink.prevBest'); store.del('preslink.prevRank'); };
+  // The next play, fetched ahead of the tap so the light moves on the first frame of the game.
+  let nextPlay = null, prefetching = null;
+  function prefetchPlay() {
+    if (!player || nextPlay || prefetching || (credits <= 0 && !openPlay)) return;
+    prefetching = api('start', { player_id: player.id })
+      .then((res) => { if (res && res.rounds && res.rounds.length === ROUNDS) { nextPlay = res; credits = res.credits; openPlay = { play_id: res.play_id }; renderHome(); } })
+      .catch(() => {})
+      .finally(() => { prefetching = null; });
+  }
+  const clearPlayer = () => { player = null; credits = 0; openPlay = null; nextPlay = null; best = null; bestLight = null; store.del(STORAGE_KEY); store.del(SCHOOL_ASKED_KEY); store.del(CODE_SHOWN_KEY); store.del(CONTACT_ASKED_KEY); store.del('preslink.prevBest'); store.del('preslink.prevRank'); };
   function adoptPlayer(p) {
     player = { id: p.id, tag: p.tag, initials: p.initials, suffix: p.suffix || 1, display: p.display || p.initials, role: p.role || 'everyone', claim_code: p.claim_code, school_email: p.school_email || null, contact_email: p.contact_email || null };
     credits = p.credits || 0;
@@ -354,8 +363,9 @@
   function renderHome() {
     const btn = $('#home-play');
     const canPlay = !!player && (credits > 0 || !!openPlay);
-    btn.textContent = canPlay ? (openPlay ? 'Play · a play is waiting' : `Play · ${credits} left`) : 'Play · €2';
+    btn.textContent = canPlay ? `Play · ${credits + (openPlay ? 1 : 0)} left` : 'Play · €2';
     btn.classList.toggle('ready', canPlay);
+    if (canPlay) prefetchPlay();
   }
   $('#home-play').addEventListener('click', playOrBuy);
   let wantGame = false;
@@ -521,6 +531,7 @@
     go('cabinet');
     refreshStats();
     await wait(120);
+    prefetchPlay(); // ready before the Start button is
     await coinDrop(n);
     // The player starts the play themselves: the button pops in and waits.
     const btn = $('#cab-play');
@@ -593,10 +604,7 @@
   function setPin(target) {
     pin.style.left = (target * 100) + '%';
   }
-  function measure() {
-    game.trackW = track.clientWidth;
-    if (sweep && sweep.effect && sweep.effect.setKeyframes) { try { sweep.effect.setKeyframes(sweepFrames()); } catch (_) { /* keeps the old width until the next light */ } }
-  }
+  function measure() { game.trackW = track.clientWidth; }
   window.addEventListener('resize', measure);
 
   function renderDots() {
@@ -622,7 +630,7 @@
     $('#tap-hint').classList.remove('live');
     $('#result-note').hidden = true;
     pin.style.opacity = '';
-    marker.classList.remove('hit', 'miss', 'run', 'wait', 'glide');
+    marker.classList.remove('hit', 'miss', 'hide');
     game.round = 0; game.taps = []; game.scores = [];
     renderDots();
     measure();
@@ -632,6 +640,7 @@
     $('#play-credits').textContent = `${credits} left`;
   }
 
+  // The play is fetched before the tap (see prefetchPlay), so the light is moving on the first frame.
   async function startGame() {
     if (!player) { go('home'); return; }
     if (game.state === 'countdown' || game.state === 'sweeping' || game.state === 'between' || game.state === 'loading') return;
@@ -642,23 +651,18 @@
     g.classList.remove('enter'); void g.offsetWidth; g.classList.add('enter');
     game.state = 'loading';
     pollStats(); // pauses the counter refresh until the play is over
-    const fetching = api('start', { player_id: player.id });
+    let res = nextPlay; nextPlay = null;
+    const fetching = res ? Promise.resolve(res) : api('start', { player_id: player.id });
     fetching.catch(() => {});
     const m = $('#game-msg');
     m.classList.remove('count', 'go', 'coach');
-    // The track is live at once: the light breathes mid-bar while the play is fetched, so nothing looks stuck.
     m.textContent = 'Light 1 of 3';
-    pin.style.opacity = '0';
-    measure(); setMarker(0.5);
-    marker.classList.add('wait');
     // The first time, the rules sit over the game until Got it is tapped; nothing moves meanwhile.
     if (!store.get(HOW_SEEN_KEY) && best == null) { await showIntro(); if (game.state !== 'loading') return; }
-    let res;
     try {
       res = await fetching;
     } catch (ex) {
       game.state = 'idle';
-      m.classList.remove('count');
       toast(ex.code === 'NO_CREDITS' ? MESSAGES.NO_CREDITS : msg(ex), ex.code !== 'NO_CREDITS');
       go('home');
       return;
@@ -670,79 +674,38 @@
     openPlay = null;
     updatePlayCredits();
     $('#tap-hint').classList.add('live');
-    settleThen(0);
+    beginRound(0);
   }
-  // The light appears where it will start and breathes for a moment before it moves. Nothing is
-  // counted until it sweeps, so there is no rush and no surprise.
-  function settleThen(i) {
-    const r = game.play.rounds[i];
-    game.round = i;
-    game.state = 'countdown';
-    const m = $('#game-msg');
-    m.classList.remove('count', 'go', 'coach');
-    m.textContent = `Light ${i + 1} of 3`;
-    setPin(r.target);
-    marker.classList.remove('hit', 'miss', 'run', 'wait', 'glide');
-    pin.style.opacity = '';
-    marker.classList.add('glide'); // the light slides to its starting point instead of jumping there
-    measure();
-    setMarker(posAt(0, r.phase, game.play.speed_ms));
-    marker.classList.remove('settle'); void marker.offsetWidth; marker.classList.add('settle');
-    renderDots();
-    setTimeout(() => { if (game.state === 'countdown' && game.round === i) { marker.classList.remove('settle'); beginRound(i); } }, 950);
-  }
+  // Each light starts sweeping the moment it is announced. This is the first version's loop: a
+  // frame callback draws posAt(now - sweepStart), and a tap is timed by the same clock.
   function beginRound(i) {
     game.round = i;
     const r = game.play.rounds[i];
-    if (i > 0) { const m = $('#game-msg'); m.classList.remove('go', 'count', 'coach'); m.textContent = `Light ${i + 1} of 3`; }
+    const m = $('#game-msg');
+    m.classList.remove('go', 'count', 'coach');
+    m.textContent = `Light ${i + 1} of 3`;
     setPin(r.target);
-    marker.classList.remove('hit', 'miss', 'run', 'wait', 'glide');
+    marker.classList.remove('hit', 'miss', 'hide');
     measure();
     game.state = 'sweeping';
     $('#game').classList.add('sweeping');
     renderDots();
-    startSweep(r);
-  }
-  // The sweep is a CSS animation: the browser's compositor moves the light on its own thread at the
-  // screen's full frame rate, whatever else the page is doing (a fetch, the counter rolling, a slow
-  // frame of script). A tap reads the animation's own clock, so the score matches what was drawn.
-  // The sweep is a Web Animation with plain pixel keyframes, which every browser runs on its
-  // compositor thread (CSS variables inside keyframes are not composited in Safari). A tap reads the
-  // animation's own clock. Where animate() is missing, a frame loop draws it, as the first version did.
-  let sweep = null, sweepRaf = 0;
-  const sweepFrames = () => [{ transform: 'translateX(0px)' }, { transform: `translateX(${game.trackW}px)` }, { transform: 'translateX(0px)' }];
-  function startSweep(r) {
-    stopSweepAnim();
-    measure();
-    const speed = game.play.speed_ms;
     game.sweepStart = performance.now();
-    if (marker.animate) {
-      sweep = marker.animate(sweepFrames(), { duration: 2 * speed, iterations: Infinity, delay: -r.phase * speed, easing: 'linear' });
-    } else {
-      const loop = (now) => { if (game.state !== 'sweeping') return; setMarker(posAt(now - game.sweepStart, r.phase, speed)); sweepRaf = requestAnimationFrame(loop); };
-      sweepRaf = requestAnimationFrame(loop);
-    }
+    setMarker(posAt(0, r.phase, game.play.speed_ms));
+    game.raf = requestAnimationFrame(loop);
   }
-  function sweepTime() { // ms since the sweep began, on the animation's own clock when there is one
-    return sweep && Number.isFinite(sweep.currentTime) ? sweep.currentTime : performance.now() - game.sweepStart;
+  function loop(now) {
+    if (game.state !== 'sweeping') return;
+    const r = game.play.rounds[game.round];
+    setMarker(posAt(now - game.sweepStart, r.phase, game.play.speed_ms));
+    game.raf = requestAnimationFrame(loop);
   }
-  function stopSweepAnim() {
-    if (sweep) { try { sweep.cancel(); } catch (_) { /* already gone */ } sweep = null; }
-    if (sweepRaf) { cancelAnimationFrame(sweepRaf); sweepRaf = 0; }
+  function abandonGame() {
+    cancelAnimationFrame(game.raf);
+    $('#game').classList.remove('sweeping');
+    game.state = 'idle';
   }
-  function stopSweep(pos) { stopSweepAnim(); setMarker(pos); }
-  function abandonGame() { stopSweepAnim(); $('#game').classList.remove('sweeping'); game.state = 'idle'; }
 
-  // Time of a tap on the sweep's own clock. The animation's currentTime is what the compositor draws
-  // from. The input lag (handler time minus the event's hardware timestamp) and the age of the frame
-  // on screen (about a frame and a half) come off, so people are scored on what they saw.
-  const DISPLAY_LAG_MS = 20;
-  function tapTime(e) {
-    const now = performance.now();
-    const ts = e && Number.isFinite(e.timeStamp) ? e.timeStamp : NaN;
-    const inputLag = ts > 0 && ts <= now + 5 && ts > now - 400 ? now - ts : 0;
-    return Math.round(sweepTime() - inputLag - DISPLAY_LAG_MS);
-  }
   // Signed timing error in ms: positive = late (the light had passed the mark), negative = early.
   function signedError(ms, r) {
     let x = ms / game.play.speed_ms + r.phase;
@@ -760,7 +723,7 @@
   }
   function onTap(e) {
     if (game.state !== 'sweeping') return;
-    const ms = tapTime(e);
+    const ms = Math.round(performance.now() - game.sweepStart);
     if (ms < SWEEP_GUARD_MS) return;
     if (e.cancelable) e.preventDefault();
     game.state = 'between';
@@ -769,7 +732,8 @@
     const r = game.play.rounds[game.round];
     const pos = posAt(ms, r.phase, game.play.speed_ms);
     const s = roundScore(pos, r.target, game.play.speed_ms);
-    stopSweep(pos);
+    cancelAnimationFrame(game.raf);
+    setMarker(pos);
     game.taps.push(ms);
     game.scores.push(s);
     afterRound(s, signedError(ms, r));
@@ -807,7 +771,10 @@
       $('#coach').textContent = '';
       $('#score-value').textContent = '';
       $('.score').classList.remove('pop');
-      settleThen(game.round + 1);
+      marker.classList.add('hide'); // the light blinks off, then reappears at the next start, already moving
+      await wait(170);
+      if (game.state !== 'between') return;
+      beginRound(game.round + 1);
     } else {
       finishPlay();
     }
@@ -862,6 +829,7 @@
     refreshStats();
     pollStats();
     prefetchBoards();
+    if (credits > 0) prefetchPlay(); // Play again starts on the first frame too
     $('#game').classList.add('done');
     $('#game').hidden = true;
     $('#tabbar').hidden = false; // the game is over: let people move around again
