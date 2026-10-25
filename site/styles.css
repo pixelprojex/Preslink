@@ -459,6 +459,8 @@ a.cell { text-decoration: none; }
 .story.school .story-body h2, .profile-board.school, #school-title { color: var(--purple); }
 .story.school .story-body h2 { display: flex; align-items: center; gap: 8px; }
 .story.school .story-body h2 img { width: 20px; height: 24px; }
+/* A quiet line of credit at the foot of About. */
+.credit { margin: 18px 10px 0; text-align: center; color: var(--muted); font-size: 12px; font-weight: 500; line-height: 1.45; }
 
 /* Admin */
 .admin-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 8px; padding: 0 4px; }
@@ -602,7 +604,7 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
   /* About: stories two across */
   [data-screen="about"] { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
   [data-screen="about"] > * { margin-top: 0 !important; }
-  [data-screen="about"] > .title, [data-screen="about"] > .card:last-child { grid-column: 1 / -1; }
+  [data-screen="about"] > .title, [data-screen="about"] > .card:last-of-type, [data-screen="about"] > .credit { grid-column: 1 / -1; }
   /* You: profile beside the code */
   #you-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
   #you-panel > * { margin-top: 0 !important; }
