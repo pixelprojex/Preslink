@@ -230,7 +230,6 @@
     // Made and woken on the tap that starts a play, so the first light's tap has nothing to set up.
     prime: () => { try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); } catch (_) { /* no sound on this device */ } },
     tap: () => beep(640, 50, 0.04, 'square', 0),
-    coin: () => { beep(1320, 60, 0.04, 'triangle', 0); beep(1760, 110, 0.04, 'triangle', 0.07); },
     good: () => { beep(880, 140, 0.05, 'sine', 0); beep(1320, 220, 0.05, 'sine', 0.11); },
     best: () => [660, 880, 1100, 1320].forEach((f, i) => beep(f, 180, 0.05, 'sine', i * 0.1)),
   };
@@ -473,8 +472,8 @@
     const ends = endsText();
     $('#board-sub').textContent = ends ? `Prizes at the end · ${ends.replace('Ends', 'ends')}` : 'Prizes at the end';
     const closes = closesText();
-    $('#prize-sub').textContent = closes ? `The arcade closes on ${closes}. Winners are emailed that day.` : 'Winners are emailed when the arcade closes.';
-    $('#home-ends').textContent = closes ? `Closes ${closes} · winners are emailed` : 'Winners are emailed';
+    $('#prize-sub').textContent = closes ? `Closes ${closes} · winners are emailed` : 'Winners are emailed at the close';
+    $('#home-ends').textContent = closes ? `Closes ${closes}` : '';
     const pz = stats.prizes || {};
     const put = (id, v, fallback) => { $(id).textContent = (v || '').trim() || fallback; };
     put('#prize-everyone', pz.everyone, 'To be announced');
@@ -550,32 +549,30 @@
   $('#cab-play').addEventListener('click', () => startPlay());
 
   // A coin goes into the slot at the top, a play token pops out of the tray at the bottom.
-  // The coin (marked with what was paid) drops, spins, lands on the slot and slips in; the slot flashes,
-  // the plays counter winds up to the new total in one motion, and a token pops into the tray for each play.
+  // A coin goes into the slot at the top, a play token pops out of the tray at the bottom.
   async function coinDrop(n) {
     const coin = $('#coin'), slot = $('#cab-slot'), panel = $('#cab-panel'), token = $('#token'), val = $('#cab-credits');
     const target = credits;
     const from = Math.max(0, target - n);
-    odoStatic(val, from, fmtPlain);
-    coin.textContent = n >= 7 ? '€10' : n >= 3 ? '€5' : '€2';
+    val.textContent = from;
     coin.classList.remove('drop'); void coin.offsetWidth; coin.classList.add('drop');
-    await wait(620);
+    await wait(760);
     slot.classList.add('glow');
     panel.classList.remove('hit'); void panel.offsetWidth; panel.classList.add('hit');
-    sounds.coin();
     vibrate(30);
-    await wait(260);
+    await wait(280);
     slot.classList.remove('glow');
     coin.classList.remove('drop');
-    odoRoll(val, from, target, fmtPlain);
-    const step = n > 3 ? 200 : 380;
+    const step = n > 3 ? 240 : 420;
     for (let i = 0; i < n; i++) {
       token.textContent = String(from + i + 1);
       token.classList.remove('out'); void token.offsetWidth; token.classList.add('out');
-      vibrate(12);
       await wait(step);
+      val.textContent = from + i + 1;
+      val.classList.remove('bump'); void val.offsetWidth; val.classList.add('bump');
+      vibrate(15);
     }
-    await wait(120);
+    await wait(150);
   }
 
   // ---------------------------------------------------------------------------
@@ -589,29 +586,29 @@
     x = x - 2 * Math.floor(x / 2);
     return x < 1 ? x : 2 - x;
   }
-  // Mirrors round_score() in the database: scores spread evenly over the whole bar. The score falls with
-  // the square of the distance from the line: 999 on the line, 10 ms off 968, 30 ms 931, 50 ms 894, 100 ms 807,
-  // 200 ms 645, 300 ms 503, half the bar 275, 700 ms 123, the far end about 60. A cusp over the first 3 ms
-  // keeps 999 to one person.
+  // Mirrors round_score() in the database: a steep peak at the line on top of a gentle ramp across the
+  // whole bar. The ramp is 300 on the line down to about 45 at the far end, so a tap anywhere earns a
+  // readable number; the peak is 649 on the line and halves every 35 ms, so the high numbers are hard:
+  // 10 ms off 866, 20 ms 767, 30 ms 685, 50 ms 562, 100 ms 396, 200 ms 290, half the bar 188, the far
+  // end about 80. 999 needs the line itself; the cusp over the first 3 ms keeps it to one person.
   const roundScore = (pos, target, speed) => {
     const d = Math.abs(pos - target);
-    const u = Math.max(0, 1 - d);
-    return Math.min(999, Math.max(50, Math.round(50 + 949 * u ** 2 - 12 * Math.sqrt(Math.min(d * speed, 3) / 3))));
+    return Math.min(999, Math.max(50, Math.round(50 + 300 * (1 - d) + 649 * Math.exp(-d / 0.05) - 12 * Math.sqrt(Math.min(d * speed, 3) / 3))));
   };
-  // A light is a hit (green) from 850: within about 75 ms of the line.
-  const HIT = 850;
+  // A light is a hit (green) from 700: within about 28 ms of the line.
+  const HIT = 700;
   function titleFor(s) {
-    if (s >= 920) return 'Outstanding';
-    if (s >= 850) return 'Superb';
-    if (s >= 700) return 'Great run';
-    if (s >= 500) return 'Good effort';
+    if (s >= 850) return 'Outstanding';
+    if (s >= 750) return 'Superb';
+    if (s >= 600) return 'Great run';
+    if (s >= 400) return 'Good effort';
     return 'Next time';
   }
   function verdictFor(s) {
-    if (s >= 960) return 'Perfect';
+    if (s >= 850) return 'Perfect';
     if (s >= HIT) return 'So close';
-    if (s >= 700) return 'Nice';
-    if (s >= 450) return 'Not bad';
+    if (s >= 500) return 'Nice';
+    if (s >= 300) return 'Not bad';
     return 'Unlucky';
   }
   function setMarker(pos) { marker.style.transform = `translateX(${pos * game.trackW}px)`; }
@@ -738,7 +735,7 @@
   // One line of coaching after a light, so the next one can be better.
   function coachFor(s, err) {
     const a = Math.abs(err);
-    if (s >= 960 || a <= 10) return '';
+    if (s >= 850 || a <= 10) return '';
     if (a < 40) return err > 0 ? 'A touch late' : 'A touch early';
     return err > 0 ? 'Late · tap a bit sooner' : 'Early · tap a bit later';
   }
@@ -785,7 +782,7 @@
   async function afterRound(s, err) {
     if (game.state !== 'between') return;
     if (s >= HIT) sounds.good();
-    vibrate(s >= 960 ? [20, 30, 20] : 25);
+    vibrate(s >= 850 ? [20, 30, 20] : 25);
     renderDots();
     const el = $('#score-value');
     el.textContent = s;
