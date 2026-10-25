@@ -131,6 +131,11 @@ function siteOrigin(req: Request): string {
   throw new HttpError(400, "NO_SITE_URL");
 }
 
+function clampInt(v: unknown, lo: number, hi: number, dflt: number): number {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return dflt;
+  return Math.max(lo, Math.min(hi, Math.round(n)));
+}
 function requireUuid(v: unknown, code: string): string {
   if (typeof v !== "string" || !UUID.test(v)) throw new HttpError(400, code);
   return v.toLowerCase();
@@ -299,7 +304,7 @@ async function signin(body: Body) {
   return await rpc("signin_player", { p_initials: initials, p_code: code });
 }
 
-const ADMIN_OPS = new Set(["overview", "emails", "void", "ban", "block", "set_code", "settings", "player", "reset_name", "stripe_status", "stripe_connect", "stripe_disconnect"]);
+const ADMIN_OPS = new Set(["overview", "emails", "void", "ban", "block", "set_code", "settings", "player", "reset_name", "stripe_status", "stripe_connect", "stripe_disconnect", "payments", "players", "set_content", "upload_image"]);
 
 // The committee code is checked by the database (same lockout as every admin call).
 async function adminVerify(code: string) {
@@ -427,6 +432,49 @@ async function admin(body: Body) {
       const prizes = parsePrizes(body.prizes);
       await rpc("admin_set_settings", { p_code: code, p_goal_cents: goal, p_prize_text: prize, p_ends_on: endsOn, p_prizes: prizes });
       return { ok: true };
+    }
+    case "payments": {
+      // Search over name, emails, Stripe ids, bundle and euro amount; optional Dublin date range; paging.
+      const q = body.q == null ? null : String(body.q).slice(0, 80);
+      const from = body.from == null || body.from === "" ? null : String(body.from);
+      const to = body.to == null || body.to === "" ? null : String(body.to);
+      for (const d of [from, to]) if (d !== null && !/^\d{4}-\d{2}-\d{2}$/.test(d)) throw new HttpError(400, "BAD_DATE");
+      return await rpc("admin_payments", { p_code: code, p_q: q, p_from: from, p_to: to, p_limit: clampInt(body.limit, 1, 500, 50), p_offset: clampInt(body.offset, 0, 1_000_000, 0) });
+    }
+    case "players": {
+      const q = body.q == null ? null : String(body.q).slice(0, 80);
+      const role = body.role == null || body.role === "" ? null : String(body.role);
+      if (role !== null && !ROLES.has(role)) throw new HttpError(400, "BAD_ROLE");
+      const banned = body.banned == null ? null : !!body.banned;
+      return await rpc("admin_players", { p_code: code, p_q: q, p_role: role, p_banned: banned, p_limit: clampInt(body.limit, 1, 500, 50), p_offset: clampInt(body.offset, 0, 1_000_000, 0) });
+    }
+    case "set_content": {
+      // The site's words and photos, one JSON document the public stats() carries.
+      const content = body.content;
+      if (!content || typeof content !== "object" || Array.isArray(content)) throw new HttpError(400, "BAD_CONTENT");
+      if (JSON.stringify(content).length > 400_000) throw new HttpError(400, "CONTENT_TOO_BIG");
+      return await rpc("admin_set_content", { p_code: code, p_content: content });
+    }
+    case "upload_image": {
+      // A photo for the About page: base64 in, a public URL out. Stored with the service role in the
+      // public "site" bucket; the browser resizes before sending, so the limit is generous.
+      await adminVerify(code);
+      const type = String(body.type ?? "");
+      const ext = ({ "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" } as Record<string, string>)[type];
+      if (!ext) throw new HttpError(400, "BAD_IMAGE");
+      const data = String(body.data ?? "");
+      if (!data || data.length > 4_200_000) throw new HttpError(400, "IMAGE_TOO_BIG");
+      let bytes: Uint8Array;
+      try { bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0)); } catch { throw new HttpError(400, "BAD_IMAGE"); }
+      if (bytes.length < 100 || bytes.length > 3_145_728) throw new HttpError(400, "IMAGE_TOO_BIG");
+      const path = `about/${Date.now().toString(36)}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
+      const res = await fetch(`${SUPABASE_URL}/storage/v1/object/site/${path}`, {
+        method: "POST",
+        headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": type, "x-upsert": "true" },
+        body: bytes,
+      });
+      if (!res.ok) { console.error("upload failed", res.status, await res.text()); throw new HttpError(502, "UPLOAD_FAILED"); }
+      return { url: `${SUPABASE_URL}/storage/v1/object/public/site/${path}` };
     }
   }
   throw new HttpError(400, "BAD_ADMIN_OP");

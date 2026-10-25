@@ -219,6 +219,9 @@ button.cell:active { background: var(--fill); }
 @keyframes demosweep { from { transform: translateX(4px); } to { transform: translateX(var(--sweep, 280px)); } }
 @media (prefers-reduced-motion: reduce) { .demo-marker { animation: none; left: 64%; margin-left: -5px; } .btn.ready { animation: none; } }
 .hero-card .btn-xl { margin-bottom: 8px; }
+.notice { margin: -6px 0 14px; padding: 9px 12px; border-radius: 12px; background: var(--yellow-l); color: #7a5a00; font-weight: 600; font-size: 14px; text-align: center; }
+a.cell { text-decoration: none; }
+#about-stories > .card + .card, #about-stories + .card { margin-top: 12px; }
 .bundles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0; }
 .bundles .pill { display: grid; justify-items: center; gap: 1px; min-height: 48px; padding: 7px 10px; border: 0; border-radius: 12px; background: var(--fill); color: var(--ink); font-weight: 600; font-size: 15px; cursor: pointer; transition: transform .08s; }
 .bundles .pill:active { transform: scale(.98); }

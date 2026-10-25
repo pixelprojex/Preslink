@@ -60,10 +60,10 @@ counter so the site feels real; clear them before launch (`docs/admin.sql`).
 Optional: in Netlify, **Site configuration → Site details → Change site name** lets you pick a
 nicer address, for example `preslink-arcade`.
 
-The committee screen is at your link with `/#admin` on the end. Use the committee code you were given.
+The committee console is at your link with `/admin.html` on the end (also the Committee row on the You tab). Use the committee code you were given; the eye on the field shows what you typed.
 
-To take real money later: an adult opens a Stripe account for the charity, then on the Committee
-screen under **Payments** pastes the Stripe secret key and taps **Connect**. The site checks the key
+To take real money later: an adult opens a Stripe account for the charity, then in the console
+under **Stripe** pastes the Stripe secret key and taps **Connect**. The site checks the key
 with Stripe, creates the webhook for you and keeps both secrets in the database, where only the
 server can read them. The free plays switch off by themselves the moment Stripe is connected, and
 **Disconnect** brings them back. Nobody needs to open Supabase. Details are in section 2 below.
@@ -74,9 +74,10 @@ server can read them. The free plays switch off by themselves the moment Stripe 
 
 | Path | What it is |
 |---|---|
-| `site/index.html` | The whole app: home, coin cabinet, game, leaderboard, about, you, sign back in, committee panel, terms |
+| `site/index.html` | The whole app: home, coin cabinet, game, leaderboard, about, you, sign back in, terms |
 | `site/styles.css` | Design |
 | `site/app.js` | Front-end logic and the game |
+| `site/admin.html`, `site/admin.css`, `site/admin.js` | The committee console: its own plain page with a menu (overview, payments, players, prizes, site content, campaign, Stripe, names, committee code) |
 | `site/config.js` | **The only file you must edit**: Supabase URL and publishable key |
 | `site/mock.js` | Demo backend. Active only while `config.js` is empty, so the site works before Supabase is wired |
 | `site/qr.html` | Printable QR poster that always encodes the live address |
@@ -99,6 +100,7 @@ server can read them. The free plays switch off by themselves the moment Stripe 
 | `supabase/migrations/0017_whole_bar.sql` | The whole bar scores: distance to the line as a fraction of the bar, 999 on the line, the floor only half a bar away |
 | `supabase/migrations/0018_first_curve.sql` | The first game's curve back: the cube of the closeness over the whole bar, 999 ceiling, cusp at the top |
 | `supabase/migrations/0019_any_school_email.sql` | Any local part on a school email; the general email check only asks for something@something.tld |
+| `supabase/migrations/0023_admin_console.sql` | The console: the site content document (home words, notice, About stories and photos, contact details) carried by `stats()`, payment and player search with paging, a public `site` bucket for photos |
 | `supabase/migrations/0022_peak_curve.sql` | A steep peak at the line on a gentle ramp across the bar: ordinary plays land in the hundreds, the far end still scores, 999 needs the line itself |
 | `supabase/migrations/0021_even_curve.sql` | Scores spread evenly over the whole bar: 999 on the line down to about 60 at the far end, by the square of the distance |
 | `supabase/migrations/0020_email_spaces_case.sql` | Emails are lower-cased and stripped of every space before the check, so capitals and stray spaces never turn an address away |
@@ -116,9 +118,9 @@ Do these in order. Steps 1 and 2 are a one-off technical setup; 3 to 6 are the l
 
 ### 1. Supabase (database + functions): already done
 
-The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all twenty-two migrations applied,
+The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all twenty-three migrations applied,
 both functions deployed, and `site/config.js` points at it. The committee code was set at deployment
-and handed over privately; change it any time from the Committee screen.
+and handed over privately; change it any time from the console's Committee code page, which can also generate one in the form `PRES-KQX#-4821-9930`.
 
 If you ever need to redo this on a fresh project: Dashboard → **SQL Editor** → run the files in
 `supabase/migrations/` in order (the first line of `0007` must be run on its own, before the rest of that file), deploy the two functions with `--no-verify-jwt` (CLI below), set the
@@ -139,7 +141,7 @@ Committee screen; nobody needs to open Supabase.
 
 1. Create the account at <https://dashboard.stripe.com/register>. Stay in **Test mode** for now.
 2. **Developers → API keys** → copy the **Secret key** (`sk_test_...`).
-3. Open the site with `/#admin` on the end, enter the committee code, and under **Payments** paste the
+3. Open the console (`/admin.html`), enter the committee code, and under **Stripe** paste the
    key and tap **Connect**. The site checks the key with Stripe, creates the webhook endpoint
    (`.../functions/v1/stripe-webhook`, listening for `checkout.session.completed` and
    `checkout.session.async_payment_succeeded`) and stores the key and the webhook signing secret in the
@@ -188,25 +190,38 @@ the request came from.
 
 ### 6. Prizes at the end
 
-1. In the Committee screen (`/#admin`), set the **end date** and the five **prize** texts (Everyone, Students,
-   Teachers, Best light, Most plays). They appear on the Prizes page. To change the prize photo, replace
-   `site/assets/photo-prize.svg` (any image file; keep the name or update `index.html`).
-2. At the end, the **Boards** section shows the top of each board with codes, and the two spot-prize holders.
+1. In the console, **Campaign** sets the closing date and **Prizes** the five prize texts (Everyone, Students,
+   Teachers, Best light, Most plays). They appear on the Prizes page as typed.
+2. At the end, **Overview** shows the leader of each board and the two spot-prize holders, with their codes
+   and emails; **Players** has everyone with a CSV download for the emails.
 3. Announce the letters. A winner shows their **You** tab (or the saved code image): letters and code must match.
 
-## The Committee screen
+## The committee console
 
-Reachable from the **You** tab or at `/#admin`. It needs the committee code, which is stored only as a
-hash in the database and locks for 15 minutes after 8 wrong tries. From there the committee can:
+A separate, plain page at `/admin.html` (also the Committee row on the You tab): white, system type, a menu
+on the left (a strip across the top on a phone), nothing of the arcade's look. It needs the committee
+code, which is stored only as a hash in the database and locks for 15 minutes after 8 wrong tries; every
+secret field has an eye to show what was typed. The pages:
 
-- see money raised, coins inserted, plays, players by board, money per day, and set the fundraising **goal**,
-  the **end date** and the five **prizes**;
-- see the Everyone, Students and Teachers boards with codes, best light and times, the spot-prize holders, and
-  **void** a score, **ban** a player or give a player a **new random name**;
-- **find any player** by their letters: code, school email, credits, every play (void or restore) and payments;
-- see recent payments with receipt emails, and **download a CSV**;
-- **block** extra three-letter names on top of the built-in list of offensive ones;
-- change the committee code.
+- **Overview**: money raised against the goal, payments (and today's), plays, players by board; the leader of
+  each board and the two spot-prize holders with codes and emails; money by day.
+- **Payments**: every payment, newest first, with a search over the name, the emails, the Stripe ids, the
+  bundle and the amount in euro, a date range, paging and a CSV download of whatever matches.
+- **Players**: everyone, with a search over the name, the emails and the code, a board filter and a banned
+  filter; plays, best score and money paid per row; **View** opens the player with every play (void or
+  restore) and payment, **Ban**, **Unban** and a **new random name**; CSV download.
+- **Prizes**: five plain text fields, shown on the Prizes page as typed.
+- **Site content**: the home title and the line under it, a notice shown on Home while set, the About page's
+  committee card heading and text, the About stories (a photo, a heading and a line each, added, reordered
+  or removed; photos are shrunk in the browser and stored in the public `site` bucket) and the contact
+  details (email, phone, Instagram, website, shown as a Contact card on About). Saved as one document in
+  `settings.site_content`; the public `stats()` carries it, so the site shows it at once.
+- **Campaign**: the goal and the closing date.
+- **Stripe**: status, connect with a secret key (the webhook is created for you), disconnect, a link to the
+  Stripe dashboard.
+- **Names**: initials nobody may use, and the banned players.
+- **Committee code**: generate a new code (`PRES-`, three letters and a symbol, two groups of four digits)
+  with copy and show, or set your own.
 
 ## Names, codes and signing back in
 

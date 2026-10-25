@@ -26,7 +26,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=32">
+  <link rel="stylesheet" href="styles.css?v=33">
 </head>
 <body>
 <div class="splash" id="splash" aria-hidden="true">
@@ -69,6 +69,7 @@
     <div class="card hero-card">
       <h1 class="hero-h">Stop the light.</h1>
       <p class="hero-p">Every play funds schools in Ghana and Nigeria.</p>
+      <p class="notice" id="home-notice" hidden></p>
       <div class="demo-track" aria-hidden="true"><span class="demo-pin"></span><span class="demo-marker"></span></div>
       <button class="btn btn-primary btn-xl" id="home-play" type="button">Play · €2</button>
       <p class="bundles-line"><button class="link" type="button" data-bundle="triple">3 plays · €5</button><button class="link" type="button" data-bundle="seven">7 plays · €10</button></p>
@@ -177,6 +178,7 @@
   <!-- ================= ABOUT ================= -->
   <section class="screen" data-screen="about" hidden>
     <div class="title"><h1>About</h1></div>
+    <div id="about-stories">
     <div class="card story">
       <img class="photo" src="assets/photo-classrooms.jpg" alt="Children in a new classroom in Ghana" loading="lazy">
       <div class="story-body"><h2>Classrooms in Ghana</h2><p>A three-classroom block in Sokabisi, Bolgatanga, funded by PresLink.</p></div>
@@ -189,10 +191,12 @@
       <img class="photo" src="assets/photo-babies.jpg" alt="Mother of Mercy Babies Home" loading="lazy">
       <div class="story-body"><h2>Mother of Mercy Babies Home</h2><p>Support for the babies home run by the Presentation Brothers in Sirigu, Ghana.</p></div>
     </div>
+    </div>
     <div class="card story school">
       <img class="photo" src="assets/photo-school.svg" alt="The PresLink committee">
-      <div class="story-body"><h2><img src="assets/crest.svg?v=10" alt="">Run by students</h2><p>PresLink is the student-run charity of Presentation Brothers College, Cork. Every cent raised here, after card fees, goes to PresLink.</p></div>
+      <div class="story-body"><h2><img src="assets/crest.svg?v=10" alt=""><span id="about-intro-title">Run by students</span></h2><p id="about-intro-text">PresLink is the student-run charity of Presentation Brothers College, Cork. Every cent raised here, after card fees, goes to PresLink.</p></div>
     </div>
+    <div class="card" id="about-contact" hidden></div>
     <div class="card">
       <button class="cell" type="button" data-sheet="terms">Terms <span class="chev">›</span></button>
     </div>
@@ -208,7 +212,7 @@
       </div>
       <div class="card">
         <button class="cell" type="button" data-go="signin"><span>Played before? Sign in</span> <span class="chev">›</span></button>
-        <button class="cell quiet" type="button" data-go="admin">Committee <span class="chev">›</span></button>
+        <a class="cell quiet" href="admin.html">Committee <span class="chev">›</span></a>
       </div>
     </div>
     <div id="you-panel" hidden>
@@ -244,7 +248,7 @@
         <button class="cell danger" type="button" id="you-signout"><span>Sign out</span></button>
       </div>
       <div class="card">
-        <button class="cell quiet" type="button" data-go="admin">Committee <span class="chev">›</span></button>
+        <a class="cell quiet" href="admin.html">Committee <span class="chev">›</span></a>
       </div>
     </div>
   </section>
@@ -264,109 +268,6 @@
   </section>
 
   <!-- ================= ADMIN ================= -->
-  <section class="screen" data-screen="admin" hidden>
-    <div class="title"><h1>Committee</h1></div>
-    <form id="admin-login" autocomplete="off">
-      <div class="card">
-        <label class="field"><span>Committee code</span><input type="password" id="admin-code" autocomplete="current-password"></label>
-      </div>
-      <p class="field-error" id="admin-error" role="alert" hidden></p>
-      <button class="btn btn-primary page-cta" type="submit">Open</button>
-    </form>
-    <div id="admin-panel" class="stack-lg" hidden>
-      <div>
-        <div class="stat-row stat-row-4">
-          <div class="stat"><span>Raised</span><strong id="adm-raised">€0</strong></div>
-          <div class="stat"><span>Coins</span><strong id="adm-payments">0</strong></div>
-          <div class="stat"><span>Plays</span><strong id="adm-plays">0</strong></div>
-          <div class="stat"><span>Players</span><strong id="adm-players">0</strong></div>
-        </div>
-        <p class="small muted center" id="adm-roles" style="margin-top:10px"></p>
-      </div>
-
-      <div>
-        <h2 class="section">Campaign</h2>
-        <form id="admin-settings" autocomplete="off">
-          <div class="card">
-            <label class="field"><span>Goal (€)</span><input id="adm-goal" inputmode="numeric" pattern="[0-9]*"></label>
-            <label class="field"><span>Progress</span><input id="adm-progress" disabled></label>
-            <label class="field"><span>Ends on</span><input id="adm-ends" type="date"></label>
-          </div>
-          <h2 class="section">Prizes (shown on the Prizes page)</h2>
-          <div class="card">
-            <label class="field"><span>Everyone board</span><input id="adm-prize-everyone" maxlength="200" placeholder="e.g. €50 voucher"></label>
-            <label class="field"><span>Students board</span><input id="adm-prize-students" maxlength="200" placeholder="e.g. €30 voucher and the PresLink trophy"></label>
-            <label class="field"><span>Teachers board</span><input id="adm-prize-teachers" maxlength="200" placeholder="e.g. €30 voucher"></label>
-            <label class="field"><span>Best light</span><input id="adm-prize-best-light" maxlength="200" placeholder="e.g. a box of chocolates"></label>
-            <label class="field"><span>Most plays</span><input id="adm-prize-most-plays" maxlength="200" placeholder="e.g. a PresLink hoodie"></label>
-          </div>
-          <button class="btn btn-primary page-cta" type="submit">Save</button>
-        </form>
-      </div>
-
-      <div>
-        <h2 class="section">Payments</h2>
-        <div class="card">
-          <div class="cell"><span>Stripe</span><strong id="adm-stripe-status">…</strong></div>
-          <form id="admin-stripe" autocomplete="off" novalidate>
-            <label class="field"><span>Stripe secret key</span><input type="password" id="adm-stripe-key" placeholder="sk_live_…" autocomplete="off" spellcheck="false"></label>
-            <p class="note">From dashboard.stripe.com, Developers, API keys. Connect checks the key with Stripe, creates the webhook for you and keeps both secrets in the database. Nothing else to set up.</p>
-            <div class="grid-2 pad-x"><button class="btn btn-primary" type="submit" id="adm-stripe-connect">Connect</button><button class="btn" type="button" id="adm-stripe-disconnect" hidden>Disconnect</button></div>
-          </form>
-        </div>
-      </div>
-
-      <div>
-        <h2 class="section">Boards</h2>
-        <div class="segmented" role="tablist" id="admin-tabs">
-          <button role="tab" type="button" class="tab active" data-role="everyone">Everyone</button>
-          <button role="tab" type="button" class="tab" data-role="student">Students</button>
-          <button role="tab" type="button" class="tab" data-role="teacher">Teachers</button>
-        </div>
-        <p class="admin-tools"><button class="link small" type="button" id="adm-emails-csv">Download players and emails (CSV)</button></p>
-        <div class="card"><div class="table-wrap"><table class="table" id="adm-board"><thead><tr><th>#</th><th>Name</th><th>Board</th><th>Code</th><th>Email</th><th>Score</th><th>Light</th><th>Plays</th><th>When</th><th></th></tr></thead><tbody></tbody></table></div></div>
-        <p class="note" id="adm-spot"></p>
-        <p class="note">Highest score wins; the earlier time wins a tie. The winner shows their You tab: name and code must match.</p>
-      </div>
-
-      <div>
-        <h2 class="section">Find a player</h2>
-        <form id="admin-find" class="row-form" autocomplete="off">
-          <input id="adm-find-initials" maxlength="7" autocapitalize="characters" placeholder="JAK" aria-label="Name">
-          <button class="btn btn-primary" type="submit">Find</button>
-        </form>
-        <div class="card" id="adm-player" hidden style="margin-top:10px"></div>
-      </div>
-
-      <div>
-        <div class="admin-head"><h2 class="section">Money</h2><button class="link small" type="button" id="adm-csv">Download CSV</button></div>
-        <div class="card"><div class="table-wrap"><table class="table" id="adm-days"><thead><tr><th>Day</th><th>Coins</th><th>€</th></tr></thead><tbody></tbody></table></div></div>
-        <h2 class="section">Recent payments</h2>
-        <div class="card"><div class="table-wrap"><table class="table" id="adm-payments-table"><thead><tr><th>When</th><th>Name</th><th>Plays</th><th>€</th><th>Email</th></tr></thead><tbody></tbody></table></div></div>
-      </div>
-
-      <div>
-        <h2 class="section">Names</h2>
-        <form id="admin-block" class="row-form" autocomplete="off">
-          <input id="adm-block-initials" maxlength="3" autocapitalize="characters" placeholder="ABC" aria-label="Initials to block">
-          <button class="btn btn-red" type="submit">Block</button>
-        </form>
-        <p class="note" id="adm-blocked-list"></p>
-        <h2 class="section">Banned players</h2>
-        <div class="card"><ul class="plain" id="adm-banned"></ul></div>
-      </div>
-
-      <div>
-        <h2 class="section">Committee code</h2>
-        <form id="admin-newcode" autocomplete="off">
-          <div class="card"><label class="field"><span>New code (6+ characters)</span><input type="password" id="adm-newcode" autocomplete="new-password"></label></div>
-          <button class="btn page-cta" type="submit">Change code</button>
-        </form>
-        <button class="link center quiet" type="button" id="admin-logout" hidden>Sign out of the committee screen</button>
-      </div>
-    </div>
-  </section>
-
 </main>
 
 <nav class="tabbar" id="tabbar" aria-label="Main">
@@ -484,7 +385,7 @@
 <div class="overlay" id="overlay" hidden><div class="overlay-card"><div class="spinner" aria-hidden="true"></div><p id="overlay-text">One moment</p></div></div>
 
 <script src="config.js"></script>
-<script src="mock.js?v=32"></script>
-<script src="app.js?v=32"></script>
+<script src="mock.js?v=33"></script>
+<script src="app.js?v=33"></script>
 </body>
 </html>

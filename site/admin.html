@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Committee · PresLink Arcade</title>
+  <link rel="icon" href="assets/cross.svg?v=10">
+  <link rel="stylesheet" href="admin.css?v=1">
+</head>
+<body>
+
+<div id="login" class="login" hidden>
+  <form id="login-form" class="login-card" autocomplete="off" novalidate>
+    <h1>Committee</h1>
+    <p class="muted">PresLink Arcade console</p>
+    <label class="lbl" for="login-code">Committee code</label>
+    <div class="pw">
+      <input id="login-code" type="password" autocomplete="current-password" spellcheck="false" autocapitalize="none" autocorrect="off">
+      <button type="button" class="eye" data-eye="login-code" aria-label="Show code" title="Show code"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="e" d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12z"/><circle class="e" cx="12" cy="12" r="3"/><path class="x" d="M4 4l16 16"/></svg></button>
+    </div>
+    <p class="err" id="login-error" hidden></p>
+    <button class="btn primary wide" type="submit" id="login-submit">Sign in</button>
+    <p class="muted small" id="login-hint" hidden></p>
+  </form>
+</div>
+
+<div id="shell" class="shell" hidden>
+  <header class="top">
+    <div class="brand">PresLink Arcade <span>Committee</span></div>
+    <div class="top-right"><span class="pill" id="top-stripe"></span><button class="btn small" type="button" id="signout">Sign out</button></div>
+  </header>
+  <nav class="menu" id="menu" aria-label="Console">
+    <a href="#overview" data-page="overview">Overview</a>
+    <a href="#payments" data-page="payments">Payments</a>
+    <a href="#players" data-page="players">Players</a>
+    <a href="#prizes" data-page="prizes">Prizes</a>
+    <a href="#content" data-page="content">Site content</a>
+    <a href="#campaign" data-page="campaign">Campaign</a>
+    <a href="#stripe" data-page="stripe">Stripe</a>
+    <a href="#names" data-page="names">Names</a>
+    <a href="#security" data-page="security">Committee code</a>
+  </nav>
+  <main class="main">
+
+    <section data-page="overview" hidden>
+      <h2>Overview</h2>
+      <div class="figures">
+        <div class="fig"><span>Raised</span><strong id="ov-raised">€0</strong><small id="ov-goal"></small></div>
+        <div class="fig"><span>Payments</span><strong id="ov-payments">0</strong><small id="ov-today"></small></div>
+        <div class="fig"><span>Plays</span><strong id="ov-plays">0</strong></div>
+        <div class="fig"><span>Players</span><strong id="ov-players">0</strong><small id="ov-roles"></small></div>
+      </div>
+      <h3>Leaders</h3>
+      <div class="tbl-wrap"><table class="tbl" id="ov-leaders"><thead><tr><th>Prize</th><th>Name</th><th>Score</th><th>Code</th><th>Email</th></tr></thead><tbody></tbody></table></div>
+      <h3>Money by day</h3>
+      <div class="tbl-wrap"><table class="tbl" id="ov-days"><thead><tr><th>Day</th><th>Payments</th><th>Amount</th></tr></thead><tbody></tbody></table></div>
+    </section>
+
+    <section data-page="payments" hidden>
+      <div class="head"><h2>Payments</h2><button class="btn small" type="button" id="pay-csv">Download CSV</button></div>
+      <form class="filters" id="pay-filters" autocomplete="off">
+        <input type="search" id="pay-q" placeholder="Name, email, Stripe id, bundle or amount" aria-label="Search payments">
+        <input type="date" id="pay-from" aria-label="From"><input type="date" id="pay-to" aria-label="To">
+        <button class="btn" type="submit">Search</button>
+      </form>
+      <p class="muted" id="pay-summary"></p>
+      <div class="tbl-wrap"><table class="tbl" id="pay-table"><thead><tr><th>When</th><th>Name</th><th>Board</th><th>Plays</th><th>Amount</th><th>Email</th><th>Source</th><th>Stripe session</th></tr></thead><tbody></tbody></table></div>
+      <div class="pager"><button class="btn small" id="pay-prev" type="button">Previous</button><span id="pay-page" class="muted small"></span><button class="btn small" id="pay-next" type="button">Next</button></div>
+    </section>
+
+    <section data-page="players" hidden>
+      <div class="head"><h2>Players</h2><button class="btn small" type="button" id="pl-csv">Download CSV</button></div>
+      <form class="filters" id="pl-filters" autocomplete="off">
+        <input type="search" id="pl-q" placeholder="Name, email or code" aria-label="Search players">
+        <select id="pl-role" aria-label="Board"><option value="">All boards</option><option value="everyone">Everyone</option><option value="student">Students</option><option value="teacher">Teachers</option></select>
+        <label class="chk"><input type="checkbox" id="pl-banned"> Banned only</label>
+        <button class="btn" type="submit">Search</button>
+      </form>
+      <p class="muted" id="pl-summary"></p>
+      <div class="tbl-wrap"><table class="tbl" id="pl-table"><thead><tr><th>Name</th><th>Board</th><th>Code</th><th>Email</th><th>School email</th><th>Plays</th><th>Best</th><th>Paid</th><th>Last seen</th><th></th></tr></thead><tbody></tbody></table></div>
+      <div class="pager"><button class="btn small" id="pl-prev" type="button">Previous</button><span id="pl-page" class="muted small"></span><button class="btn small" id="pl-next" type="button">Next</button></div>
+      <div class="detail" id="pl-detail" hidden></div>
+    </section>
+
+    <section data-page="prizes" hidden>
+      <h2>Prizes</h2>
+      <p class="muted">What each winner gets. Shown on the Prizes page exactly as typed; leave a line empty to show nothing.</p>
+      <form id="prize-form" class="form" autocomplete="off">
+        <label>Everyone board<input id="pz-everyone" maxlength="200"></label>
+        <label>Students board<input id="pz-students" maxlength="200"></label>
+        <label>Teachers board<input id="pz-teachers" maxlength="200"></label>
+        <label>Best light<input id="pz-best_light" maxlength="200"></label>
+        <label>Most plays<input id="pz-most_plays" maxlength="200"></label>
+        <div class="actions"><button class="btn primary" type="submit">Save</button><span class="status" id="prize-status"></span></div>
+      </form>
+    </section>
+
+    <section data-page="content" hidden>
+      <h2>Site content</h2>
+      <p class="muted">Everything here appears on the site the moment it is saved. Empty fields fall back to the site's own words.</p>
+      <form id="content-form" class="form" autocomplete="off">
+        <h3>Home</h3>
+        <label>Title<input id="ct-hero-title" maxlength="60" placeholder="Stop the light."></label>
+        <label>Line under the title<input id="ct-hero-sub" maxlength="140" placeholder="Every play funds schools in Ghana and Nigeria."></label>
+        <label>Notice (a line shown on Home while set)<input id="ct-notice" maxlength="140" placeholder="e.g. Last day on Friday"></label>
+        <h3>About</h3>
+        <label>Committee card heading<input id="ct-intro-title" maxlength="60" placeholder="Run by students"></label>
+        <label>Committee card text<textarea id="ct-intro-text" rows="3" maxlength="500" placeholder="PresLink is the student-run charity of Presentation Brothers College, Cork. Every cent raised here, after card fees, goes to PresLink."></textarea></label>
+        <h3>Stories</h3>
+        <p class="muted small">A photo, a heading and a line each, in this order. With none, the site shows its three built-in stories.</p>
+        <div id="ct-stories"></div>
+        <button class="btn" type="button" id="ct-add-story">Add a story</button>
+        <h3>Contact</h3>
+        <label>Email<input id="ct-email" type="email" placeholder="preslink@pbc-cork.ie"></label>
+        <label>Phone<input id="ct-phone" placeholder="021 …"></label>
+        <label>Instagram<input id="ct-instagram" placeholder="preslink"></label>
+        <label>Website<input id="ct-website" placeholder="https://"></label>
+        <div class="actions"><button class="btn primary" type="submit">Save</button><span class="status" id="content-status"></span></div>
+      </form>
+    </section>
+
+    <section data-page="campaign" hidden>
+      <h2>Campaign</h2>
+      <form id="camp-form" class="form" autocomplete="off">
+        <label>Goal (€)<input id="camp-goal" inputmode="numeric"></label>
+        <label>Closing date<input id="camp-ends" type="date"></label>
+        <p class="muted" id="camp-progress"></p>
+        <div class="actions"><button class="btn primary" type="submit">Save</button><span class="status" id="camp-status"></span></div>
+      </form>
+    </section>
+
+    <section data-page="stripe" hidden>
+      <h2>Stripe</h2>
+      <p id="st-status" class="status-line"></p>
+      <form id="st-form" class="form" autocomplete="off" novalidate>
+        <label>Secret key<div class="pw"><input id="st-key" type="password" placeholder="sk_live_…" autocomplete="off" spellcheck="false"><button type="button" class="eye" data-eye="st-key" aria-label="Show key" title="Show key"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="e" d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12z"/><circle class="e" cx="12" cy="12" r="3"/><path class="x" d="M4 4l16 16"/></svg></button></div></label>
+        <p class="muted small">Stripe dashboard, Developers, API keys. Connecting checks the key with Stripe, creates the webhook and keeps both secrets in the database.</p>
+        <div class="actions"><button class="btn primary" type="submit" id="st-connect">Connect</button><button class="btn danger" type="button" id="st-disconnect" hidden>Disconnect</button><a class="btn" href="https://dashboard.stripe.com/payments" target="_blank" rel="noopener">Open Stripe</a></div>
+      </form>
+    </section>
+
+    <section data-page="names" hidden>
+      <h2>Names</h2>
+      <p class="muted">Initials nobody may use, on top of the built-in list.</p>
+      <form id="block-form" class="filters" autocomplete="off"><input id="block-initials" maxlength="3" placeholder="ABC" autocapitalize="characters" aria-label="Initials to block"><button class="btn" type="submit">Block</button></form>
+      <p class="muted" id="blocked-list"></p>
+      <h3>Banned players</h3>
+      <div class="tbl-wrap"><table class="tbl" id="banned-table"><thead><tr><th>Name</th><th>Code</th><th></th></tr></thead><tbody></tbody></table></div>
+    </section>
+
+    <section data-page="security" hidden>
+      <h2>Committee code</h2>
+      <div class="form">
+        <h3>Generate a new code</h3>
+        <div class="pw"><input id="gen-code" type="password" readonly aria-label="Generated code"><button type="button" class="eye" data-eye="gen-code" aria-label="Show code" title="Show code"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="e" d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12z"/><circle class="e" cx="12" cy="12" r="3"/><path class="x" d="M4 4l16 16"/></svg></button></div>
+        <div class="actions"><button class="btn" type="button" id="gen-new">Generate</button><button class="btn" type="button" id="gen-copy" disabled>Copy</button><button class="btn primary" type="button" id="gen-use" disabled>Use this code</button></div>
+        <h3>Or set your own</h3>
+        <form id="own-form" autocomplete="off" novalidate>
+          <div class="pw"><input id="own-code" type="password" autocomplete="new-password" aria-label="New code"><button type="button" class="eye" data-eye="own-code" aria-label="Show code" title="Show code"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="e" d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12z"/><circle class="e" cx="12" cy="12" r="3"/><path class="x" d="M4 4l16 16"/></svg></button></div>
+          <div class="actions"><button class="btn primary" type="submit">Change code</button><span class="status" id="own-status"></span></div>
+        </form>
+        <p class="muted small">At least 6 characters. Everyone on the committee uses the same code; change it when someone leaves. Write the new one down before using it.</p>
+      </div>
+    </section>
+
+  </main>
+</div>
+<div class="toast" id="toast" hidden></div>
+<script src="config.js"></script>
+<script src="mock.js?v=33"></script>
+<script src="admin.js?v=1"></script>
+</body>
+</html>

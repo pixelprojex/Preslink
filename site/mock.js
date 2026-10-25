@@ -83,6 +83,7 @@
   };
   const stats = () => ({
     total_raised_cents: db.payments.reduce((s, p) => s + p.amount_cents, 0), goal_cents: db.settings.goal_cents, prize_text: '', ends_on: db.settings.ends_on || '', prizes: db.settings.prizes || {},
+    content: db.settings.content || {},
     payments: db.payments.length, plays: db.plays.filter((p) => p.score != null && !p.voided).length, players: Object.keys(db.players).length,
     week_start: weekStart(), week_end: (() => { const d = new Date(weekStart() + 'T12:00:00'); d.setDate(d.getDate() + 6); return d.toISOString().slice(0, 10); })(),
   });
@@ -233,6 +234,35 @@
           case 'ban': { const p = db.players[b.player_id]; if (!p) fail('PLAYER_NOT_FOUND'); p.banned = b.banned !== false; save(db); return { ok: true }; }
           case 'block': { const i = String(b.initials).toUpperCase(); if (b.block !== false) { if (!db.blocked.includes(i)) db.blocked.push(i); } else db.blocked = db.blocked.filter((x) => x !== i); save(db); return { ok: true }; }
           case 'set_code': return { ok: true };
+          case 'payments': {
+            const q = String(b.q || '').trim().toLowerCase();
+            const inRange = (p) => (!b.from || p.created_at.slice(0, 10) >= b.from) && (!b.to || p.created_at.slice(0, 10) <= b.to);
+            const rows = db.payments.slice().reverse().map((p, i) => { const pl = db.players[p.player_id] || {}; return { id: p.stripe_session_id || String(i), created_at: p.created_at, initials: pl.initials ? disp(pl) : '???', player_id: p.player_id, role: pl.role || 'everyone', bundle: p.bundle, credits: p.credits, amount_cents: p.amount_cents, email: p.email || null, source: 'confirm', stripe_session_id: p.stripe_session_id || '', stripe_payment_intent: null, contact_email: pl.contact_email || null }; })
+              .filter(inRange).filter((r) => !q || r.initials.toLowerCase().startsWith(q) || String(r.email || '').toLowerCase().includes(q) || String(r.contact_email || '').toLowerCase().includes(q) || r.stripe_session_id.toLowerCase().includes(q) || r.bundle === q || (/^\d+$/.test(q) && r.amount_cents === Number(q) * 100));
+            const off = Math.max(0, Number(b.offset) || 0), lim = Math.min(500, Math.max(1, Number(b.limit) || 50));
+            return { rows: rows.slice(off, off + lim), total: rows.length, sum_cents: rows.reduce((s, r) => s + r.amount_cents, 0) };
+          }
+          case 'players': {
+            const q = String(b.q || '').trim().toLowerCase();
+            const rows = Object.values(db.players).map((p) => {
+              const plays = db.plays.filter((x) => x.player_id === p.id && x.score != null && !x.voided);
+              return { id: p.id, initials: disp(p), role: p.role || 'everyone', claim_code: p.claim_code, contact_email: p.contact_email || null, school_email: p.school_email || null, credits: p.credits || 0, banned: !!p.banned, created_at: p.created_at || new Date().toISOString(), last_seen_at: p.last_seen_at || p.created_at || new Date().toISOString(), plays: plays.length, best: plays.length ? Math.max(...plays.map((x) => x.score)) : null, paid_cents: db.payments.filter((x) => x.player_id === p.id).reduce((s, x) => s + x.amount_cents, 0) };
+            }).filter((r) => (!b.role || r.role === b.role) && (b.banned == null || r.banned === !!b.banned))
+              .filter((r) => !q || r.initials.toLowerCase().startsWith(q) || String(r.contact_email || '').toLowerCase().includes(q) || String(r.school_email || '').toLowerCase().includes(q) || r.claim_code === q)
+              .sort((x, y) => String(y.last_seen_at).localeCompare(String(x.last_seen_at)));
+            const off = Math.max(0, Number(b.offset) || 0), lim = Math.min(500, Math.max(1, Number(b.limit) || 50));
+            return { rows: rows.slice(off, off + lim), total: rows.length };
+          }
+          case 'set_content': {
+            if (!b.content || typeof b.content !== 'object' || Array.isArray(b.content)) fail('BAD_CONTENT');
+            if (JSON.stringify(b.content).length > 400000) fail('CONTENT_TOO_BIG');
+            db.settings.content = b.content; save(db); return { ok: true };
+          }
+          case 'upload_image': {
+            if (!['image/jpeg', 'image/png', 'image/webp'].includes(b.type)) fail('BAD_IMAGE');
+            if (!b.data || String(b.data).length > 4200000) fail('IMAGE_TOO_BIG');
+            return { url: 'data:' + b.type + ';base64,' + b.data }; // the demo keeps the picture in the page itself
+          }
           case 'stripe_status': return stripeStatus();
           case 'stripe_connect': {
             const key = String(b.secret_key || '').trim();
@@ -258,6 +288,7 @@
     await wait(120);
     db = load() || db;
     if (name === 'stats') return stats();
+    if (name === 'site_content') return db.settings.content || {};
     if (name === 'leaderboard') return board(args.p_role, args.p_week);
     if (name === 'spot_prizes') return spotPrizes();
     if (name === 'past_winners') return [];
