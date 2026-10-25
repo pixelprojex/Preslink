@@ -541,8 +541,43 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .splash-mark, .arm, .dots, .splash-word span, .splash-sub, .splash-credit { animation: none; } .splash { transition: opacity .4s ease, visibility .4s; } }
 
 /* iPad and desktop */
+/* Prizes: a boxed card for each prize in its own bright colour: a band with the board, room for a photo, the prize, the leader. */
+.title-sub { margin: 2px 0 0; color: var(--muted); font-size: 14px; font-weight: 500; }
+.sec-h { margin: 18px 4px 8px; font-size: 12px; font-weight: 700; color: var(--muted-d); text-transform: uppercase; letter-spacing: .08em; }
+.title + .sec-h { margin-top: 0; }
+.prize-grid { display: grid; gap: 12px; }
+.prize-grid > .card + .card { margin-top: 0; }
+.prize { --pc: #58cc02; --pc-l: #ebf8dc; --pc-d: #46a302; --pc-ink: #fff; display: grid; grid-template-rows: auto auto 1fr; border-color: var(--pc); border-bottom-width: 3px; border-bottom-color: var(--pc-d); }
+.prize[data-prize="students"] { --pc: var(--purple); --pc-l: var(--purple-l); --pc-d: var(--purple-d); }
+.prize[data-prize="teachers"] { --pc: #1cb0f6; --pc-l: #e3f4fd; --pc-d: #1899d6; }
+.prize[data-prize="best_light"] { --pc: #ffc800; --pc-l: #fff6d0; --pc-d: #e5b400; --pc-ink: #5a4300; }
+.prize[data-prize="most_plays"] { --pc: #ff9600; --pc-l: #fff0da; --pc-d: #e68700; }
+.prize-band { display: flex; align-items: center; gap: 7px; padding: 9px 14px; background: var(--pc); color: var(--pc-ink); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.prize-photo { position: relative; aspect-ratio: 2 / 1; background: var(--pc-l); display: grid; place-items: center; }
+.prize-photo svg { width: 46px; height: 46px; color: var(--pc); opacity: .5; }
+.prize-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.prize.has-photo .prize-photo svg { display: none; }
+.prize-body { display: grid; grid-template-rows: auto auto 1fr; padding: 12px 14px; }
+.prize-what { margin: 0; font-size: 18px; font-weight: 800; letter-spacing: -.02em; line-height: 1.25; color: var(--ink); }
+.prize-what.tba { color: var(--muted); font-weight: 600; }
+.prize-how { margin: 3px 0 0; color: var(--muted); font-size: 13px; font-weight: 500; }
+.prize-how.pres { color: var(--purple); font-weight: 600; }
+.prize-how .crest-ic { display: inline-block; width: 12px; height: 15px; vertical-align: -3px; margin-right: 5px; }
+.prize-lead { display: flex; align-items: center; gap: 8px; align-self: end; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--sep); min-height: 42px; font-size: 15px; font-weight: 700; color: var(--ink); }
+.prize-lead .lead-k { color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.prize-lead .avatar { width: 30px; height: 30px; font-size: 11px; }
+.prize-lead strong { margin-left: auto; font-weight: 800; font-size: 17px; font-variant-numeric: tabular-nums; }
+.prize-lead:empty::before { content: 'Nobody yet'; color: var(--muted-2); font-weight: 600; }
+
 @media (min-width: 700px) {
   .shell { max-width: 640px; padding-left: 24px; padding-right: 24px; }
+  .prize-grid.boards { grid-template-columns: repeat(3, 1fr); }
+  .prize-grid.boards .prize-photo { aspect-ratio: 16 / 9; }
+  /* the spot prizes lie sideways: the band across, the photo on the left */
+  .prize-grid.spots { grid-template-columns: 1fr 1fr; }
+  .prize-grid.spots .prize { grid-template-rows: auto 1fr; grid-template-columns: 5fr 7fr; }
+  .prize-grid.spots .prize-band { grid-column: 1 / -1; }
+  .prize-grid.spots .prize-photo { aspect-ratio: auto; min-height: 150px; height: 100%; }
   .appbar { margin: 0 -24px; padding-left: 24px; padding-right: 24px; height: 64px; }
   .tabbar, .sheet { max-width: 640px; }
   .title h1 { font-size: 40px; }
@@ -584,16 +619,31 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
   .sheet { left: var(--side-w); right: 0; bottom: auto; top: 50%; max-width: 520px; border-radius: 24px; padding: 14px 24px 24px; max-height: 86vh; animation: modalin .35s cubic-bezier(.2, .8, .2, 1); transform: translateY(-50%); }
   .sheet::before { display: none; }
   .game { min-height: 600px; }
+  /* About: the committee card across the top, the stories three across, contact beside Terms */
+  [data-screen="about"] { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; align-items: stretch; }
+  [data-screen="about"] > * { margin-top: 0 !important; }
+  [data-screen="about"] > .title { grid-column: 1 / -1; order: -2; }
+  [data-screen="about"] > .story.school { grid-column: 1 / -1; order: -1; display: grid; grid-template-columns: 2fr 3fr; }
+  [data-screen="about"] > .story.school .photo { height: 100%; min-height: 200px; aspect-ratio: auto; }
+  [data-screen="about"] > .story.school .story-body { align-self: center; padding: 22px 26px; }
+  #about-stories { display: contents; }
+  #about-stories > .card { grid-column: span 2; margin-top: 0 !important; }
+  #about-contact, [data-screen="about"] > .card:last-of-type { grid-column: span 3; }
+  #about-contact[hidden] + .card { grid-column: 1 / -1; }
+  [data-screen="about"] > .credit { grid-column: 1 / -1; margin-top: 8px !important; }
+  /* You: the cards share rows and heights */
+  #you-panel, #you-empty { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; }
+  #you-panel > *, #you-empty > * { margin-top: 0 !important; }
+  #you-panel > .profile, #you-empty > .you-empty { display: grid; align-content: center; }
+  #you-panel > :nth-child(n+3) { grid-column: 1 / -1; }
 }
 @keyframes modalin { from { opacity: 0; transform: translateY(-50%) scale(.96); } to { opacity: 1; transform: translateY(-50%) scale(1); } }
 @media (min-width: 1100px) {
   .appbar, .screen, .splash-credit { max-width: 900px; }
   .game { max-width: 760px; margin: 0 auto; }
   /* Home: the hero beside the links */
-  [data-screen="home"] { display: grid; grid-template-columns: 1.25fr 1fr; grid-template-areas: "hero links" "hero school"; gap: 16px; align-items: start; }
-  [data-screen="home"] > .hero-card { grid-area: hero; margin-top: 14px; }
-  [data-screen="home"] > .home-links { grid-area: links; margin-top: 14px; }
-  [data-screen="home"] > .card:last-child { grid-area: school; margin-top: 0; }
+  [data-screen="home"] { display: grid; grid-template-columns: 1.25fr 1fr; gap: 16px; align-items: start; }
+  [data-screen="home"] > .hero-card, [data-screen="home"] > .home-links { margin-top: 14px; }
   /* Result: score across the top, then two columns */
   .result { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
   .result > * { margin: 0 !important; }
@@ -602,14 +652,13 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
   .result > .school-ask { grid-column: 1; }
   .result > .cta-card { grid-column: 2; grid-row: 2; }
   .result > .card:last-child { grid-column: 2; grid-row: 3; }
-  /* About: stories two across */
-  [data-screen="about"] { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
-  [data-screen="about"] > * { margin-top: 0 !important; }
-  [data-screen="about"] > .title, [data-screen="about"] > .card:last-of-type, [data-screen="about"] > .credit { grid-column: 1 / -1; }
-  /* You: profile beside the code */
-  #you-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
-  #you-panel > * { margin-top: 0 !important; }
-  #you-panel > :nth-child(n+3) { grid-column: 1 / -1; }
+  /* You: three cards across, the rows under them */
+  #you-panel { grid-template-columns: 1fr 1fr 1fr; }
+  #you-panel > :nth-child(n+3) { grid-column: auto; }
+  #you-panel > .card:nth-child(3) { display: grid; grid-auto-rows: 1fr; }
+  #you-panel > #edit-form { grid-column: 1 / -1; }
+  #you-panel > .card:nth-child(5) { grid-column: 1 / 3; }
+  #you-panel > .card:last-child { grid-column: 3; align-self: start; }
 }
 
 /* PresLink and the school are purple, with the crest wherever the school itself is meant. */

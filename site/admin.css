@@ -65,6 +65,10 @@ input[readonly] { background: var(--panel); }
 .main { padding: 24px 28px 48px; max-width: 1080px; min-width: 0; }
 .head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .head h2 { margin: 0; }
+.head.sub { margin: 26px 0 8px; justify-content: flex-start; gap: 14px; }
+.head.sub h3 { margin: 0; }
+.quick { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: -4px 0 12px; }
+.quick .mini.on { background: var(--ink); color: #fff; border-color: var(--ink); }
 
 /* figures and tables */
 .figures { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 8px; }
@@ -100,6 +104,9 @@ input[readonly] { background: var(--panel); }
 .story-fields input, .story-fields textarea { margin-bottom: 8px; }
 .story-tools { display: flex; gap: 6px; }
 .story .uploading { font-size: 12px; color: var(--muted); }
+.story img:not([src]) { visibility: visible; }
+.prize-row > label { margin: 0; }
+.story-fields > label:first-child { margin-top: 0; }
 
 /* toast */
 .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 6px; font-size: 14px; z-index: 10; max-width: 90vw; }

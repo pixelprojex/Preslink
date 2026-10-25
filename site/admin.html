@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex, nofollow">
   <title>Committee · PresLink Arcade</title>
   <link rel="icon" href="assets/cross.svg?v=10">
-  <link rel="stylesheet" href="admin.css?v=1">
+  <link rel="stylesheet" href="admin.css?v=2">
 </head>
 <body>
 
@@ -28,7 +28,7 @@
 <div id="shell" class="shell" hidden>
   <header class="top">
     <div class="brand">PresLink Arcade <span>Committee</span></div>
-    <div class="top-right"><span class="pill" id="top-stripe"></span><button class="btn small" type="button" id="signout">Sign out</button></div>
+    <div class="top-right"><span class="pill" id="top-stripe"></span><a class="btn small" href="index.html" target="_blank" rel="noopener">Open the site</a><button class="btn small" type="button" id="signout">Sign out</button></div>
   </header>
   <nav class="menu" id="menu" aria-label="Console">
     <a href="#overview" data-page="overview">Overview</a>
@@ -53,6 +53,8 @@
       </div>
       <h3>Leaders</h3>
       <div class="tbl-wrap"><table class="tbl" id="ov-leaders"><thead><tr><th>Prize</th><th>Name</th><th>Score</th><th>Code</th><th>Email</th></tr></thead><tbody></tbody></table></div>
+      <div class="head sub"><h3>Latest payments</h3><a href="#payments" class="small">All payments</a></div>
+      <div class="tbl-wrap"><table class="tbl" id="ov-recent"><thead><tr><th>When</th><th>Name</th><th>Plays</th><th>Amount</th><th>Email</th></tr></thead><tbody></tbody></table></div>
       <h3>Money by day</h3>
       <div class="tbl-wrap"><table class="tbl" id="ov-days"><thead><tr><th>Day</th><th>Payments</th><th>Amount</th></tr></thead><tbody></tbody></table></div>
     </section>
@@ -64,6 +66,7 @@
         <input type="date" id="pay-from" aria-label="From"><input type="date" id="pay-to" aria-label="To">
         <button class="btn" type="submit">Search</button>
       </form>
+      <div class="quick" id="pay-quick"><span class="muted small">Show</span><button type="button" class="mini" data-range="today">Today</button><button type="button" class="mini" data-range="7">Last 7 days</button><button type="button" class="mini" data-range="30">Last 30 days</button><button type="button" class="mini on" data-range="all">Everything</button></div>
       <p class="muted" id="pay-summary"></p>
       <div class="tbl-wrap"><table class="tbl" id="pay-table"><thead><tr><th>When</th><th>Name</th><th>Board</th><th>Plays</th><th>Amount</th><th>Email</th><th>Source</th><th>Stripe session</th></tr></thead><tbody></tbody></table></div>
       <div class="pager"><button class="btn small" id="pay-prev" type="button">Previous</button><span id="pay-page" class="muted small"></span><button class="btn small" id="pay-next" type="button">Next</button></div>
@@ -84,14 +87,14 @@
     </section>
 
     <section data-page="prizes" hidden>
-      <h2>Prizes</h2>
-      <p class="muted">What each winner gets. Shown on the Prizes page exactly as typed; leave a line empty to show nothing.</p>
+      <div class="head"><h2>Prizes</h2><a class="btn small" href="index.html#prize" target="_blank" rel="noopener">See the Prizes page</a></div>
+      <p class="muted">What each winner gets, with a photo of it when you have one. Shown on the Prizes page as typed; an empty line shows "To be announced".</p>
       <form id="prize-form" class="form" autocomplete="off">
-        <label>Everyone board<input id="pz-everyone" maxlength="200"></label>
-        <label>Students board<input id="pz-students" maxlength="200"></label>
-        <label>Teachers board<input id="pz-teachers" maxlength="200"></label>
-        <label>Best light<input id="pz-best_light" maxlength="200"></label>
-        <label>Most plays<input id="pz-most_plays" maxlength="200"></label>
+        <div class="story prize-row" data-key="everyone"><div><img alt=""><label class="btn small pick">Choose photo<input type="file" accept="image/*"></label> <button type="button" class="mini" data-clear hidden>Remove</button> <span class="uploading"></span></div><label>Everyone board<input id="pz-everyone" maxlength="200"></label></div>
+        <div class="story prize-row" data-key="students"><div><img alt=""><label class="btn small pick">Choose photo<input type="file" accept="image/*"></label> <button type="button" class="mini" data-clear hidden>Remove</button> <span class="uploading"></span></div><label>Students board<input id="pz-students" maxlength="200"></label></div>
+        <div class="story prize-row" data-key="teachers"><div><img alt=""><label class="btn small pick">Choose photo<input type="file" accept="image/*"></label> <button type="button" class="mini" data-clear hidden>Remove</button> <span class="uploading"></span></div><label>Teachers board<input id="pz-teachers" maxlength="200"></label></div>
+        <div class="story prize-row" data-key="best_light"><div><img alt=""><label class="btn small pick">Choose photo<input type="file" accept="image/*"></label> <button type="button" class="mini" data-clear hidden>Remove</button> <span class="uploading"></span></div><label>Best light<input id="pz-best_light" maxlength="200"></label></div>
+        <div class="story prize-row" data-key="most_plays"><div><img alt=""><label class="btn small pick">Choose photo<input type="file" accept="image/*"></label> <button type="button" class="mini" data-clear hidden>Remove</button> <span class="uploading"></span></div><label>Most plays<input id="pz-most_plays" maxlength="200"></label></div>
         <div class="actions"><button class="btn primary" type="submit">Save</button><span class="status" id="prize-status"></span></div>
       </form>
     </section>
@@ -105,8 +108,9 @@
         <label>Line under the title<input id="ct-hero-sub" maxlength="140" placeholder="Every play funds schools in Ghana and Nigeria."></label>
         <label>Notice (a line shown on Home while set)<input id="ct-notice" maxlength="140" placeholder="e.g. Last day on Friday"></label>
         <h3>About</h3>
+        <div class="story"><div><img id="ct-intro-photo" alt=""><label class="btn small pick">Committee photo<input type="file" accept="image/*" id="ct-intro-file"></label> <button type="button" class="mini" id="ct-intro-clear" hidden>Remove</button> <span class="uploading" id="ct-intro-up"></span></div><div class="story-fields">
         <label>Committee card heading<input id="ct-intro-title" maxlength="60" placeholder="Run by students"></label>
-        <label>Committee card text<textarea id="ct-intro-text" rows="3" maxlength="500" placeholder="PresLink is the student-run charity of Presentation Brothers College, Cork. Every cent raised here, after card fees, goes to PresLink."></textarea></label>
+        <label>Committee card text<textarea id="ct-intro-text" rows="3" maxlength="500" placeholder="PresLink is the student-run charity of Presentation Brothers College, Cork. Every cent raised here, after card fees, goes to PresLink."></textarea></label></div></div>
         <h3>Stories</h3>
         <p class="muted small">A photo, a heading and a line each, in this order. With none, the site shows its three built-in stories.</p>
         <div id="ct-stories"></div>
@@ -169,6 +173,6 @@
 <div class="toast" id="toast" hidden></div>
 <script src="config.js"></script>
 <script src="mock.js?v=34"></script>
-<script src="admin.js?v=1"></script>
+<script src="admin.js?v=2"></script>
 </body>
 </html>

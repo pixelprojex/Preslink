@@ -191,7 +191,8 @@ the request came from.
 ### 6. Prizes at the end
 
 1. In the console, **Campaign** sets the closing date and **Prizes** the five prize texts (Everyone, Students,
-   Teachers, Best light, Most plays). They appear on the Prizes page as typed.
+   Teachers, Best light, Most plays), each with a photo if you have one. They appear on the Prizes page as
+   typed, one boxed card per prize; an empty line shows "To be announced".
 2. At the end, **Overview** shows the leader of each board and the two spot-prize holders, with their codes
    and emails; **Players** has everyone with a CSV download for the emails.
 3. Announce the letters. A winner shows their **You** tab (or the saved code image): letters and code must match.
@@ -210,9 +211,10 @@ secret field has an eye to show what was typed. The pages:
 - **Players**: everyone, with a search over the name, the emails and the code, a board filter and a banned
   filter; plays, best score and money paid per row; **View** opens the player with every play (void or
   restore) and payment, **Ban**, **Unban** and a **new random name**; CSV download.
-- **Prizes**: five plain text fields, shown on the Prizes page as typed.
+- **Prizes**: five plain text fields and a photo each, shown on the Prizes page as typed (the photos are
+  kept in the site content document as `prize_photos`).
 - **Site content**: the home title and the line under it, a notice shown on Home while set, the About page's
-  committee card heading and text, the About stories (a photo, a heading and a line each, added, reordered
+  committee card photo, heading and text, the About stories (a photo, a heading and a line each, added, reordered
   or removed; photos are shrunk in the browser and stored in the public `site` bucket) and the contact
   details (email, phone, Instagram, website, shown as a Contact card on About). Saved as one document in
   `settings.site_content`; the public `stats()` carries it, so the site shows it at once.
@@ -266,8 +268,8 @@ secret field has an eye to show what was typed. The pages:
 
 All the words are in `site/index.html`. The About page was written from the school's newsletters and the
 Presentation Brothers' website; the committee should check it. Three photos are real (`photo-classrooms.jpg`,
-`photo-bikes.jpg`, `photo-babies.jpg`); `photo-school.svg` (the committee) and `photo-prize.svg` are
-placeholders to replace with real images (JPG or PNG; update the file names in `index.html` if they change).
+`photo-bikes.jpg`, `photo-babies.jpg`); `photo-school.svg` (the committee card) is a placeholder until a photo
+is chosen in the console, and each prize card shows a tinted placeholder until the committee adds its photo.
 Prices live in
 three places that must agree: the bundle buttons in `index.html`, `BUNDLES` in
 `supabase/functions/api/index.ts` and `BUNDLES` in `supabase/functions/stripe-webhook/index.ts`.

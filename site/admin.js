@@ -105,7 +105,8 @@
   function signOut(error) { session.del(); overview = null; showLogin(error); }
   $('#login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const code = $('#login-code').value.trim();
+    let code = $('#login-code').value.trim().replace(/[\u2010-\u2015\u2212]/g, '-').replace(/\s+/g, '');
+    if (/^pres-[a-z]{3}[#$%&*!]-\d{4}-\d{4}$/i.test(code)) code = code.toUpperCase();
     const btn = $('#login-submit');
     if (!code) { showLogin('Type the committee code.'); return; }
     btn.disabled = true;
@@ -143,7 +144,18 @@
   }
 
   // Overview -------------------------------------------------------------------
-  loaders.overview = async () => { await refreshOverview(); renderOverview(); };
+  loaders.overview = async () => { await refreshOverview(); renderOverview(); loadRecent(); };
+  async function loadRecent() {
+    let res;
+    try { res = await call('payments', { q: '', from: '', to: '', limit: 5, offset: 0 }); } catch (_) { return; }
+    const tb = $('#ov-recent tbody'); tb.innerHTML = '';
+    (res.rows || []).forEach((p) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${esc(when(p.created_at))}</td><td><a href="#players" data-player="${esc(p.initials)}">${esc(p.initials)}</a></td><td class="num">${p.credits}</td><td class="num">${euro(p.amount_cents)}</td><td>${esc(p.email || p.contact_email || '')}</td>`;
+      tb.appendChild(tr);
+    });
+    if (!tb.children.length) tb.innerHTML = '<tr><td colspan="5" class="muted">No payments yet.</td></tr>';
+  }
   function renderOverview() {
     const d = overview; if (!d) return;
     const s = d.stats || {};
@@ -199,7 +211,16 @@
     $('#pay-page').textContent = pay.total ? `${first} to ${last} of ${pay.total}` : '';
     $('#pay-prev').disabled = pay.offset === 0; $('#pay-next').disabled = last >= pay.total;
   }
-  $('#pay-filters').addEventListener('submit', (e) => { e.preventDefault(); pay.q = $('#pay-q').value.trim(); pay.from = $('#pay-from').value; pay.to = $('#pay-to').value; pay.offset = 0; loadPayments(); });
+  $('#pay-filters').addEventListener('submit', (e) => { e.preventDefault(); $$('#pay-quick .mini').forEach((x) => x.classList.remove('on')); pay.q = $('#pay-q').value.trim(); pay.from = $('#pay-from').value; pay.to = $('#pay-to').value; pay.offset = 0; loadPayments(); });
+  const dayIE = (back) => { const d = new Date(); d.setDate(d.getDate() - back); return d.toLocaleDateString('en-CA', { timeZone: 'Europe/Dublin' }); };
+  $('#pay-quick').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-range]'); if (!b) return;
+    const r = b.dataset.range;
+    $('#pay-from').value = r === 'all' ? '' : dayIE(r === 'today' ? 0 : Number(r) - 1);
+    $('#pay-to').value = r === 'all' ? '' : dayIE(0);
+    $$('#pay-quick .mini').forEach((x) => x.classList.toggle('on', x === b));
+    pay.q = $('#pay-q').value.trim(); pay.from = $('#pay-from').value; pay.to = $('#pay-to').value; pay.offset = 0; loadPayments();
+  });
   $('#pay-prev').addEventListener('click', () => { pay.offset = Math.max(0, pay.offset - pay.limit); loadPayments(); });
   $('#pay-next').addEventListener('click', () => { pay.offset += pay.limit; loadPayments(); });
   $('#pay-csv').addEventListener('click', async () => {
@@ -301,26 +322,69 @@
 
   // Prizes ---------------------------------------------------------------------
   const PRIZES = ['everyone', 'students', 'teachers', 'best_light', 'most_plays'];
-  loaders.prizes = async () => { await refreshOverview(); const pz = ((overview || {}).stats || {}).prizes || {}; PRIZES.forEach((k) => { $('#pz-' + k).value = pz[k] || ''; }); };
+  let prizePhotos = {};
+  loaders.prizes = async () => {
+    await refreshOverview();
+    const s = (overview || {}).stats || {};
+    const pz = s.prizes || {};
+    PRIZES.forEach((k) => { $('#pz-' + k).value = pz[k] || ''; });
+    prizePhotos = Object.assign({}, (s.content || {}).prize_photos || {});
+    renderPrizePhotos();
+  };
+  function renderPrizePhotos() {
+    $$('#prize-form .prize-row').forEach((row) => {
+      const src = prizePhotos[row.dataset.key] || '', img = row.querySelector('img');
+      if (src) img.src = src; else img.removeAttribute('src');
+      row.querySelector('[data-clear]').hidden = !src;
+    });
+  }
+  // The texts live in the settings, the photos in the site content document with everything else the committee writes.
   $('#prize-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const prizes = {}; PRIZES.forEach((k) => { prizes[k] = $('#pz-' + k).value.trim(); });
-    if (await guarded(() => call('settings', { prizes }))) { status('prize-status', 'Saved'); overview = null; }
+    if (!await guarded(() => call('settings', { prizes }))) return;
+    const base = (((await refreshOverview()) || {}).stats || {}).content || {};
+    const content = Object.assign({}, base, { prize_photos: prizePhotos });
+    if (await guarded(() => call('set_content', { content }))) { status('prize-status', 'Saved · live on the site'); overview = null; }
   });
+  $('#prize-form').addEventListener('change', async (e) => {
+    const inp = e.target.closest('input[type="file"]'); if (!inp || !inp.files || !inp.files[0]) return;
+    const row = inp.closest('.prize-row'), note = row.querySelector('.uploading');
+    note.textContent = 'Uploading…';
+    try { prizePhotos[row.dataset.key] = await uploadPhoto(inp.files[0]); renderPrizePhotos(); note.textContent = 'Uploaded · save to publish'; }
+    catch (ex) { note.textContent = ''; toast(msg(ex), true); }
+    inp.value = '';
+  });
+  $('#prize-form').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-clear]'); if (!b) return;
+    const row = b.closest('.prize-row'); delete prizePhotos[row.dataset.key]; row.querySelector('.uploading').textContent = ''; renderPrizePhotos();
+  });
+  async function uploadPhoto(file) { const { type, data } = await shrinkImage(file); const res = await call('upload_image', { type, data }); return res.url; }
 
   // Site content ---------------------------------------------------------------
   let stories = [];
+  let introImage = '';
   loaders.content = async () => {
     await refreshOverview();
     const c = ((overview || {}).stats || {}).content || {};
     const hero = c.hero || {}, about = c.about || {}, contact = c.contact || {};
     $('#ct-hero-title').value = hero.title || ''; $('#ct-hero-sub').value = hero.subtitle || ''; $('#ct-notice').value = c.notice || '';
     $('#ct-intro-title').value = about.intro_title || ''; $('#ct-intro-text').value = about.intro_text || '';
+    introImage = about.intro_image || ''; renderIntroPhoto();
     stories = Array.isArray(about.stories) ? about.stories.map((s) => ({ id: s.id || uid(), image: s.image || '', title: s.title || '', text: s.text || '' })) : [];
     renderStories();
     $('#ct-email').value = contact.email || ''; $('#ct-phone').value = contact.phone || ''; $('#ct-instagram').value = contact.instagram || ''; $('#ct-website').value = contact.website || '';
   };
   const uid = () => Math.random().toString(36).slice(2, 10);
+  function renderIntroPhoto() { const img = $('#ct-intro-photo'); if (introImage) img.src = introImage; else img.removeAttribute('src'); $('#ct-intro-clear').hidden = !introImage; }
+  $('#ct-intro-file').addEventListener('change', async (e) => {
+    const inp = e.target; if (!inp.files || !inp.files[0]) return;
+    const note = $('#ct-intro-up'); note.textContent = 'Uploading…';
+    try { introImage = await uploadPhoto(inp.files[0]); renderIntroPhoto(); note.textContent = 'Uploaded · save to publish'; }
+    catch (ex) { note.textContent = ''; toast(msg(ex), true); }
+    inp.value = '';
+  });
+  $('#ct-intro-clear').addEventListener('click', () => { introImage = ''; $('#ct-intro-up').textContent = ''; renderIntroPhoto(); });
   function renderStories() {
     const box = $('#ct-stories'); box.innerHTML = '';
     stories.forEach((s, i) => {
@@ -369,12 +433,13 @@
   }
   $('#content-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const content = {
+    const base = (((await refreshOverview()) || {}).stats || {}).content || {};
+    const content = Object.assign({}, base, {
       hero: { title: $('#ct-hero-title').value.trim(), subtitle: $('#ct-hero-sub').value.trim() },
       notice: $('#ct-notice').value.trim(),
-      about: { intro_title: $('#ct-intro-title').value.trim(), intro_text: $('#ct-intro-text').value.trim(), stories: stories.filter((s) => s.image || s.title || s.text).map((s) => ({ id: s.id, image: s.image, title: s.title.trim(), text: s.text.trim() })) },
+      about: { intro_title: $('#ct-intro-title').value.trim(), intro_text: $('#ct-intro-text').value.trim(), intro_image: introImage, stories: stories.filter((s) => s.image || s.title || s.text).map((s) => ({ id: s.id, image: s.image, title: s.title.trim(), text: s.text.trim() })) },
       contact: { email: $('#ct-email').value.trim(), phone: $('#ct-phone').value.trim(), instagram: $('#ct-instagram').value.trim().replace(/^@/, ''), website: $('#ct-website').value.trim() },
-    };
+    });
     if (await guarded(() => call('set_content', { content }))) { status('content-status', 'Saved · live on the site'); overview = null; }
   });
 

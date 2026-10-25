@@ -52,6 +52,9 @@
     <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M12 2l8 3v6.5c0 4.6-3.3 8.3-8 10.5-4.7-2.2-8-5.9-8-10.5V5z" fill="#ffc800"/><path d="M12 6.4l1.6 3.3 3.6.5-2.6 2.5.6 3.6-3.2-1.7-3.2 1.7.6-3.6-2.6-2.5 3.6-.5z" fill="#fff"/></symbol>
     <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="#ff4b4b"/></symbol>
     <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#1cb0f6"/><circle cx="12" cy="9.2" r="3.6" fill="#fff"/><path d="M5.2 19a7 7 0 0 1 13.6 0 10 10 0 0 1-13.6 0z" fill="#fff"/></symbol>
+    <symbol id="i-photo" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="4" fill="currentColor"/><circle cx="8.2" cy="9.3" r="1.9" fill="#fff"/><path d="M5 17.2l4.3-5.2 3 3.5 2.7-3.2 4.2 4.9z" fill="#fff"/></symbol>
+    <symbol id="i-flash" viewBox="0 0 24 24"><path d="M13.2 2L4.5 13.5h6.1L9.8 22l8.7-11.5h-6.1z" fill="currentColor"/></symbol>
+    <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z" fill="currentColor"/></symbol>
   </defs>
 </svg>
 
@@ -74,7 +77,7 @@
       <button class="btn btn-primary btn-xl" id="home-play" type="button">Play · €2</button>
       <p class="bundles-line"><button class="link" type="button" data-bundle="triple">3 plays · €5</button><button class="link" type="button" data-bundle="seven">7 plays · €10</button></p>
     </div>
-    <div class="card">
+    <div class="card home-links">
       <button class="cell" type="button" data-go="prize"><span>Prizes<small id="home-ends"></small></span> <span class="chev">›</span></button>
       <button class="cell" type="button" data-sheet="how"><span>How to play</span> <span class="chev">›</span></button>
     </div>
@@ -160,18 +163,37 @@
 
   <!-- ================= PRIZES ================= -->
   <section class="screen" data-screen="prize" hidden>
-    <div class="title"><h1>Prizes</h1></div>
-    <div class="card pad"><p class="lead-p" id="prize-sub">Winners are emailed when the arcade closes.</p></div>
-    <div class="card">
-      <h2 class="card-h">Top of each board</h2>
-      <div class="cell"><span>Everyone<small id="prize-everyone">To be announced</small></span><span class="lead" id="lead-everyone"></span></div>
-      <div class="cell"><span class="pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Students<small id="prize-students">To be announced</small></span><span class="lead" id="lead-student"></span></div>
-      <div class="cell"><span class="pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Teachers<small id="prize-teachers">To be announced</small></span><span class="lead" id="lead-teacher"></span></div>
+    <div class="title"><h1>Prizes</h1><p class="title-sub" id="prize-sub">Winners are emailed at the close</p></div>
+    <h2 class="sec-h">Top of each board</h2>
+    <div class="prize-grid boards">
+      <article class="card prize" data-prize="everyone">
+        <div class="prize-band">Everyone</div>
+        <div class="prize-photo"><img alt="" hidden><svg aria-hidden="true"><use href="#i-photo"/></svg></div>
+        <div class="prize-body"><p class="prize-what tba" id="prize-everyone">To be announced</p><p class="prize-how">Highest score</p><div class="prize-lead" id="lead-everyone"></div></div>
+      </article>
+      <article class="card prize" data-prize="students">
+        <div class="prize-band">Students</div>
+        <div class="prize-photo"><img alt="" hidden><svg aria-hidden="true"><use href="#i-photo"/></svg></div>
+        <div class="prize-body"><p class="prize-what tba" id="prize-students">To be announced</p><p class="prize-how pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Highest score by a student</p><div class="prize-lead" id="lead-student"></div></div>
+      </article>
+      <article class="card prize" data-prize="teachers">
+        <div class="prize-band">Teachers</div>
+        <div class="prize-photo"><img alt="" hidden><svg aria-hidden="true"><use href="#i-photo"/></svg></div>
+        <div class="prize-body"><p class="prize-what tba" id="prize-teachers">To be announced</p><p class="prize-how pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Highest score by a teacher</p><div class="prize-lead" id="lead-teacher"></div></div>
+      </article>
     </div>
-    <div class="card">
-      <h2 class="card-h">Spot prizes</h2>
-      <div class="cell"><span>Best light<small id="prize-best-light">Closest to 1,000 with one light.</small></span><span class="lead" id="lead-light"></span></div>
-      <div class="cell"><span>Most plays<small id="prize-most-plays">The biggest supporter.</small></span><span class="lead" id="lead-plays"></span></div>
+    <h2 class="sec-h">Spot prizes</h2>
+    <div class="prize-grid spots">
+      <article class="card prize" data-prize="best_light">
+        <div class="prize-band">Best light</div>
+        <div class="prize-photo"><img alt="" hidden><svg aria-hidden="true"><use href="#i-photo"/></svg></div>
+        <div class="prize-body"><p class="prize-what tba" id="prize-best-light">To be announced</p><p class="prize-how">One light closest to 1,000</p><div class="prize-lead" id="lead-light"></div></div>
+      </article>
+      <article class="card prize" data-prize="most_plays">
+        <div class="prize-band">Most plays</div>
+        <div class="prize-photo"><img alt="" hidden><svg aria-hidden="true"><use href="#i-photo"/></svg></div>
+        <div class="prize-body"><p class="prize-what tba" id="prize-most-plays">To be announced</p><p class="prize-how">The most plays</p><div class="prize-lead" id="lead-plays"></div></div>
+      </article>
     </div>
   </section>
 

@@ -29,6 +29,8 @@
   // Two people with the same initials: the second is the letters with a 2 in a bubble, never "FB#2" on screen.
   const nameHtml = (display) => { const [l, n] = String(display || '').split('#'); return esc(l) + (n ? `<span class="dup inline">${esc(n)}</span>` : ''); };
   // A coloured circle with the letters; the tint comes from the letters so it is stable. The bubble sits on the rim.
+  // The leader line on a prize card: the word, the bubble, the name, the score on the right.
+  const leadHtml = (initials, score) => `<span class="lead-k">Leading</span>${avatarHtml(initials)}<span class="lead-n">${nameHtml(initials)}</span><strong>${esc(String(score))}</strong>`;
   const avatarHtml = (display, big) => { const [l, n] = String(display || '').split('#'); let h = 0; for (const c of l) h = (h * 31 + c.charCodeAt(0)) % 5; return `<span class="avatar c${h + 1}${big ? ' big' : ''}">${esc(l)}${n ? `<span class="dup">${esc(n)}</span>` : ''}</span>`; };
   const boardName = (role) => BOARD_NAMES[role] || 'Everyone';
   const CREST_IMG = '<img class="crest-ic" src="assets/crest.svg?v=10" alt="">';
@@ -484,6 +486,13 @@
     if (site) rows.push(`<a class="cell" href="${esc(/^https?:\/\//.test(site) ? site : 'https://' + site)}" target="_blank" rel="noopener"><span>Website<small>${esc(site.replace(/^https?:\/\//, ''))}</small></span><span class="chev">›</span></a>`);
     cc.innerHTML = rows.length ? `<h2 class="card-h">Contact</h2>${rows.join('')}` : '';
     cc.hidden = !rows.length;
+    $('.story.school .photo').src = about.intro_image || 'assets/photo-school.svg';
+    const photos = c.prize_photos || {};
+    $$('.prize[data-prize]').forEach((el) => {
+      const src = String(photos[el.dataset.prize] || ''), img = $('img', el);
+      if (src) img.src = src; else img.removeAttribute('src');
+      img.hidden = !src; el.classList.toggle('has-photo', !!src);
+    });
   }
   const endsText = () => {
     const d = stats && stats.ends_on ? new Date(stats.ends_on + 'T12:00:00') : null;
@@ -506,12 +515,12 @@
     $('#prize-sub').textContent = closes ? `Closes ${closes} · winners are emailed` : 'Winners are emailed at the close';
     $('#home-ends').textContent = closes ? `Closes ${closes}` : '';
     const pz = stats.prizes || {};
-    const put = (id, v, fallback) => { $(id).textContent = (v || '').trim() || fallback; };
-    put('#prize-everyone', pz.everyone, 'To be announced');
-    put('#prize-students', pz.students, 'To be announced');
-    put('#prize-teachers', pz.teachers, 'To be announced');
-    put('#prize-best-light', pz.best_light, 'Closest to 1,000 with one light.');
-    put('#prize-most-plays', pz.most_plays, 'The biggest supporter.');
+    const put = (id, v) => { const el = $(id); const t = String(v || '').trim(); el.textContent = t || 'To be announced'; el.classList.toggle('tba', !t); };
+    put('#prize-everyone', pz.everyone);
+    put('#prize-students', pz.students);
+    put('#prize-teachers', pz.teachers);
+    put('#prize-best-light', pz.best_light);
+    put('#prize-most-plays', pz.most_plays);
   }
 
   async function refreshMe() {
@@ -1166,8 +1175,8 @@
     const l = spot && spot.best_light, p = spot && spot.most_plays;
     if ($('#spot-light')) $('#spot-light').innerHTML = l ? `${nameHtml(l.initials)} · ${l.score}` : '–';
     if ($('#spot-plays')) $('#spot-plays').innerHTML = p ? `${nameHtml(p.initials)} · ${p.plays}` : '–';
-    $('#lead-light').innerHTML = l ? `Leading: ${nameHtml(l.initials)} · ${l.score}` : '';
-    $('#lead-plays').innerHTML = p ? `Leading: ${nameHtml(p.initials)} · ${p.plays} ${Number(p.plays) === 1 ? 'play' : 'plays'}` : '';
+    $('#lead-light').innerHTML = l ? leadHtml(l.initials, l.score) : '';
+    $('#lead-plays').innerHTML = p ? leadHtml(p.initials, `${p.plays} ${Number(p.plays) === 1 ? 'play' : 'plays'}`) : '';
   }
   async function loadBoard() {
     if (!boardTouched) boardRole = isSchool() ? player.role : 'everyone';
@@ -1216,7 +1225,7 @@
         const rows = await rpc('leaderboard', { p_role: role === 'everyone' ? null : role });
         boardCache[role] = rows;
         const top = rows[0];
-        $('#lead-' + role).innerHTML = top ? `Leading: ${nameHtml(top.initials)} · ${top.score}` : '';
+        $('#lead-' + role).innerHTML = top ? leadHtml(top.initials, top.score) : '';
       } catch (_) { /* leave blank */ }
     }));
   }
