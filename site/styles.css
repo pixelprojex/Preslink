@@ -293,7 +293,7 @@ button.cell:active { background: var(--fill); }
 .game-mid { display: grid; align-content: center; gap: 0; }
 .game-msg { text-align: center; font-size: 17px; font-weight: 600; color: var(--muted); min-height: 56px; margin-bottom: 14px; letter-spacing: -.01em; display: grid; place-items: center; }
 .game-msg.go { color: var(--orange); font-size: 24px; font-weight: 800; }
-.game-msg.coach { color: var(--muted-d); font-weight: 600; }
+.coach { text-align: center; color: var(--muted-d); font-size: 15px; font-weight: 600; min-height: 22px; margin-top: 2px; }
 .acc { width: 100%; }
 .acc > .cell { cursor: pointer; }
 .acc > .cell .chev { transition: transform .25s; }

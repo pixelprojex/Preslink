@@ -616,6 +616,7 @@
     $('#score-value').textContent = '';
     $('.score').classList.remove('pop');
     $('#verdict').textContent = '';
+    $('#coach').textContent = '';
     $('#verdict').classList.remove('miss');
     $('#tap-hint').textContent = 'Tap when the light is on the mark';
     $('#tap-hint').classList.remove('live');
@@ -797,13 +798,13 @@
     const v = $('#verdict');
     v.textContent = verdictFor(s);
     v.classList.toggle('miss', s < 550);
-    const m = $('#game-msg');
-    m.textContent = coachFor(s, err);
-    m.classList.toggle('coach', !!m.textContent);
+    $('#game-msg').textContent = ''; // the light's own pop floats here; the coaching sits under the verdict
+    $('#coach').textContent = coachFor(s, err);
     await wait(1150);
     if (game.state !== 'between') return;
     if (game.round < ROUNDS - 1) {
       v.textContent = '';
+      $('#coach').textContent = '';
       $('#score-value').textContent = '';
       $('.score').classList.remove('pop');
       settleThen(game.round + 1);
@@ -819,6 +820,7 @@
     $('#tap-hint').textContent = '';
     $('#tap-hint').classList.remove('live');
     $('#verdict').textContent = '';
+    $('#coach').textContent = '';
     const el = $('#score-value');
     await countUp(el, 0, score, 1200, String);
     $('.score').classList.add('pop');
