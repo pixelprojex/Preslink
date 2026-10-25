@@ -2,7 +2,7 @@
 //
 // Dependency-free on purpose: Postgres is reached through PostgREST RPC with the
 // service-role key, Stripe through its REST API. Every action is a POST with a
-// JSON body: { action: "register" | "update" | "school" | "signin" | "me" | "checkout" | "confirm" | "start" | "submit" | "admin", ... }.
+// JSON body: { action: "register" | "update" | "school" | "contact" | "signin" | "me" | "checkout" | "confirm" | "start" | "submit" | "admin", ... }.
 // "register" needs no name: the database assigns a random three-letter one. New players start on the
 // Everyone board (role "everyone"); "school" moves a player onto the Students or Teachers board by
 // checking the shape of a school email address (students @pbccork.ie, teachers @pbc-cork.ie; nothing is sent).
@@ -10,14 +10,27 @@
 // Admin calls carry the committee code; the database verifies it (SHA-256 hash in settings) and
 // locks the admin scope after repeated failures.
 //
-// Secrets (Supabase dashboard -> Edge Functions -> Secrets):
-//   STRIPE_SECRET_KEY   sk_test_... / sk_live_...
-//   SITE_URL            optional, e.g. https://preslink-arcade.netlify.app (used for Stripe return URLs;
+// Stripe: the committee connects it from the Committee page (admin op "stripe_connect"): the key is
+// checked with Stripe, the webhook endpoint is created, and both secrets are kept in app_secrets,
+// which only the service role can read. A STRIPE_SECRET_KEY environment secret, if set, wins.
+//   SITE_URL            optional, e.g. https://preslink.netlify.app (used for Stripe return URLs;
 //                       falls back to the browser's Origin header)
 
 const SUPABASE_URL = (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, "");
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-const STRIPE_KEY = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
+const STRIPE_ENV_KEY = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
+// The key the committee saved from the Committee page, cached for a minute. Empty means demo mode.
+let keyCache: { value: string; at: number } | null = null;
+export async function stripeKey(): Promise<string> {
+  if (STRIPE_ENV_KEY) return STRIPE_ENV_KEY;
+  if (keyCache && Date.now() - keyCache.at < 60_000) return keyCache.value;
+  const value = await secretGet("stripe_secret_key");
+  keyCache = { value, at: Date.now() };
+  return value;
+}
+async function secretGet(key: string): Promise<string> {
+  try { return (await rpc<string | null>("app_secret_get", { p_key: key })) ?? ""; } catch { return ""; }
+}
 const STRIPE_API = (Deno.env.get("STRIPE_API_BASE") ?? "https://api.stripe.com").replace(/\/$/, "");
 const SITE_URL = (Deno.env.get("SITE_URL") ?? "").replace(/\/$/, "");
 
@@ -90,12 +103,13 @@ export async function rpc<T = unknown>(name: string, args: Record<string, unknow
 // ---------------------------------------------------------------------------
 // Stripe (REST, form-encoded)
 // ---------------------------------------------------------------------------
-export async function stripe(method: "GET" | "POST", path: string, params?: Record<string, string>) {
-  if (!STRIPE_KEY) throw new HttpError(503, "STRIPE_NOT_CONFIGURED");
+export async function stripe(method: "GET" | "POST" | "DELETE", path: string, params?: Record<string, string>, key?: string) {
+  const k = key ?? await stripeKey();
+  if (!k) throw new HttpError(503, "STRIPE_NOT_CONFIGURED");
   const res = await fetch(`${STRIPE_API}${path}`, {
     method,
     headers: {
-      Authorization: `Bearer ${STRIPE_KEY}`,
+      Authorization: `Bearer ${k}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: method === "POST" ? new URLSearchParams(params ?? {}).toString() : undefined,
@@ -162,6 +176,19 @@ async function school(body: Body) {
   return await rpc("set_school", { p_id: playerId, p_email: email });
 }
 
+// Where to send the news if they win, plus an optional school email that joins a board. A school
+// address in the first field counts too. Format checks only; the database applies the same rules.
+const ANY_EMAIL = /^[a-z0-9._%+'-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+async function contact(body: Body) {
+  const playerId = requireUuid(body.player_id, "BAD_PLAYER");
+  if (typeof body.email !== "string") throw new HttpError(400, "BAD_EMAIL");
+  const email = body.email.trim().toLowerCase();
+  if (email.length < 6 || email.length > 120 || !ANY_EMAIL.test(email)) throw new HttpError(400, "BAD_EMAIL");
+  const school = body.school_email == null ? "" : String(body.school_email).trim().toLowerCase();
+  if (school !== "" && !SCHOOL_EMAIL.test(school)) throw new HttpError(400, "BAD_SCHOOL_EMAIL");
+  return await rpc("set_contact", { p_id: playerId, p_email: email, p_school_email: school === "" ? null : school });
+}
+
 async function me(body: Body) {
   const playerId = requireUuid(body.player_id, "BAD_PLAYER");
   return await rpc("me_player", { p_id: playerId });
@@ -177,7 +204,7 @@ async function checkout(req: Request, body: Body) {
   const origin = siteOrigin(req);
 
   // Demo mode: with no Stripe key configured, plays are free and clearly labelled as such.
-  if (!STRIPE_KEY) {
+  if (!(await stripeKey())) {
     const id = `cs_demo_${bundle}_${playerId}_${crypto.randomUUID().replace(/-/g, "")}`;
     return { url: `${origin}/?session_id=${id}`, session_id: id, demo: true };
   }
@@ -208,7 +235,7 @@ async function checkout(req: Request, body: Body) {
 async function confirm(body: Body) {
   const sessionId = String(body.session_id ?? "");
   const demo = sessionId.match(/^cs_demo_(single|triple|seven)_([0-9a-f-]{36})_[0-9a-f]{32}$/);
-  if (demo && !STRIPE_KEY) {
+  if (demo && !(await stripeKey())) {
     const b = BUNDLES[demo[1]];
     const grant = await rpc<{ credits: number }>("grant_demo_credits", { p_player_id: demo[2], p_credits: b.credits });
     const player = await rpc("me_player", { p_id: demo[2] });
@@ -272,7 +299,27 @@ async function signin(body: Body) {
   return await rpc("signin_player", { p_initials: initials, p_code: code });
 }
 
-const ADMIN_OPS = new Set(["overview", "void", "ban", "block", "set_code", "settings", "player", "reset_name"]);
+const ADMIN_OPS = new Set(["overview", "emails", "void", "ban", "block", "set_code", "settings", "player", "reset_name", "stripe_status", "stripe_connect", "stripe_disconnect"]);
+
+// The committee code is checked by the database (same lockout as every admin call).
+async function adminVerify(code: string) {
+  const err = await rpc<string | null>("admin_verify", { p_code: code });
+  if (err) throw new HttpError(403, String(err));
+}
+function accountName(a: Record<string, unknown>): string {
+  const bp = (a.business_profile ?? {}) as Record<string, unknown>;
+  const dash = ((a.settings ?? {}) as Record<string, unknown>).dashboard as Record<string, unknown> | undefined;
+  return String(bp.name || (dash && dash.display_name) || a.email || a.id || "Stripe").slice(0, 120);
+}
+async function stripeStatus() {
+  const key = await stripeKey();
+  if (!key) return { connected: false, mode: "", account: "", webhook: false, from_env: false };
+  const fromEnv = !!STRIPE_ENV_KEY;
+  const account = fromEnv ? "" : await secretGet("stripe_account");
+  const webhook = fromEnv ? !!(Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? "") : !!(await secretGet("stripe_webhook_secret"));
+  return { connected: true, mode: key.startsWith("sk_live_") ? "live" : "test", account, webhook, from_env: fromEnv };
+}
+const SECRET_KEYS = ["stripe_secret_key", "stripe_webhook_secret", "stripe_webhook_id", "stripe_account"];
 const PRIZE_KEYS = new Set(["students", "teachers", "everyone", "best_light", "most_plays"]);
 
 // body.prizes: null (leave alone) or an object whose keys are the five prize slots; each value is
@@ -332,6 +379,44 @@ async function admin(body: Body) {
       await rpc("admin_set_code", { p_code: code, p_new_code: newCode });
       return { ok: true };
     }
+    case "emails": return await rpc("admin_emails", { p_code: code }); // a bad code comes back as BAD_ADMIN, like overview
+    case "stripe_status": {
+      await adminVerify(code);
+      return await stripeStatus();
+    }
+    case "stripe_connect": {
+      await adminVerify(code);
+      const key = String(body.secret_key ?? "").trim();
+      if (!/^sk_(live|test)_[A-Za-z0-9]{16,}$/.test(key)) throw new HttpError(400, "BAD_STRIPE_KEY");
+      // 1. The key must work: ask Stripe who it belongs to.
+      let account: Record<string, unknown>;
+      try { account = await stripe("GET", "/v1/account", undefined, key); } catch { throw new HttpError(400, "STRIPE_KEY_REJECTED"); }
+      // 2. One webhook endpoint for this project, replacing the one we made before, if any.
+      const oldId = await secretGet("stripe_webhook_id");
+      if (oldId) { try { await stripe("DELETE", `/v1/webhook_endpoints/${oldId}`, undefined, key); } catch { /* already gone */ } }
+      const hook = await stripe("POST", "/v1/webhook_endpoints", {
+        url: `${SUPABASE_URL}/functions/v1/stripe-webhook`,
+        "enabled_events[0]": "checkout.session.completed",
+        "enabled_events[1]": "checkout.session.async_payment_succeeded",
+        description: "PresLink Arcade",
+      }, key);
+      // 3. Keep both secrets where only the service role can read them.
+      await rpc("app_secret_set", { p_key: "stripe_secret_key", p_value: key });
+      await rpc("app_secret_set", { p_key: "stripe_webhook_secret", p_value: String(hook.secret ?? "") });
+      await rpc("app_secret_set", { p_key: "stripe_webhook_id", p_value: String(hook.id ?? "") });
+      await rpc("app_secret_set", { p_key: "stripe_account", p_value: accountName(account) });
+      keyCache = null;
+      return await stripeStatus();
+    }
+    case "stripe_disconnect": {
+      await adminVerify(code);
+      const key = await stripeKey();
+      const oldId = await secretGet("stripe_webhook_id");
+      if (key && oldId && !STRIPE_ENV_KEY) { try { await stripe("DELETE", `/v1/webhook_endpoints/${oldId}`, undefined, key); } catch { /* best effort */ } }
+      for (const k of SECRET_KEYS) await rpc("app_secret_set", { p_key: k, p_value: "" });
+      keyCache = null;
+      return await stripeStatus();
+    }
     case "settings": {
       const goal = body.goal_cents == null ? null : Number(body.goal_cents);
       if (goal !== null && (!Number.isInteger(goal) || goal < 0 || goal > 100000000)) throw new HttpError(400, "BAD_GOAL");
@@ -363,6 +448,7 @@ export async function handler(req: Request): Promise<Response> {
       case "register": return json(await register(body));
       case "update": return json(await update(body));
       case "school": return json(await school(body));
+      case "contact": return json(await contact(body));
       case "signin": return json(await signin(body));
       case "admin": return json(await admin(body));
       case "me": return json(await me(body));

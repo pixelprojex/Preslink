@@ -6,10 +6,12 @@
   const DEMO = !CONFIG.SUPABASE_URL;
   const STORAGE_KEY = 'preslink.player';
   const SCHOOL_ASKED_KEY = 'preslink.schoolAsked';
+  const CONTACT_ASKED_KEY = 'preslink.contactAsked';
   const CODE_SHOWN_KEY = 'preslink.codeShown';
+  const HOW_SEEN_KEY = 'preslink.howSeen';
   const PENDING_KEY = 'preslink.pendingScore';
   const ADMIN_KEY = 'preslink.adminCode';
-  const SWEEP_GUARD_MS = 150;
+  const SWEEP_GUARD_MS = 60; // the server accepts taps from 60 ms into a sweep
   const ROUNDS = 3;
   const BUNDLES = { single: { amount: 2, credits: 1 }, triple: { amount: 5, credits: 3 }, seven: { amount: 10, credits: 7 } };
   const SCHOOL = /^[a-z0-9._%+'-]+@(pbccork\.ie|pbc-cork\.ie)$/;
@@ -27,24 +29,28 @@
   // A coloured circle with the letters; the tint comes from the letters so it is stable.
   const avatarHtml = (display, big) => { const l = String(display || '').split('#')[0]; let h = 0; for (const c of l) h = (h * 31 + c.charCodeAt(0)) % 5; return `<span class="avatar c${h + 1}${big ? ' big' : ''}">${nameHtml(display)}</span>`; };
   const boardName = (role) => BOARD_NAMES[role] || 'Everyone';
+  const CREST_IMG = '<img class="crest-ic" src="assets/crest.svg?v=10" alt="">';
 
   const MESSAGES = {
     NETWORK: 'No connection. Check your signal and try again.',
     NO_CREDITS: 'No plays left.',
-    BAD_INITIALS: 'Two or three letters, A to Z.',
-    BLOCKED_INITIALS: 'Those letters are not allowed. Try others.',
-    TAKEN: 'Those letters are taken. Try others.',
+    BAD_INITIALS: 'Two or three initials, A to Z.',
+    BLOCKED_INITIALS: 'Those initials are not allowed. Try others.',
+    TAKEN: 'Those initials are taken. Try others.',
     BAD_ROLE: 'To join a school board, add your school email on the You tab.',
     BAD_SESSION: 'This payment link is not valid any more. Nothing was charged.',
     UNKNOWN_SESSION: 'This payment link is not valid any more. Nothing was charged.',
     BAD_GOAL: 'Enter a whole number of euro.',
-    NO_PLAYER: 'No player with those letters.',
+    NO_PLAYER: 'No player with those initials.',
     BAD_SCHOOL_EMAIL: 'That is not a school email we recognise.',
+    BAD_EMAIL: 'That does not look like an email address.',
     NEEDS_SCHOOL_EMAIL: 'Add your school email first.',
     BAD_SIGNIN: 'That name and code do not match.',
     LOCKED: 'Too many tries. Wait 15 minutes.',
     BANNED: 'This player has been removed by the committee.',
     STRIPE_NOT_CONFIGURED: 'Payments are not switched on yet.',
+    BAD_STRIPE_KEY: 'That is not a Stripe secret key. It starts with sk_live_ or sk_test_.',
+    STRIPE_KEY_REJECTED: 'Stripe did not accept that key.',
     NO_SITE_URL: 'Payments are not set up for this address yet.',
     PLAYER_NOT_FOUND: 'We could not find your player on this device. Tap Play to start fresh.',
     SCORE_MISMATCH: 'That score did not check out, so it was not saved.',
@@ -85,9 +91,9 @@
   let prevScreen = 'home';
 
   const savePlayer = () => store.set(STORAGE_KEY, player);
-  const clearPlayer = () => { player = null; credits = 0; openPlay = null; best = null; bestLight = null; store.del(STORAGE_KEY); store.del(SCHOOL_ASKED_KEY); store.del(CODE_SHOWN_KEY); store.del('preslink.prevBest'); store.del('preslink.prevRank'); };
+  const clearPlayer = () => { player = null; credits = 0; openPlay = null; best = null; bestLight = null; store.del(STORAGE_KEY); store.del(SCHOOL_ASKED_KEY); store.del(CODE_SHOWN_KEY); store.del(CONTACT_ASKED_KEY); store.del('preslink.prevBest'); store.del('preslink.prevRank'); };
   function adoptPlayer(p) {
-    player = { id: p.id, tag: p.tag, initials: p.initials, suffix: p.suffix || 1, display: p.display || p.initials, role: p.role || 'everyone', claim_code: p.claim_code, school_email: p.school_email || null };
+    player = { id: p.id, tag: p.tag, initials: p.initials, suffix: p.suffix || 1, display: p.display || p.initials, role: p.role || 'everyone', claim_code: p.claim_code, school_email: p.school_email || null, contact_email: p.contact_email || null };
     credits = p.credits || 0;
     openPlay = p.open_play || null;
     best = p.best != null ? p.best : (p.best_this_week == null ? null : p.best_this_week);
@@ -131,9 +137,11 @@
 
   // The first tap opens a small sheet asking for two or three letters; the player is created on submit.
   let pendingBundle = null;
-  function ensurePlayer(bundle) {
+  let pendingAfter = null; // 'school' when the initials sheet was opened from the join-your-board row
+  function ensurePlayer(bundle, after) {
     if (player) return true;
     pendingBundle = bundle || 'single';
+    pendingAfter = after || null;
     showError('name-error', '');
     nameInitials.set('');
     openSheet('name');
@@ -169,13 +177,46 @@
     $$('.sheet').forEach((s) => { s.hidden = true; });
     $('#sheet-backdrop').hidden = true;
   }
-  $('#sheet-backdrop').addEventListener('click', () => { if ($('#sheet-code').hidden) closeSheets(); });
+  $('#sheet-backdrop').addEventListener('click', () => { if (!$('#sheet-contact').hidden) { skipContact(); return; } if ($('#sheet-code').hidden) closeSheets(); });
   document.addEventListener('click', (e) => {
     const s = e.target.closest('[data-sheet]');
     if (s) { e.preventDefault(); openSheet(s.dataset.sheet); return; }
     if (e.target.closest('[data-close]')) closeSheets();
   });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheets(); });
+  // How to play: shown by its rows, and once by itself before the very first light.
+  function showIntro() {
+    return new Promise((resolve) => {
+      const sheet = $('#sheet-how');
+      store.set(HOW_SEEN_KEY, true); // once per device, even if the page is reloaded with the sheet open
+      openSheet('how');
+      const obs = new MutationObserver(() => { if (sheet.hidden) { obs.disconnect(); store.set(HOW_SEEN_KEY, true); resolve(); } });
+      obs.observe(sheet, { attributes: true, attributeFilter: ['hidden'] });
+    });
+  }
+  $('#how-done').addEventListener('click', () => { store.set(HOW_SEEN_KEY, true); closeSheets(); });
+  // Arcade sounds: a soft tick on each tap, a two-note chime for a good light, a run of notes for a
+  // new best. Built with the Web Audio API on the first tap, so nothing plays uninvited.
+  let audio = null;
+  function beep(freq, ms, gain, type, at) {
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === 'suspended') audio.resume();
+      const t = audio.currentTime + (at || 0);
+      const o = audio.createOscillator(); const g = audio.createGain();
+      o.type = type || 'sine'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(gain, t + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + ms / 1000);
+      o.connect(g); g.connect(audio.destination);
+      o.start(t); o.stop(t + ms / 1000 + 0.02);
+    } catch (_) { /* no sound on this device */ }
+  }
+  const sounds = {
+    tap: () => beep(640, 50, 0.04, 'square', 0),
+    good: () => { beep(880, 140, 0.05, 'sine', 0); beep(1320, 220, 0.05, 'sine', 0.11); },
+    best: () => [660, 880, 1100, 1320].forEach((f, i) => beep(f, 180, 0.05, 'sine', i * 0.1)),
+  };
   // Badge bubbles: tap a prize symbol to see what it means.
   const BADGE_TEXT = { light: ['Best light', 'Closest to 1,000 with a single light. A spot prize at the end.'], plays: ['Most plays', 'The most plays in the campaign. A spot prize at the end.'] };
   function closeBubbles() { $$('.bubble').forEach((b) => b.remove()); $$('.board li.bubbling').forEach((l) => l.classList.remove('bubbling')); }
@@ -272,6 +313,8 @@
     window.scrollTo(0, 0);
     const tab = { home: 'play', cabinet: 'play', play: 'play', signin: 'play', board: 'board', prize: 'board', about: 'about', you: 'you' }[name];
     $$('#tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
+    const ti = ['play', 'board', 'about', 'you'].indexOf(tab);
+    if (ti >= 0) $('#tabbar').style.setProperty('--i', ti);
     $('#tabbar').hidden = name === 'play' || name === 'admin' || name === 'cabinet';
     if (name !== 'play' && game.state !== 'idle' && game.state !== 'done') abandonGame();
     if (name === 'home') { renderHome(); refreshStats(); refreshMe(); }
@@ -340,18 +383,38 @@
     });
     el.setAttribute('aria-label', text);
   }
-  function tickTo(el, from, to, fmt, dur) {
+  // Rolls like a mechanical counter: the digits slide to a stop, rest, slide again. At most eight
+  // stops, and the rests get a little longer towards the end so the last digit settles.
+  function tickTo(el, from, to, fmt) {
     return new Promise((resolve) => {
+      clearTimeout(el._tick);
       if (reduceMotion() || to === from) { setOdometer(el, fmt(to)); resolve(); return; }
-      const steps = Math.min(14, Math.max(4, Math.abs(to - from)));
+      const delta = to - from;
+      const n = Math.min(8, Math.abs(delta));
+      const vals = [];
+      for (let i = 1; i <= n; i++) vals.push(Math.round(from + delta * (i / n)));
       let i = 0;
-      const t = setInterval(() => {
+      const step = () => {
+        setOdometer(el, fmt(vals[i]));
         i++;
-        const k = 1 - Math.pow(1 - i / steps, 2);
-        setOdometer(el, fmt(Math.round(from + (to - from) * k)));
-        if (i >= steps) { clearInterval(t); setOdometer(el, fmt(to)); resolve(); }
-      }, dur / steps);
+        if (i >= n) { resolve(); return; }
+        const k = i / n;
+        el._tick = setTimeout(step, 460 + 300 * k * k);
+      };
+      el._tick = setTimeout(step, 140);
     });
+  }
+  // A plain count-up for the big score on the result screen.
+  function countUp(el, to, ms) {
+    if (reduceMotion()) { el.textContent = to; return; }
+    const t0 = performance.now();
+    const frame = (now) => {
+      const k = Math.min(1, (now - t0) / ms);
+      const e = 1 - Math.pow(1 - k, 3);
+      el.textContent = Math.round(to * e);
+      if (k < 1) requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
   }
   let shownRaised = null; // whole euro shown in the app bar
   function showRing(cents, goalCents) {
@@ -360,35 +423,35 @@
     const pct = goalCents > 0 ? Math.min(1, cents / goalCents) : (cents > 0 ? 1 : 0);
     ring.setAttribute('stroke-dasharray', `${Math.max(pct > 0 ? 3 : 0, pct * circ).toFixed(1)} ${circ}`);
   }
+  // The raised total only ever rolls: digits slide to the new value, nothing else changes.
   function showRaised(cents) {
     const el = $('#raised-n');
-    const wrap = $('#raised');
     const target = Math.round((cents || 0) / 100);
     const fmt = (n) => '€' + n.toLocaleString('en-IE');
-    if (shownRaised === null) {
-      shownRaised = target;
-      tickTo(el, 0, target, fmt, target > 0 ? 1500 : 0);
-      return;
-    }
-    if (target > shownRaised) {
-      const plus = document.createElement('span');
-      plus.className = 'raised-plus';
-      plus.textContent = '+' + fmt(target - shownRaised);
-      wrap.appendChild(plus);
-      setTimeout(() => plus.remove(), 2000);
-      wrap.classList.remove('up'); void wrap.offsetWidth; wrap.classList.add('up');
-      setTimeout(() => wrap.classList.remove('up'), 2000);
-      tickTo(el, shownRaised, target, fmt, 1900);
-    } else {
-      setOdometer(el, fmt(target));
-    }
+    const from = shownRaised;
     shownRaised = target;
+    if (from === null) { tickTo(el, 0, target, fmt); return; }
+    if (target === from) return;
+    if (target > from) tickTo(el, from, target, fmt);
+    else setOdometer(el, fmt(target));
   }
+  // Live total: every open page asks for the total every few seconds, so a payment anywhere rolls
+  // the counter on everyone's screen within that time. Paused while the tab is hidden.
+  const STATS_EVERY = 5000;
+  let statsTimer = 0;
+  const inPlay = () => ['loading', 'countdown', 'sweeping', 'between'].includes(game.state);
+  function pollStats() {
+    clearTimeout(statsTimer);
+    if (document.hidden || inPlay()) return; // nothing moves on the page while the light sweeps
+    statsTimer = setTimeout(() => { refreshStats().finally(pollStats); }, STATS_EVERY);
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshStats(); pollStats(); });
 
   const endsText = () => {
     const d = stats && stats.ends_on ? new Date(stats.ends_on + 'T12:00:00') : null;
     return d && !isNaN(d) ? 'Ends ' + d.toLocaleDateString('en-IE', { day: 'numeric', month: 'long' }) : '';
   };
+  const closesText = () => endsText().replace('Ends ', '');
   let statsSeq = 0;
   async function refreshStats() {
     const seq = ++statsSeq;
@@ -400,7 +463,9 @@
     showRing(Number(stats.total_raised_cents || 0), Number(stats.goal_cents || 0));
     const ends = endsText();
     $('#board-sub').textContent = ends ? `Prizes at the end · ${ends.replace('Ends', 'ends')}` : 'Prizes at the end';
-    $('#prize-sub').textContent = ends ? `Awarded at the end · ${ends.replace('Ends', 'ends')}` : 'Awarded at the end of the campaign';
+    const closes = closesText();
+    $('#prize-sub').textContent = closes ? `The arcade closes on ${closes}. Winners are emailed that day.` : 'Winners are emailed when the arcade closes.';
+    $('#home-ends').textContent = closes ? `Closes ${closes} · winners are emailed` : 'Winners are emailed';
     const pz = stats.prizes || {};
     const put = (id, v, fallback) => { $(id).textContent = (v || '').trim() || fallback; };
     put('#prize-everyone', pz.everyone, 'To be announced');
@@ -458,9 +523,7 @@
     const n = result.credits_added || 1;
     const b = BUNDLES[result.bundle];
     $('#cab-title').textContent = result.demo ? 'Demo play' : 'Thank you';
-    $('#cab-text').textContent = result.demo
-      ? 'No payment was taken: payments are not switched on yet.'
-      : `Your €${b ? b.amount : 2} goes to Presentation Brothers schools in Ghana and Nigeria.`;
+    $('#cab-text').textContent = '';
     cabinetBusy = true;
     await splashDone;
     go('cabinet');
@@ -504,42 +567,53 @@
   // ---------------------------------------------------------------------------
   // Game: three lights, line each one up with the mark
   // ---------------------------------------------------------------------------
-  const game = { state: 'idle', play: null, round: 0, taps: [], scores: [], sweepStart: 0, raf: 0, trackW: 0, pending: null, lastScore: 0 };
-  const marker = $('#marker'), track = $('#track'), pin = $('#pin'), swatch = $('#swatch');
+  const game = { state: 'idle', play: null, round: 0, taps: [], scores: [], sweepStart: 0, trackW: 0, pending: null, lastScore: 0 };
+  const marker = $('#marker'), track = $('#track'), pin = $('#pin'), swatch = $('#swatch'), zone = $('#zone');
+  const ZONE_HALF = 0.025; // the sweet spot drawn on the track: 25 ms either side of the mark at a one-second sweep
 
   function posAt(ms, phase, speed) {
     let x = ms / speed + phase;
     x = x - 2 * Math.floor(x / 2);
     return x < 1 ? x : 2 - x;
   }
-  // Steep on purpose: 20 ms off at a one-second sweep is about 880, and 1,000 needs an error under a tenth of a millisecond.
-  const roundScore = (pos, target) => 50 + Math.round(950 * Math.pow(Math.max(0, 1 - Math.abs(pos - target) / 0.5), 3));
+  // Mirrors round_score() in the database: a bell over the timing error in milliseconds, not a spike.
+  //   score = max(50, round(50 + 949 * exp(-(err/40)^2) - 12 * sqrt(min(err, 3) / 3))),  err = |pos - target| * speed_ms
+  // 999 on the mark, then a fine ruler over the first 3 ms (0.5 ms = 994, 1 ms = 991, 3 ms = 982) so the top of the
+  // board stays one person; the bell underneath keeps it fair: 10 ms = 930, 20 ms = 777, 30 ms = 579, 40 ms = 387,
+  // 60 ms = 138, 80 ms = 55, further = 50. 1,000 is not a score: 999 is the ceiling.
+  const SCORE_WIDTH_MS = 40;
+  const roundScore = (pos, target, speed) => {
+    const err = Math.abs(pos - target) * speed;
+    return Math.max(50, Math.round(50 + 949 * Math.exp(-((err / SCORE_WIDTH_MS) ** 2)) - 12 * Math.sqrt(Math.min(err, 3) / 3)));
+  };
   function titleFor(s) {
-    if (s >= 950) return 'Outstanding';
-    if (s >= 900) return 'Superb';
-    if (s >= 800) return 'Great run';
-    if (s >= 600) return 'Good effort';
+    if (s >= 850) return 'Outstanding';
+    if (s >= 700) return 'Superb';
+    if (s >= 550) return 'Great run';
+    if (s >= 400) return 'Good effort';
     return 'Next time';
   }
   function verdictFor(s) {
-    if (s >= 990) return 'Perfect';
-    if (s >= 950) return 'So close';
-    if (s >= 850) return 'Nice';
-    if (s >= 600) return 'Not bad';
+    if (s >= 900) return 'Perfect';
+    if (s >= 750) return 'So close';
+    if (s >= 550) return 'Nice';
+    if (s >= 350) return 'Not bad';
     return 'Unlucky';
   }
   function setMarker(pos) { marker.style.transform = `translateX(${pos * game.trackW}px)`; }
   function setPin(target) {
     pin.style.left = (target * 100) + '%';
+    zone.style.left = ((target - ZONE_HALF) * 100) + '%';
     swatch.style.background = `color-mix(in srgb, #ffe08a ${Math.round((1 - target) * 100)}%, #f26a1b)`;
   }
-  function measure() { game.trackW = track.clientWidth; }
+  function measure() { game.trackW = track.clientWidth; marker.style.setProperty('--w', game.trackW + 'px'); }
   window.addEventListener('resize', measure);
 
   function renderDots() {
     $$('#rounds .dot').forEach((d, i) => {
       d.className = 'dot';
-      if (i < game.scores.length) d.classList.add('done', game.scores[i] < 850 ? 'low' : 'high');
+      d.textContent = i < game.scores.length ? game.scores[i] : i + 1;
+      if (i < game.scores.length) d.classList.add('done', game.scores[i] < 400 ? 'low' : 'high');
       else if (i === game.round && (game.state === 'sweeping' || game.state === 'countdown')) d.classList.add('live');
     });
   }
@@ -548,15 +622,15 @@
     $('#game').hidden = false;
     $('#game').classList.remove('done');
     $('#game-msg').textContent = 'Ready';
-    $('#game-msg').classList.remove('go');
-    $('#score-value').textContent = '0';
+    $('#game-msg').classList.remove('go', 'coach');
+    $('#score-value').textContent = '';
     $('.score').classList.remove('pop');
     $('#verdict').textContent = '';
     $('#verdict').classList.remove('miss');
     $('#tap-hint').textContent = 'Tap when the light is on the mark';
     $('#tap-hint').classList.remove('live');
     $('#result-note').hidden = true;
-    marker.classList.remove('hit', 'miss');
+    marker.classList.remove('hit', 'miss', 'run');
     game.round = 0; game.taps = []; game.scores = [];
     renderDots();
     measure();
@@ -575,16 +649,14 @@
     const g = $('#game');
     g.classList.remove('enter'); void g.offsetWidth; g.classList.add('enter');
     game.state = 'loading';
-    // The play is fetched while the countdown runs, so the light starts the moment "Go" shows.
+    pollStats(); // pauses the counter refresh until the play is over
     const fetching = api('start', { player_id: player.id });
     fetching.catch(() => {});
     const m = $('#game-msg');
-    for (const n of ['3', '2', '1']) {
-      if (game.state !== 'loading') return;
-      m.textContent = n;
-      m.classList.remove('count'); void m.offsetWidth; m.classList.add('count');
-      await wait(650);
-    }
+    m.classList.remove('count', 'go', 'coach');
+    m.textContent = '';
+    // The first time, the rules sit over the game until Got it is tapped; nothing moves meanwhile.
+    if (!store.get(HOW_SEEN_KEY) && best == null) { await showIntro(); if (game.state !== 'loading') return; }
     let res;
     try {
       res = await fetching;
@@ -601,85 +673,139 @@
     credits = res.credits;
     openPlay = null;
     updatePlayCredits();
-    game.state = 'countdown';
-    setPin(res.rounds[0].target);
-    renderDots();
-    m.classList.remove('count');
-    m.textContent = 'Go';
-    m.classList.add('go');
     $('#tap-hint').classList.add('live');
-    beginRound(0);
-    setTimeout(() => { if (game.state === 'sweeping' && game.round === 0) { m.classList.remove('go'); m.textContent = 'Light 1 of 3'; } }, 700);
+    settleThen(0);
+  }
+  // The light appears where it will start and breathes for a moment before it moves. Nothing is
+  // counted until it sweeps, so there is no rush and no surprise.
+  function settleThen(i) {
+    const r = game.play.rounds[i];
+    game.round = i;
+    game.state = 'countdown';
+    const m = $('#game-msg');
+    m.classList.remove('count', 'go', 'coach');
+    m.textContent = `Light ${i + 1} of 3`;
+    setPin(r.target);
+    marker.classList.remove('hit', 'miss', 'run');
+    measure();
+    setMarker(posAt(0, r.phase, game.play.speed_ms));
+    marker.classList.remove('settle'); void marker.offsetWidth; marker.classList.add('settle');
+    renderDots();
+    setTimeout(() => { if (game.state === 'countdown' && game.round === i) { marker.classList.remove('settle'); beginRound(i); } }, 950);
   }
   function beginRound(i) {
     game.round = i;
     const r = game.play.rounds[i];
-    if (i > 0) { const m = $('#game-msg'); m.classList.remove('go', 'count'); m.textContent = `Light ${i + 1} of 3`; }
+    if (i > 0) { const m = $('#game-msg'); m.classList.remove('go', 'count', 'coach'); m.textContent = `Light ${i + 1} of 3`; }
     setPin(r.target);
-    marker.classList.remove('hit', 'miss');
+    marker.classList.remove('hit', 'miss', 'run');
     measure();
     game.state = 'sweeping';
+    $('#game').classList.add('sweeping');
     renderDots();
-    game.sweepStart = performance.now();
-    game.raf = requestAnimationFrame(loop);
+    startSweep(r);
   }
-  function loop(now) {
-    if (game.state !== 'sweeping') return;
-    const r = game.play.rounds[game.round];
-    setMarker(posAt(now - game.sweepStart, r.phase, game.play.speed_ms));
-    game.raf = requestAnimationFrame(loop);
+  // The sweep is a CSS animation: the browser's compositor moves the light on its own thread at the
+  // screen's full frame rate, whatever else the page is doing (a fetch, the counter rolling, a slow
+  // frame of script). A tap reads the animation's own clock, so the score matches what was drawn.
+  function startSweep(r) {
+    marker.classList.remove('run');
+    void marker.offsetWidth; // a fresh animation, never a resumed one
+    marker.style.setProperty('--cycle', (2 * game.play.speed_ms) + 'ms');
+    marker.style.setProperty('--delay', (-r.phase * game.play.speed_ms) + 'ms');
+    game.sweepStart = performance.now();
+    marker.classList.add('run');
+  }
+  function sweepAnimation() {
+    try { return (marker.getAnimations ? marker.getAnimations() : []).find((a) => a.animationName === 'sweep') || null; } catch (_) { return null; }
+  }
+  function stopSweep(pos) {
+    marker.classList.remove('run');
+    setMarker(pos);
   }
   function abandonGame() {
-    cancelAnimationFrame(game.raf);
+    marker.classList.remove('run');
+    $('#game').classList.remove('sweeping');
     game.state = 'idle';
   }
 
+  // Time of a tap on the sweep's own clock. The animation's currentTime is what the compositor draws
+  // from. The input lag (handler time minus the event's hardware timestamp) and the age of the frame
+  // on screen (about a frame and a half) come off, so people are scored on what they saw.
+  const DISPLAY_LAG_MS = 20;
+  function tapTime(e) {
+    const now = performance.now();
+    const ts = e && Number.isFinite(e.timeStamp) ? e.timeStamp : NaN;
+    const inputLag = ts > 0 && ts <= now + 5 && ts > now - 400 ? now - ts : 0;
+    const anim = sweepAnimation();
+    const elapsed = anim && Number.isFinite(anim.currentTime) ? anim.currentTime : now - game.sweepStart;
+    return Math.round(elapsed - inputLag - DISPLAY_LAG_MS);
+  }
+  // Signed timing error in ms: positive = late (the light had passed the mark), negative = early.
+  function signedError(ms, r) {
+    let x = ms / game.play.speed_ms + r.phase;
+    x = x - 2 * Math.floor(x / 2);
+    const pos = x < 1 ? x : 2 - x;
+    const dir = x < 1 ? 1 : -1;
+    return Math.round((pos - r.target) * dir * game.play.speed_ms);
+  }
+  // One line of coaching after a light, so the next one can be better.
+  function coachFor(s, err) {
+    const a = Math.abs(err);
+    if (s >= 900 || a <= 10) return '';
+    if (a < 40) return err > 0 ? 'A touch late' : 'A touch early';
+    return err > 0 ? 'Late · tap a bit sooner' : 'Early · tap a bit later';
+  }
   function onTap(e) {
     if (game.state !== 'sweeping') return;
-    const ms = Math.round(performance.now() - game.sweepStart);
+    const ms = tapTime(e);
     if (ms < SWEEP_GUARD_MS) return;
     if (e.cancelable) e.preventDefault();
     game.state = 'between';
-    cancelAnimationFrame(game.raf);
+    $('#game').classList.remove('sweeping');
+    sounds.tap();
     const r = game.play.rounds[game.round];
     const pos = posAt(ms, r.phase, game.play.speed_ms);
-    const s = roundScore(pos, r.target);
-    setMarker(pos);
+    const s = roundScore(pos, r.target, game.play.speed_ms);
+    stopSweep(pos);
     game.taps.push(ms);
     game.scores.push(s);
-    afterRound(s);
+    afterRound(s, signedError(ms, r));
   }
   $('#game').addEventListener('pointerdown', onTap);
   document.addEventListener('keydown', (e) => {
     if ((e.code === 'Space' || e.code === 'Enter') && game.state === 'sweeping') onTap(e);
   });
 
-  async function afterRound(s) {
+  async function afterRound(s, err) {
     const g = $('#game');
     g.classList.remove('flash'); void g.offsetWidth; g.classList.add('flash');
-    marker.classList.add(s >= 850 ? 'hit' : 'miss');
+    marker.classList.add(s >= 550 ? 'hit' : 'miss');
     const pop = document.createElement('span');
-    pop.className = 'light-pop' + (s >= 900 ? ' top' : '');
+    pop.className = 'light-pop' + (s >= 750 ? ' top' : '');
+    if (s >= 750) sounds.good();
     pop.textContent = '+' + s;
     pop.style.left = marker.style.transform.replace(/[^0-9.]/g, '') + 'px';
     track.appendChild(pop);
     setTimeout(() => pop.remove(), 1200);
-    vibrate(s >= 950 ? [20, 30, 20] : 25);
+    vibrate(s >= 900 ? [20, 30, 20] : 25);
     renderDots();
     const el = $('#score-value');
     el.textContent = s;
     $('.score').classList.remove('pop'); void el.offsetWidth; $('.score').classList.add('pop');
     const v = $('#verdict');
     v.textContent = verdictFor(s);
-    v.classList.toggle('miss', s < 850);
-    $('#game-msg').textContent = '';
+    v.classList.toggle('miss', s < 550);
+    const m = $('#game-msg');
+    m.textContent = coachFor(s, err);
+    m.classList.toggle('coach', !!m.textContent);
     await wait(1150);
     if (game.state !== 'between') return;
     if (game.round < ROUNDS - 1) {
       v.textContent = '';
-      $('#score-value').textContent = '0';
+      $('#score-value').textContent = '';
       $('.score').classList.remove('pop');
-      beginRound(game.round + 1);
+      settleThen(game.round + 1);
     } else {
       finishPlay();
     }
@@ -695,8 +821,8 @@
     const el = $('#score-value');
     await countUp(el, 0, score, 1200, String);
     $('.score').classList.add('pop');
-    vibrate(score >= 900 ? [30, 40, 30, 40, 60] : 40);
-    if (score >= 900) confetti.burst(score >= 950 ? 180 : 110);
+    vibrate(score >= 850 ? [30, 40, 30, 40, 60] : 40);
+    if (score >= 850) confetti.burst(score >= 950 ? 180 : 110);
     await wait(900);
 
     const payload = { player_id: player.id, play_id: game.play.play_id, score, taps: game.taps.slice() };
@@ -728,7 +854,10 @@
   }
 
   function showResult(score, r, note) {
+    if (r && r.score != null) { score = r.score; game.lastScore = score; } // the server's number is the score
     updatePlayCredits();
+    refreshStats();
+    pollStats();
     $('#game').classList.add('done');
     $('#game').hidden = true;
     $('#tabbar').hidden = false; // the game is over: let people move around again
@@ -739,18 +868,18 @@
     const newBest = !!r && prevBest != null && score > prevBest;
     const movedUp = !!r && prevRank != null && rank != null && rank < prevRank;
     kicker.className = 'result-kicker' + (newBest ? ' best' : movedUp ? ' up' : '');
+    if (newBest) sounds.best();
     kicker.textContent = newBest ? 'New best' : movedUp ? `Up ${prevRank - rank} ${prevRank - rank === 1 ? 'place' : 'places'}` : titleFor(score);
     if (r) { store.set('preslink.prevBest', best); if (rank != null) store.set('preslink.prevRank', rank); }
-    $('#result-score').textContent = score;
+    countUp($('#result-score'), score, 900);
     const bestRound = Math.max(...game.scores);
     $('#result-rounds').innerHTML = '<span class="lbl">3 lights</span>' + game.scores.map((s) => `<span class="chip${s === bestRound ? ' top' : ''}">${s}</span>`).join('');
     $('#result-best').textContent = r && best != null ? best : '–';
-    $('#result-best-sub').textContent = r && r.best_light != null ? `best light ${r.best_light}` : '';
     $('#result-rank').textContent = rank ? '#' + rank : '–';
     $('#result-rank-sub').textContent = '';
     $('#result-rank-sub').className = '';
     if (r && rank) showGap(rank);
-    $('#result-school').hidden = !player || isSchool() || !!store.get(SCHOOL_ASKED_KEY) || !r;
+    renderResultEmail();
     const n = $('#result-note');
     n.textContent = note || '';
     n.hidden = !note;
@@ -768,10 +897,13 @@
       $('#result-topup').hidden = false;
     }
     $('#result').hidden = false;
-    if (r && rank === 1) toast('You are top of the board');
-    // First scored play: make sure the code that collects a prize is kept.
-    if (r && player && !store.get(CODE_SHOWN_KEY)) showCodeSheet();
+    // First scored play: ask where to send the news if they win, and nothing on top of it.
+    const firstAsk = !!r && !!player && !player.contact_email && !store.get(CONTACT_ASKED_KEY);
+    if (r && rank === 1 && !firstAsk) toast('You are top of the board');
+    if (firstAsk) openContact(true);
   }
+  // The reminder row on the result screen shows only while no email is on file.
+  function renderResultEmail() { $('#result-email').hidden = !player || !!player.contact_email; }
 
   // How far to the next place: the nudge that makes "one more go" worth it.
   async function showGap(rank) {
@@ -806,15 +938,15 @@
   $('#code-done').addEventListener('click', () => { store.set(CODE_SHOWN_KEY, true); closeSheets(); });
   $('#you-copy').addEventListener('click', () => copyCode());
   $('#code-save').addEventListener('click', () => saveCodeImage());
-  $('#you-save').addEventListener('click', () => saveCodeImage());
+  $('#you-save').addEventListener('click', () => (IS_APPLE_MOBILE ? showCodeSheet() : saveCodeImage())); // iPhone: the sheet shows what to tap
   async function copyCode() {
     if (!player) return;
     try { await navigator.clipboard.writeText(`PresLink Arcade: ${player.display} · code ${player.claim_code}`); toast('Copied'); }
     catch (_) { toast(`${player.display} · ${player.claim_code}`); }
   }
-  // The prize ticket: a 4:5 image with the PresLink cross, the light bar, the name and the code.
-  // Shown in the code sheet (long-press saves it on iPhone) and handed to the share sheet by
-  // "Save to Photos" (Save Image on iPhone and iPad) or downloaded elsewhere.
+  // The ticket: a 4:5 image with the PresLink cross, the light bar, the initials and the code, and
+  // the words that matter: it is not a prize, it is the code that collects one if you win. Shown in
+  // the code sheet and saved by the button below (where it goes depends on the device, see save).
   function roundRect(ctx, x, y, w, h, r) {
     ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
   }
@@ -832,7 +964,7 @@
     const img = await crossImage;
     if (img) ctx.drawImage(img, W / 2 - 72, 128, 144, 144);
     ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-    ctx.fillStyle = '#1c1c1e'; ctx.font = font(50, 800); ctx.fillText('PresLink Arcade', W / 2, 356);
+    ctx.fillStyle = '#5b3a9a'; ctx.font = font(50, 800); ctx.fillText('PresLink Arcade', W / 2, 356);
     // the light bar: the game's own mark
     const bx = 240, by = 396, bw = 600, bh = 34;
     const g = ctx.createLinearGradient(bx, 0, bx + bw, 0);
@@ -841,74 +973,144 @@
     ctx.fillStyle = '#1c1c1e'; roundRect(ctx, bx + bw * 0.62 - 3, by - 10, 6, bh + 20, 3); ctx.fill();
     ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#1c1c1e'; ctx.lineWidth = 4; roundRect(ctx, bx + bw * 0.62 - 13, by - 6, 26, bh + 12, 13); ctx.fill(); ctx.stroke();
     // name
-    ctx.fillStyle = '#8e8e93'; ctx.font = font(28, 700); ctx.fillText('Y O U R   N A M E', W / 2, 560);
+    ctx.fillStyle = '#8e8e93'; ctx.font = font(28, 700); ctx.fillText('Y O U R   I N I T I A L S', W / 2, 560);
     ctx.fillStyle = '#1c1c1e'; ctx.font = font(170, 800); ctx.fillText(player.display, W / 2, 712);
     // code
     ctx.fillStyle = '#8e8e93'; ctx.font = font(28, 700); ctx.fillText('Y O U R   C O D E', W / 2, 820);
     ctx.fillStyle = '#1f9d5a'; ctx.font = font(200, 800); ctx.fillText(player.claim_code.split('').join(' '), W / 2, 1000);
-    // rule and the two lines that matter
+    // rule, then the condition first so nobody reads the ticket as a prize
     ctx.fillStyle = '#e5e5ea'; ctx.fillRect(160, 1064, W - 320, 3);
-    ctx.fillStyle = '#1c1c1e'; ctx.font = font(36, 700); ctx.fillText('Keep this. Name and code collect a prize.', W / 2, 1140);
-    ctx.fillStyle = '#8e8e93'; ctx.font = font(30, 600); ctx.fillText(location.host || 'preslink.netlify.app', W / 2, 1200);
+    ctx.fillStyle = '#1c1c1e'; ctx.font = font(36, 800); ctx.fillText('If you win, show this to collect your prize.', W / 2, 1130);
+    ctx.fillStyle = '#3a3a3c'; ctx.font = font(28, 600); ctx.fillText('Prizes go to the top of each board when the arcade closes.', W / 2, 1184);
+    ctx.fillStyle = '#8e8e93'; ctx.font = font(28, 600); ctx.fillText(location.host || 'preslink.netlify.app', W / 2, 1236);
     return c;
+  }
+  // One rendered ticket per player, kept as a blob so the save button has nothing left to wait for.
+  let ticket = null;
+  async function ticketFor() {
+    const key = `${player.display}|${player.claim_code}|${location.host}`;
+    if (ticket && ticket.key === key) return ticket;
+    const c = await renderTicket();
+    const blob = await new Promise((resolve, reject) => c.toBlob((b) => (b ? resolve(b) : reject(new Error('no image'))), 'image/png'));
+    if (ticket) URL.revokeObjectURL(ticket.url);
+    const file = new File([blob], `preslink-${player.display.replace('#', '-')}.png`, { type: 'image/png' });
+    ticket = { key, blob, file, url: URL.createObjectURL(blob) };
+    return ticket;
   }
   async function showTicket() {
     const img = $('#code-preview');
     if (!player) { img.hidden = true; return; }
-    try { img.src = (await renderTicket()).toDataURL('image/png'); img.hidden = false; } catch (_) { img.hidden = true; }
+    try { img.src = (await ticketFor()).url; img.hidden = false; } catch (_) { img.hidden = true; }
+  }
+  // Where the picture goes depends on the device, and only Apple's phones and tablets see a menu.
+  // iPhone and iPad: a web page cannot write to Photos; Apple's one road in is the share sheet, where
+  // Save Image is a single tap, so the button opens that and the line under it says what to tap.
+  // Android: a plain download, which lands in Downloads and shows up in the Gallery. Mac or PC: the
+  // Downloads folder. Nothing else pops up anywhere.
+  const UA = navigator.userAgent || '';
+  const IS_APPLE_MOBILE = /iP(hone|ad|od)/.test(UA) || (/Mac/.test(navigator.platform || '') && navigator.maxTouchPoints > 1);
+  const IS_ANDROID = /Android/i.test(UA);
+  const SAVE_LABEL = IS_APPLE_MOBILE ? 'Save to Photos' : IS_ANDROID ? 'Save to Gallery' : 'Save picture';
+  const HINT_TAP = 'Then tap Save Image on the menu that opens.';
+  const HINT_HOLD = 'Or hold your finger on the ticket, then tap Add to Photos.';
+  $$('.save-btn').forEach((b) => { b.textContent = SAVE_LABEL; });
+  $('#save-hint').textContent = HINT_TAP;
+  $('#save-hint').hidden = !IS_APPLE_MOBILE;
+  function downloadBlob(blob, name) {
+    const a = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    a.href = url; a.download = name; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
   async function saveCodeImage() {
     if (!player) return;
-    const c = await renderTicket();
-    const blob = await new Promise((resolve) => c.toBlob(resolve, 'image/png'));
-    const file = new File([blob], `preslink-${player.display.replace('#', '-')}.png`, { type: 'image/png' });
-    try {
-      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'PresLink Arcade ticket' }); return; }
-    } catch (_) { return; /* cancelled */ }
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = file.name;
-    a.click();
-    toast('Saved');
+    let t;
+    try { t = await ticketFor(); } catch (_) { toast('Could not make the picture', true); return; }
+    const canShareFile = !!(navigator.canShare && navigator.canShare({ files: [t.file] }));
+    if (IS_APPLE_MOBILE) {
+      if (!canShareFile) { holdHint(); return; }
+      try { await navigator.share({ files: [t.file], title: 'PresLink Arcade' }); toast('Saved'); }
+      catch (_) { holdHint(); /* the menu was closed without saving */ }
+      return;
+    }
+    if ('download' in HTMLAnchorElement.prototype) {
+      downloadBlob(t.blob, t.file.name);
+      toast(IS_ANDROID ? 'Saved. Look in Gallery, under Download.' : 'Saved to your Downloads folder.');
+      return;
+    }
+    if (canShareFile) { try { await navigator.share({ files: [t.file], title: 'PresLink Arcade' }); } catch (_) { /* cancelled */ } return; }
+    window.open(t.url, '_blank');
   }
-  // iPhone and iPad: the share sheet opens with Save Image on it; say so once under the button.
-  if (navigator.canShare) $$('.save-hint').forEach((h) => { h.hidden = false; });
+  // The share sheet was closed without saving: point at the other road into Photos, on the ticket itself.
+  function holdHint() {
+    if ($('#sheet-code').hidden) return;
+    const h = $('#save-hint');
+    h.hidden = false; h.textContent = HINT_HOLD;
+  }
 
   // ---------------------------------------------------------------------------
-  // School: optional. A school email puts you on the Students or Teachers board.
+  // If you win: an email to send the news to. A school email joins the Students or Teachers board.
   // ---------------------------------------------------------------------------
-  function openSchool() {
-    showError('school-error', '');
-    $('#school-email').value = player && player.school_email ? player.school_email : '';
-    openSheet('school');
-    setTimeout(() => $('#school-email').focus(), 80);
+  const STUDENT_EMAIL = /^[a-z0-9._%+'-]+@pbccork\.ie$/;
+  const TEACHER_EMAIL = /^[a-z0-9._%+'-]+@pbc-cork\.ie$/;
+  const ANY_EMAIL = /^[a-z0-9._%+'-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+  const isSchoolEmail = (v) => STUDENT_EMAIL.test(v) || TEACHER_EMAIL.test(v);
+  function openContact(first) {
+    if (!player) return;
+    showError('contact-error', '');
+    $('#contact-email').value = player.contact_email || '';
+    $('#contact-school').value = player.school_email || '';
+    $('#contact-school-wrap').hidden = !player.school_email;
+    $('#contact-more').hidden = !!player.school_email;
+    $('#contact-skip').hidden = !first;
+    $('#contact-close').hidden = !!first;
+    const closes = closesText();
+    $('#contact-note').textContent = closes ? `Winners are emailed when the arcade closes on ${closes}.` : 'Winners are emailed when the arcade closes.';
+    openSheet('contact');
+    if (!first) setTimeout(() => $('#contact-email').focus(), 60);
   }
-  $('#result-school').addEventListener('click', openSchool);
-  $('#you-school').addEventListener('click', openSchool);
-  $('#school-form').addEventListener('submit', async (e) => {
+  $('#contact-more').addEventListener('click', () => { $('#contact-school-wrap').hidden = false; $('#contact-more').hidden = true; setTimeout(() => $('#contact-school').focus(), 60); });
+  $('#contact-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!player) return;
-    const email = $('#school-email').value.trim().toLowerCase();
-    if (!SCHOOL.test(email)) { showError('school-error', MESSAGES.BAD_SCHOOL_EMAIL); return; }
-    const btn = $('#school-submit');
+    const email = $('#contact-email').value.trim().toLowerCase();
+    if (!ANY_EMAIL.test(email)) { showError('contact-error', MESSAGES.BAD_EMAIL); return; }
+    const school = $('#contact-school-wrap').hidden ? '' : $('#contact-school').value.trim().toLowerCase();
+    if (school && !isSchoolEmail(school)) { showError('contact-error', 'That is not a school email.'); return; }
+    const btn = $('#contact-submit');
     btn.disabled = true;
     try {
-      adoptPlayer(await api('school', { player_id: player.id, email }));
-      store.set(SCHOOL_ASKED_KEY, true);
+      adoptPlayer(await api('contact', { player_id: player.id, email, school_email: school || null }));
+      store.set(CONTACT_ASKED_KEY, true);
       closeSheets();
-      $('#result-school').hidden = true;
       renderYou();
-      toast(`You are on the ${boardName(player.role)} board`);
+      renderResultEmail();
+      toast(isSchool() ? `Saved. You are on the ${boardName(player.role)} board.` : 'Saved. We will email you if you win.');
     } catch (ex) {
-      showError('school-error', msg(ex));
+      showError('contact-error', msg(ex));
     } finally { btn.disabled = false; }
   });
-  $$('#sheet-school [data-close]').forEach((b) => b.addEventListener('click', () => { store.set(SCHOOL_ASKED_KEY, true); $('#result-school').hidden = true; }));
+  const skipContact = () => { store.set(CONTACT_ASKED_KEY, true); closeSheets(); renderResultEmail(); };
+  $('#contact-skip').addEventListener('click', skipContact);
+  $('#contact-close').addEventListener('click', closeSheets);
+  $('#result-email').addEventListener('click', () => openContact(false));
+  $('#you-email').addEventListener('click', () => openContact(false));
 
   // ---------------------------------------------------------------------------
   // Leaderboard and prizes
   // ---------------------------------------------------------------------------
   $$('[data-screen="board"] .tab').forEach((t) => t.addEventListener('click', () => { boardRole = t.dataset.role; boardTouched = true; loadBoard(); }));
+  // A white thumb slides under the active tab instead of each tab repainting.
+  $$('.segmented').forEach((seg) => {
+    const tabs = $$('.tab, button', seg).filter((b) => !b.classList.contains('thumb'));
+    if (!tabs.length) return;
+    const thumb = document.createElement('span'); thumb.className = 'thumb'; thumb.setAttribute('aria-hidden', 'true'); seg.prepend(thumb);
+    seg.style.setProperty('--n', tabs.length);
+    const place = () => { const i = tabs.findIndex((b) => b.classList.contains('active') || b.classList.contains('on')); seg.style.setProperty('--i', Math.max(0, i)); thumb.style.opacity = i < 0 ? '0' : '1'; };
+    place();
+    new MutationObserver(place).observe(seg, { attributes: true, subtree: true, attributeFilter: ['class'] });
+  });
   function fmtWhen(iso) {
     const d = new Date(iso);
     return d.toLocaleDateString('en-IE', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('en-IE', { hour: '2-digit', minute: '2-digit' });
@@ -944,7 +1146,7 @@
       li.className = (me ? 'me ' : '') + (r.rank <= 3 ? 'r' + r.rank : '');
       const badges = [r.tag === lightTag ? ['i-flash', 'Best light', 'light'] : null, r.tag === playsTag ? ['i-repeat', 'Most plays', 'plays'] : null].filter(Boolean)
         .map(([i, t, k]) => `<button class="badge ${k}" type="button" data-badge="${k}" title="${t}" aria-label="${t}"><svg><use href="#${i}"/></svg></button>`).join('');
-      li.innerHTML = `<span class="rank">${r.rank}</span>${avatarHtml(r.initials)}
+      li.innerHTML = `<span class="rank${r.rank <= 3 ? ' r' + r.rank : ''}">${r.rank}</span>${avatarHtml(r.initials)}
         <span class="name"><span class="badges">${badges}${me ? '<span class="youtag">You</span>' : ''}</span><span class="meta">${r.plays} ${Number(r.plays) === 1 ? 'play' : 'plays'}</span></span>
         <span class="pts">${r.score}</span>`;
       list.appendChild(li);
@@ -980,7 +1182,7 @@
     const paint = () => {
       boxes.forEach((b, i) => {
         b.textContent = letters[i]; b.classList.toggle('filled', !!letters[i]); b.classList.toggle('active', i === active);
-        b.setAttribute('aria-label', letters[i] ? `Letter ${i + 1}: ${letters[i]}. Tap to clear` : `Letter ${i + 1}${i === 2 ? ', optional' : ''}, empty`);
+        b.setAttribute('aria-label', letters[i] ? `Initial ${i + 1}: ${letters[i]}. Tap to clear` : `Initial ${i + 1}${i === 2 ? ', optional' : ''}, empty`);
       });
       pad.classList.toggle('full', active < 0);
       $$('.key:not(.back)', pad).forEach((k) => k.setAttribute('aria-disabled', active < 0 ? 'true' : 'false'));
@@ -1037,7 +1239,7 @@
     btn.disabled = true;
     try {
       adoptPlayer(await api('register', { role: 'everyone', initials }));
-      store.del(SCHOOL_ASKED_KEY); store.del(CODE_SHOWN_KEY); store.del('preslink.prevBest'); store.del('preslink.prevRank');
+      store.del(SCHOOL_ASKED_KEY); store.del(CODE_SHOWN_KEY); store.del(CONTACT_ASKED_KEY); store.del('preslink.prevBest'); store.del('preslink.prevRank');
       closeSheets();
       buy(pendingBundle || 'single');
     } catch (ex) {
@@ -1057,9 +1259,9 @@
     $('#you-name').innerHTML = nameHtml(player.display || player.initials);
     $('#you-avatar').outerHTML = avatarHtml(player.display || player.initials, true).replace('<span ', '<span id="you-avatar" ');
     const b = $('#you-board');
-    b.textContent = isSchool() ? `${boardName(player.role)} board · ${player.school_email || 'school'}` : 'Everyone board';
+    b.innerHTML = isSchool() ? `${CREST_IMG}${esc(boardName(player.role))} board · ${esc(player.school_email || 'school')}` : 'Everyone board';
     b.classList.toggle('school', isSchool());
-    $('#you-school').hidden = isSchool();
+    $('#you-email-text').textContent = player.contact_email || 'Add your email · so we can tell you if you win';
     $('#you-code').textContent = player.claim_code;
     $('#you-credits').textContent = credits;
     $('#you-best').textContent = best == null ? '–' : best;
@@ -1091,7 +1293,7 @@
     } finally { $('#edit-save').disabled = false; }
   });
   $('#you-signout').addEventListener('click', () => {
-    if (!confirm(`Sign out ${player.display} on this device? Sign back in with your letters and code ${player.claim_code}.`)) return;
+    if (!confirm(`Sign out ${player.display} on this device? Sign back in with your initials and code ${player.claim_code}.`)) return;
     clearPlayer();
     renderHome();
     toast('Signed out');
@@ -1102,7 +1304,7 @@
     e.preventDefault();
     const initials = $('#signin-name').value.toUpperCase().replace(/\s/g, '');
     const code = $('#signin-code').value.replace(/\D/g, '');
-    if (!/^[A-Z]{2,3}(#\d{1,3})?$/.test(initials)) { showError('signin-error', 'Two or three letters, like JAK or JAK#2.'); return; }
+    if (!/^[A-Z]{2,3}(#\d{1,3})?$/.test(initials)) { showError('signin-error', 'Two or three initials, like JAK or JAK#2.'); return; }
     if (!/^\d{4}$/.test(code)) { showError('signin-error', 'Your code is four digits.'); return; }
     const btn = $('#signin-submit');
     btn.disabled = true;
@@ -1110,6 +1312,7 @@
     try {
       store.del(SCHOOL_ASKED_KEY); store.del('preslink.prevBest'); store.del('preslink.prevRank');
       adoptPlayer(await api('signin', { initials, code }));
+      store.set(HOW_SEEN_KEY, true); // they have played before
       store.set(CODE_SHOWN_KEY, true);
       toast(`Welcome back, ${player.display}`);
       go('you');
@@ -1123,6 +1326,7 @@
   // ---------------------------------------------------------------------------
   let adminRole = 'everyone';
   let adminData = null;
+  let adminEmails = [];
   const adminCode = () => session.get(ADMIN_KEY) || '';
 
   function renderAdminEntry() {
@@ -1155,7 +1359,35 @@
       toast(msg(ex), true); return;
     }
     renderAdmin();
+    adminCall('stripe_status').then(renderStripe).catch(() => {});
+    adminCall('emails').then((rows) => { adminEmails = Array.isArray(rows) ? rows : []; renderAdmin(); }).catch(() => {});
   }
+  // Payments: the committee connects Stripe here; the key never reaches the browser again.
+  function renderStripe(s) {
+    const el = $('#adm-stripe-status');
+    if (!s || !s.connected) el.textContent = 'Not connected · plays are free demo plays';
+    else el.textContent = (s.mode === 'live' ? 'Connected · live' : 'Connected · test mode') + (s.account ? ' · ' + s.account : '') + (s.webhook ? '' : ' · no webhook') + (s.from_env ? ' · set in Supabase' : '');
+    $('#adm-stripe-disconnect').hidden = !(s && s.connected && !s.from_env);
+    $('#admin-stripe').querySelector('.field').hidden = !!(s && s.from_env);
+  }
+  $('#admin-stripe').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const key = $('#adm-stripe-key').value.trim();
+    if (!key) { toast(MESSAGES.BAD_STRIPE_KEY, true); return; }
+    const btn = $('#adm-stripe-connect');
+    btn.disabled = true; btn.textContent = 'Checking with Stripe';
+    try {
+      renderStripe(await adminCall('stripe_connect', { secret_key: key }));
+      $('#adm-stripe-key').value = '';
+      toast('Connected to Stripe. Payments are live.');
+    } catch (ex) { toast(msg(ex), true); }
+    finally { btn.disabled = false; btn.textContent = 'Connect'; }
+  });
+  $('#adm-stripe-disconnect').addEventListener('click', async () => {
+    if (!confirm('Disconnect Stripe? Plays become free demo plays until it is connected again.')) return;
+    try { renderStripe(await adminCall('stripe_disconnect')); toast('Stripe disconnected'); }
+    catch (ex) { toast(msg(ex), true); }
+  });
   const fmtDate = (iso, withTime) => new Date(iso).toLocaleString('en-IE', withTime ? { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' } : { day: 'numeric', month: 'short' });
   const PRIZE_FIELDS = { everyone: '#adm-prize-everyone', students: '#adm-prize-students', teachers: '#adm-prize-teachers', best_light: '#adm-prize-best-light', most_plays: '#adm-prize-most-plays' };
   function renderAdmin() {
@@ -1181,13 +1413,14 @@
     tb.innerHTML = '';
     const rows = (d.board || []).filter((r) => adminRole === 'everyone' || r.role === adminRole)
       .sort((a, b) => b.score - a.score || String(a.finished_at).localeCompare(String(b.finished_at)));
+    const emailOf = (id) => { const e = adminEmails.find((x) => x.player_id === id); return e && e.contact_email ? e.contact_email : ''; };
     rows.forEach((r, i) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${adminRole === 'everyone' ? (r.rank_all == null ? '–' : r.rank_all) : (r.rank == null ? '–' : r.rank)}</td><td><b>${esc(r.initials)}</b>${r.banned ? ' <span class="muted">(banned)</span>' : ''}</td><td>${esc(boardName(r.role))}</td><td>${esc(r.claim_code)}</td><td><b>${r.score}</b></td><td>${r.best_light == null ? '' : r.best_light}</td><td>${r.plays}</td><td>${esc(fmtDate(r.finished_at, true))}</td>
+      tr.innerHTML = `<td>${adminRole === 'everyone' ? (r.rank_all == null ? '–' : r.rank_all) : (r.rank == null ? '–' : r.rank)}</td><td><b>${esc(r.initials)}</b>${r.banned ? ' <span class="muted">(banned)</span>' : ''}</td><td>${esc(boardName(r.role))}</td><td>${esc(r.claim_code)}</td><td class="email">${esc(emailOf(r.player_id))}</td><td><b>${r.score}</b></td><td>${r.best_light == null ? '' : r.best_light}</td><td>${r.plays}</td><td>${esc(fmtDate(r.finished_at, true))}</td>
         <td><button class="mini" data-void="${esc(r.play_id)}">Void</button> <button class="mini ${r.banned ? 'undo' : ''}" data-ban="${esc(r.player_id)}" data-banned="${r.banned ? '1' : ''}">${r.banned ? 'Unban' : 'Ban'}</button> <button class="mini alt" data-reset="${esc(r.player_id)}">New name</button></td>`;
       tb.appendChild(tr);
     });
-    if (!tb.children.length) tb.innerHTML = '<tr><td colspan="9" class="muted">No scores yet.</td></tr>';
+    if (!tb.children.length) tb.innerHTML = '<tr><td colspan="10" class="muted">No scores yet.</td></tr>';
     const sp = d.spot || {};
     // spot_prizes is a public read and carries no codes; the committee board rows do.
     const codeFor = (initials) => { const row = (d.board || []).find((r) => r.initials === initials); return row ? row.claim_code : '–'; };
@@ -1275,7 +1508,7 @@
     try {
       const res = await adminCall('player', { initials });
       const p = res.player;
-      box.innerHTML = `<dl><dt>Name</dt><dd>${esc(p.initials)}${p.banned ? ' (banned)' : ''}${(res.others || []).length ? ` <span class="muted">(also: ${res.others.map(esc).join(', ')})</span>` : ''}</dd><dt>Board</dt><dd>${esc(boardName(p.role))}${p.school_email ? ` · ${esc(p.school_email)}` : ''}</dd><dt>Code</dt><dd>${esc(p.claim_code)}</dd><dt>Plays left</dt><dd>${p.credits}</dd><dt>First seen</dt><dd>${esc(fmtDate(p.created_at, true))}</dd><dt>Last seen</dt><dd>${esc(fmtDate(p.last_seen_at, true))}</dd></dl>
+      box.innerHTML = `<dl><dt>Name</dt><dd>${esc(p.initials)}${p.banned ? ' (banned)' : ''}${(res.others || []).length ? ` <span class="muted">(also: ${res.others.map(esc).join(', ')})</span>` : ''}</dd><dt>Board</dt><dd>${esc(boardName(p.role))}${p.school_email ? ` · ${esc(p.school_email)}` : ''}</dd><dt>Email</dt><dd>${esc(p.contact_email || '–')}</dd><dt>Code</dt><dd>${esc(p.claim_code)}</dd><dt>Plays left</dt><dd>${p.credits}</dd><dt>First seen</dt><dd>${esc(fmtDate(p.created_at, true))}</dd><dt>Last seen</dt><dd>${esc(fmtDate(p.last_seen_at, true))}</dd></dl>
         <div class="table-wrap"><table class="table"><thead><tr><th>Play</th><th>Score</th><th></th></tr></thead><tbody>${(res.plays || []).map((x) => `<tr><td>${esc(fmtDate(x.started_at, true))}</td><td>${x.score == null ? '<span class="muted">open</span>' : '<b>' + x.score + '</b>'}${x.voided ? ' <span class="muted">(void)</span>' : ''}</td><td>${x.score == null ? '' : x.voided ? `<button class="mini undo" data-unvoid="${esc(x.play_id)}">Restore</button>` : `<button class="mini" data-void="${esc(x.play_id)}">Void</button>`}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">No plays.</td></tr>'}</tbody></table></div>
         <p class="note">${(res.payments || []).length} payment(s) · €${((res.payments || []).reduce((s, x) => s + x.amount_cents, 0) / 100).toFixed(2)}</p>`;
       box.hidden = false;
@@ -1290,7 +1523,7 @@
   $('#admin-block').addEventListener('submit', async (e) => {
     e.preventDefault();
     const initials = $('#adm-block-initials').value.toUpperCase().trim();
-    if (!/^[A-Z]{3}$/.test(initials)) { toast('Three letters, A to Z.', true); return; }
+    if (!/^[A-Z]{3}$/.test(initials)) { toast('Three initials, A to Z.', true); return; }
     try {
       await adminCall('block', { initials, block: true });
       $('#adm-block-initials').value = '';
@@ -1314,11 +1547,20 @@
     if (!d) return;
     const rows = [['when', 'name', 'board', 'bundle', 'plays', 'amount_eur', 'email', 'stripe_session']];
     (d.payments || []).forEach((p) => rows.push([p.created_at, p.initials, p.role || '', p.bundle, p.credits, (p.amount_cents / 100).toFixed(2), p.email || '', p.stripe_session_id]));
+    downloadCsv(rows, 'preslink-payments.csv');
+  });
+  function downloadCsv(rows, name) {
     const csv = rows.map((r) => r.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    a.download = 'preslink-payments.csv';
+    a.download = name;
     a.click();
+  }
+  // Who to write to when the arcade closes: every player, both emails, best score.
+  $('#adm-emails-csv').addEventListener('click', () => {
+    const rows = [['name', 'board', 'email', 'school_email', 'code', 'best']];
+    adminEmails.forEach((p) => rows.push([p.initials, p.role || '', p.contact_email || '', p.school_email || '', p.claim_code, p.best == null ? '' : p.best]));
+    downloadCsv(rows, 'preslink-players.csv');
   });
 
   // ---------------------------------------------------------------------------
@@ -1329,7 +1571,7 @@
     const el = $('#splash');
     if (!el) { resolve(); return; }
     const finish = () => { el.classList.add('gone'); resolve(); };
-    const returning = /session_id=|cancelled=/.test(location.search);
+    const returning = /session_id=|cancelled=/.test(location.search) || document.documentElement.classList.contains('no-splash');
     if (returning) { finish(); return; }
     setTimeout(finish, reduceMotion() ? 1400 : 3300);
     el.addEventListener('click', finish);
@@ -1352,6 +1594,7 @@
 
     renderHome();
     refreshStats();
+    pollStats();
     render(location.hash.slice(1) || 'home');
     if (sessionId) await confirmPayment(sessionId);
     else if (cancelled) toast('Payment cancelled. Nothing was charged.');

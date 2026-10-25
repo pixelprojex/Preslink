@@ -8,10 +8,13 @@ One campaign, three boards (Everyone, Students, Teachers) and prizes at the end,
 
 There is no sign-up. On the first tap a small sheet asks for two or three letters (your initials),
 picked on an on-screen letter pad (tap a box to clear that letter), so the phone keyboard never covers
-the boxes; then it goes straight to payment. After the first play a sheet shows the player's **name and four-digit
-code** on a prize ticket image; Save to Photos hands it to the share sheet (Save Image on an iPhone) and a
-long press on the ticket saves it too, because those two things collect a prize; the code is also on the
-**You** tab on that device and signs them in anywhere. Everyone is on the Everyone board. People at
+the boxes; then it goes straight to payment. After the first play an "If you win" sheet asks for an email, because winners are emailed when the
+arcade closes; a school email, in that field or the optional one under "At Presentation Brothers
+College?", puts the player on the Students or Teachers board on its own (no student/teacher choice to
+make). "Not now" leaves a reminder row on the result screen and the You tab. The four-digit **code**
+lives on the You tab, where "Save to Photos" keeps it as a ticket picture (on an iPhone or iPad through
+Apple's share sheet, where Save Image is one tap, since a web page cannot write to Photos any other way;
+a plain download elsewhere); winners show the code to collect. The code also signs them in anywhere. Everyone is on the Everyone board. People at
 Presentation Brothers College can optionally give their school email to join the Students board
 (@pbccork.ie) or the Teachers board (@pbc-cork.ie); it is a format check, nothing is sent. If someone
 already has the same letters you still get them, shown with a small tag (JAK, JAK#2), so nobody is ever refused.
@@ -58,9 +61,11 @@ nicer address, for example `preslink-arcade`.
 
 The committee screen is at your link with `/#admin` on the end. Use the committee code you were given.
 
-To take real money later: an adult opens a Stripe account for the charity, then in Supabase
-(**Edge Functions → Secrets**) adds `STRIPE_SECRET_KEY` and, for the webhook, `STRIPE_WEBHOOK_SECRET`.
-The free plays switch off by themselves the moment a Stripe key exists. Details are in section 2 below.
+To take real money later: an adult opens a Stripe account for the charity, then on the Committee
+screen under **Payments** pastes the Stripe secret key and taps **Connect**. The site checks the key
+with Stripe, creates the webhook for you and keeps both secrets in the database, where only the
+server can read them. The free plays switch off by themselves the moment Stripe is connected, and
+**Disconnect** brings them back. Nobody needs to open Supabase. Details are in section 2 below.
 
 ---
 
@@ -85,10 +90,15 @@ The free plays switch off by themselves the moment a Stripe key exists. Details 
 | `supabase/migrations/0009_admin_school_email.sql` | Committee lookup shows a player's school email and best light |
 | `supabase/migrations/0010_demo_payments_count.sql` | Demo plays count on the raised total (clear them before going live, see `docs/admin.sql`) |
 | `supabase/migrations/0011_score_floor.sql` | Every light scores at least 50, so a wild tap never gives zero |
+| `supabase/migrations/0012_bell_curve.sql` | Bell-shaped score curve (15 ms per e-fold) so the field spreads out and 900+ stays rare |
+| `supabase/migrations/0013_stripe_from_admin.sql` | Server-only `app_secrets` table so the committee connects Stripe from the Committee screen instead of the Supabase dashboard |
+| `supabase/migrations/0014_fair_scores_contact.sql` | Bell-shaped score curve over milliseconds (40 ms wide), one-second sweep, `contact_email` and the committee's email list |
+| `supabase/migrations/0015_tolerant_submit.sql` | The server scores the taps itself and ignores the browser's number, so an older build keeps working when the curve changes; taps count from 60 ms |
+| `supabase/migrations/0016_top_is_999.sql` | 999 is the ceiling; a cusp over the first 3 ms of error makes the top a fine ruler, so the best score is one person's |
 | `site/poster.html` | A3 poster preview with a large QR code (vendored encoder in `site/vendor/`); its Save as PDF button downloads the file below |
 | `site/poster.pdf` | The poster rendered to A3 PDF for the printer, QR pointing at preslink.netlify.app (re-render it if the address changes) |
 | `site/assets/` | Logo (`logo.svg`, `cross.svg`), icons, and the photo slots `photo-*.svg` to replace with real photos |
-| `supabase/functions/api/index.ts` | Register, checkout, confirm payment, start play, submit score |
+| `supabase/functions/api/index.ts` | Register, checkout, confirm payment, start play, submit score, committee actions (including Stripe connect) |
 | `supabase/functions/stripe-webhook/index.ts` | Receives Stripe's payment confirmation |
 | `docs/admin.sql` | Extra SQL for the committee (most day-to-day admin is in the app's Committee screen) |
 | `netlify.toml` | Netlify settings and security headers |
@@ -99,11 +109,11 @@ Do these in order. Steps 1 and 2 are a one-off technical setup; 3 to 6 are the l
 
 ### 1. Supabase (database + functions): already done
 
-The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all eleven migrations applied,
+The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all sixteen migrations applied,
 both functions deployed, and `site/config.js` points at it. The committee code was set at deployment
 and handed over privately; change it any time from the Committee screen.
 
-If you ever need to redo this on a fresh project: Dashboard → **SQL Editor** → run the ten files in
+If you ever need to redo this on a fresh project: Dashboard → **SQL Editor** → run the files in
 `supabase/migrations/` in order (the first line of `0007` must be run on its own, before the rest of that file), deploy the two functions with `--no-verify-jwt` (CLI below), set the
 committee code with `select public.admin_set_code(null, 'YourCode');`, and put the project URL and
 publishable key in `site/config.js`.
@@ -117,22 +127,28 @@ supabase functions deploy stripe-webhook --no-verify-jwt
 ### 2. Stripe (payments)
 
 The Stripe account must be opened by an adult in the charity's name, with the charity's bank account
-and registered details. A student cannot be the account holder.
+and registered details. A student cannot be the account holder. Everything else happens on the
+Committee screen; nobody needs to open Supabase.
 
 1. Create the account at <https://dashboard.stripe.com/register>. Stay in **Test mode** for now.
 2. **Developers → API keys** → copy the **Secret key** (`sk_test_...`).
-3. In Supabase: **Edge Functions → Secrets** → add:
-   - `STRIPE_SECRET_KEY` = the secret key
-   - `SITE_URL` = your site address, e.g. `https://preslink-arcade.netlify.app` (no trailing slash).
-     Optional: without it the function uses the address the request came from.
-4. **Developers → Webhooks → Add endpoint**:
-   - Endpoint URL: `https://bsovummlmfclefdlvsic.supabase.co/functions/v1/stripe-webhook`
-   - Events: `checkout.session.completed` and `checkout.session.async_payment_succeeded`
-   - After saving, copy the **Signing secret** (`whsec_...`) and add it in Supabase secrets as
-     `STRIPE_WEBHOOK_SECRET`.
+3. Open the site with `/#admin` on the end, enter the committee code, and under **Payments** paste the
+   key and tap **Connect**. The site checks the key with Stripe, creates the webhook endpoint
+   (`.../functions/v1/stripe-webhook`, listening for `checkout.session.completed` and
+   `checkout.session.async_payment_succeeded`) and stores the key and the webhook signing secret in the
+   database table `app_secrets`, which only the server can read. The card then shows the Stripe account
+   name and whether it is a test or a live key. Free plays stop at once.
+4. **Disconnect** removes the key, deletes the webhook endpoint and brings the free plays back.
+   Connecting a new key replaces the old webhook endpoint, so you can repeat step 3 any time.
 5. Optional but recommended: apply for Stripe's reduced nonprofit pricing (search "Stripe nonprofit
    pricing" in the Stripe support site) and switch on Apple Pay and Google Pay under **Settings →
    Payment methods** (they are on by default for Checkout).
+
+If you would rather keep the secrets out of the database, the old way still works and wins: set
+`STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` under **Edge Functions → Secrets** in Supabase, and the
+Committee screen shows that Stripe is set from the server. `SITE_URL` (your site address without a
+trailing slash) is optional in both cases: without it the function sends players back to the address
+the request came from.
 
 ### 3. Netlify (hosting)
 
@@ -141,22 +157,23 @@ and registered details. A student cannot be the account holder.
 3. Build settings: leave **Build command** empty, set **Publish directory** to `site`. (netlify.toml already
    says this.) Deploy.
 4. **Site configuration → Site details → Change site name** to something short, e.g. `preslink-arcade`.
-   The address is then `https://preslink-arcade.netlify.app`. If you set `SITE_URL` in step 2.3, make sure
-   it matches.
+   The address is then `https://preslink-arcade.netlify.app`. If you set the optional `SITE_URL`
+   secret, make sure it matches.
 
 ### 4. Test it end to end (still in Stripe test mode)
 
 1. Open the site on your device. Tap **Play · €2**. Stripe's test page opens.
 2. Pay with card number `4242 4242 4242 4242`, any future expiry, any CVC, any postcode.
-3. You land back in the coin cabinet, see the coin go in and a token come out, and the game starts: three lights, then the result, the Keep this sheet with your name and four-digit code, and the At Presentation Brothers College? card (a school email joins a school board). Check the leaderboard after.
+3. You land back in the coin cabinet, see the coin go in and a token come out, and the game starts: three lights, then the result, then the If you win sheet asking for an email (a school email joins the Students or Teachers board on its own). Check the leaderboard after.
 4. In Supabase → **Table Editor** you will see the player, the payment and the play.
 5. In Stripe → **Developers → Webhooks** the endpoint should show a successful delivery.
 
 ### 5. Go live
 
 1. Finish Stripe account activation (the charity's details and bank account).
-2. Switch the Stripe dashboard to **Live mode** and repeat steps 2.2 to 2.4 with the **live** keys
-   (`sk_live_...`, a new webhook endpoint and its `whsec_...`). Replace the two secrets in Supabase.
+2. Switch the Stripe dashboard to **Live mode**, copy the **live** secret key (`sk_live_...`) and on
+   the Committee screen under **Payments** tap **Connect** with it. The site swaps the webhook and the
+   secrets for you; the card should now say Live.
 3. Fill the yellow placeholders in the terms in `site/index.html` (committee contact, where winners are
    announced). Have the school check the terms and the legal position of a paid game with a prize.
 4. Open `/poster.html`, tap Save as PDF, and print the PDF at A3.
@@ -190,17 +207,25 @@ hash in the database and locks for 15 minutes after 8 wrong tries. From there th
   the real initials always work. Offensive letters are refused; the built-in list is in
   `0002_names_signin_admin.sql` (table `blocked_initials`), the committee can add more, and can reset a
   player's name to a random one.
-- The game: a play is three lights. Each light sweeps the bar at its own random speed (about a second per
-  pass) and has its own mark; you tap when the light is on the mark. The score for a light falls off steeply
-  with distance (10 ms off is about 940, 20 ms about 885, 30 ms about 830, 50 ms about 730, and a wild tap
-  still scores 50, never zero), and the play's
-  score is the average of the three, so one lucky tap is not enough: scores above 900 need three taps within
-  about 15 ms, and a single-light 1,000 needs an error under a tenth of a millisecond, which integer-millisecond
-  taps practically never hit.
+- The game: a play is three lights. Each light sweeps the bar once a second and has its own mark and starting
+  point; you tap when the light is on the mark. The score for a light is a bell over the timing error in milliseconds with a sharp cusp at the top:
+  max(50, 50 + 949 × e^−(error ÷ 40 ms)² − 12 × √(min(error, 3 ms) ÷ 3)). 999 is the ceiling (there is no 1,000,
+  though the screen says "out of 1,000"): on the mark is 999, half a millisecond off 994, 1 ms 991, 3 ms 982, 10 ms 930,
+  20 ms 777, 30 ms 579, 40 ms 387, 60 ms 138, and a wild tap still scores 50, never zero. Taps are whole milliseconds
+  and the mark is a random fraction, so a 999 needs the tap within a few microseconds of the mark, which keeps the
+  top of the board to one person (equal scores: the earlier one wins). The play's score is the average of the three;
+  most plays land between 300 and 800. The sweep is a fixed second
+  per pass. The light is moved by a CSS animation, so the browser's compositor draws it on its own thread at the
+  screen's full frame rate whatever the page is doing, and a tap reads the animation's own clock, with the input
+  lag (handler time minus the touch's hardware timestamp) and the age of the frame on screen taken off. After each
+  light the screen says early or late so the next one can be better. The server recomputes every light from the
+  taps and stores its own number; the browser's score is only what it shows while the answer is on its way.
 - Everyone starts on the Everyone board. The result screen and the You tab offer "At Presentation Brothers
   College?": a school email ending @pbccork.ie puts the player on the Students board, @pbc-cork.ie on the
   Teachers board. The address is stored for the committee to check; nothing is emailed.
-- Every player has a four-digit **code**, shown once after the first play (Save image / Copy) and always on
+- The splash plays once per visit (decided by a tiny script in the page head, before anything loads), so a
+  return from payment or a reload in the same tab never flashes it.
+- Every player has a four-digit **code**, shown once after the first play (save the ticket picture, or Copy) and always on
   the **You** tab. It proves a winning score is theirs and lets them **sign back in** on another device
   (You tab → "Played before?"). Five wrong codes lock that name for 15 minutes. A lost code can be looked up
   by the committee.

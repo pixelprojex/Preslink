@@ -28,7 +28,8 @@
   function roundScore(tapMs, phase, target, speedMs) {
     let x = tapMs / speedMs + phase; x = x - 2 * Math.floor(x / 2);
     const pos = x < 1 ? x : 2 - x;
-    return 50 + Math.round(950 * Math.pow(Math.max(0, 1 - Math.abs(pos - target) / 0.5), 3));
+    const err = Math.abs(pos - target) * speedMs;
+    return Math.max(50, Math.round(50 + 949 * Math.exp(-((err / 40) ** 2)) - 12 * Math.sqrt(Math.min(err, 3) / 3)));
   }
   const newRounds = () => Array.from({ length: 3 }, () => ({ phase: Math.random(), target: 0.15 + Math.random() * 0.7 }));
 
@@ -49,7 +50,7 @@
   const me = (p) => {
     const open = db.plays.find((x) => x.player_id === p.id && x.score == null && !x.voided);
     const best = scoredPlays(p.id).reduce((m, x) => Math.max(m, x.score), null);
-    return { id: p.id, tag: tag(p.id), initials: p.initials, suffix: p.suffix || 1, display: disp(p), role: p.role || 'everyone', school_email: p.school_email || null, claim_code: p.claim_code, credits: p.credits, banned: !!p.banned, best, best_this_week: best, best_light: bestLightOf(p.id), open_play: open ? { play_id: open.id, speed_ms: open.speed_ms, rounds: open.rounds } : null };
+    return { id: p.id, tag: tag(p.id), initials: p.initials, suffix: p.suffix || 1, display: disp(p), role: p.role || 'everyone', school_email: p.school_email || null, contact_email: p.contact_email || null, claim_code: p.claim_code, credits: p.credits, banned: !!p.banned, best, best_this_week: best, best_light: bestLightOf(p.id), open_play: open ? { play_id: open.id, speed_ms: open.speed_ms, rounds: open.rounds } : null };
   };
   const board = (role, week, withIds) => {
     if (role === 'everyone') role = null;
@@ -86,6 +87,7 @@
     week_start: weekStart(), week_end: (() => { const d = new Date(weekStart() + 'T12:00:00'); d.setDate(d.getDate() + 6); return d.toISOString().slice(0, 10); })(),
   });
   const adminCheck = (code) => { if (code !== DEMO_ADMIN_CODE) fail('BAD_ADMIN'); };
+  const stripeStatus = () => { const s = db.settings.stripe; return s ? { connected: true, mode: s.mode, account: s.account, webhook: true, from_env: false } : { connected: false, mode: '', account: '', webhook: false, from_env: false }; };
 
   async function api(action, b) {
     await wait(250);
@@ -98,6 +100,20 @@
         const m = email.match(/^[a-z0-9._%+'-]+@(pbccork\.ie|pbc-cork\.ie)$/);
         if (!m) fail('BAD_SCHOOL_EMAIL');
         player.role = m[1] === 'pbccork.ie' ? 'student' : 'teacher'; player.school_email = email; save(db);
+        return me(player);
+      }
+      case 'contact': {
+        if (!player) fail('PLAYER_NOT_FOUND');
+        const email = String(b.email || '').trim().toLowerCase();
+        if (!/^[a-z0-9._%+'-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(email)) fail('BAD_EMAIL');
+        let school = String(b.school_email || '').trim().toLowerCase();
+        if (!school && /@(pbccork\.ie|pbc-cork\.ie)$/.test(email)) school = email;
+        if (school) {
+          const m = school.match(/^[a-z0-9._%+'-]+@(pbccork\.ie|pbc-cork\.ie)$/);
+          if (!m) fail('BAD_SCHOOL_EMAIL');
+          player.role = m[1] === 'pbccork.ie' ? 'student' : 'teacher'; player.school_email = school;
+        }
+        player.contact_email = email; save(db);
         return me(player);
       }
       case 'register': {
@@ -162,7 +178,7 @@
         if (open) return { play_id: open.id, speed_ms: open.speed_ms, rounds: open.rounds, credits: player.credits, resumed: true };
         if (player.credits <= 0) fail('NO_CREDITS');
         player.credits -= 1;
-        const play = { id: uuid(), player_id: player.id, started_at: new Date().toISOString(), score: null, rounds: newRounds(), speed_ms: 850 + Math.floor(Math.random() * 201), voided: false };
+        const play = { id: uuid(), player_id: player.id, started_at: new Date().toISOString(), score: null, rounds: newRounds(), speed_ms: 1000, voided: false };
         db.plays.push(play); save(db);
         return { play_id: play.id, speed_ms: play.speed_ms, rounds: play.rounds, credits: player.credits, resumed: false };
       }
@@ -172,10 +188,9 @@
         if (!play) fail('PLAY_NOT_FOUND');
         if (play.score != null) fail('ALREADY_SCORED');
         const taps = Array.isArray(b.taps) ? b.taps.map(Number) : [];
-        if (taps.length !== 3 || taps.some((t) => !Number.isInteger(t) || t < 150 || t > 120000)) fail('BAD_TAP');
+        if (taps.length !== 3 || taps.some((t) => !Number.isInteger(t) || t < 60 || t > 120000)) fail('BAD_TAP');
         const rounds = taps.map((t, i) => roundScore(t, play.rounds[i].phase, play.rounds[i].target, play.speed_ms));
         const exp = Math.round((rounds[0] + rounds[1] + rounds[2]) / 3);
-        if (Math.abs(exp - b.score) > 5) fail('SCORE_MISMATCH');
         play.score = exp; play.taps = taps; play.finished_at = new Date().toISOString(); play.week_start = weekStart();
         save(db);
         const row = board(player.role === 'everyone' ? null : player.role).find((r) => r.tag === tag(player.id));
@@ -205,6 +220,7 @@
               banned: Object.values(db.players).filter((p) => p.banned).map((p) => ({ player_id: p.id, initials: disp(p), claim_code: p.claim_code })),
             };
           }
+          case 'emails': return Object.values(db.players).map((p) => ({ player_id: p.id, initials: disp(p), role: p.role || 'everyone', contact_email: p.contact_email || null, school_email: p.school_email || null, claim_code: p.claim_code, banned: !!p.banned, best: scoredPlays(p.id).reduce((m, x) => Math.max(m, x.score), null) }));
           case 'player': {
             const [ini, sfx] = String(b.initials).toUpperCase().split('#');
             const p = Object.values(db.players).sort((x, y) => (x.suffix || 1) - (y.suffix || 1)).find((x) => x.initials === ini && (!sfx || (x.suffix || 1) === Number(sfx))); if (!p) fail('PLAYER_NOT_FOUND');
@@ -217,6 +233,14 @@
           case 'ban': { const p = db.players[b.player_id]; if (!p) fail('PLAYER_NOT_FOUND'); p.banned = b.banned !== false; save(db); return { ok: true }; }
           case 'block': { const i = String(b.initials).toUpperCase(); if (b.block !== false) { if (!db.blocked.includes(i)) db.blocked.push(i); } else db.blocked = db.blocked.filter((x) => x !== i); save(db); return { ok: true }; }
           case 'set_code': return { ok: true };
+          case 'stripe_status': return stripeStatus();
+          case 'stripe_connect': {
+            const key = String(b.secret_key || '').trim();
+            if (!/^sk_(live|test)_[A-Za-z0-9]{16,}$/.test(key)) fail('BAD_STRIPE_KEY');
+            db.settings.stripe = { mode: key.startsWith('sk_live_') ? 'live' : 'test', account: 'Demo account' };
+            save(db); return stripeStatus();
+          }
+          case 'stripe_disconnect': { db.settings.stripe = null; save(db); return stripeStatus(); }
           case 'settings': {
             if (b.goal_cents != null) db.settings.goal_cents = b.goal_cents;
             if (b.ends_on != null) { if (b.ends_on !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(b.ends_on)) fail('BAD_DATE'); db.settings.ends_on = b.ends_on; }
