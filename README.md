@@ -21,8 +21,8 @@ already has the same letters you still get them, shown with a small blue numbere
 carries a 2), so nobody is ever refused.
 
 The look follows the conventions of native apps (grouped white cards on a soft grey canvas, large titles,
-segmented controls, avatars, a progress ring) in PresLink's colours: green for actions, orange for the
-light and the ring, the yellow of the Presentation Brothers cross for the logo. The logo and the running
+segmented controls, avatars, a progress bar under the running total) in PresLink's colours: green for actions, orange for the
+light, the yellow of the Presentation Brothers cross for the logo. The logo and the running
 total raised sit at the top of every screen; there is a tab bar (Play, Board, About, You), a Prize page
 with a photo, and very little text.
 
@@ -99,6 +99,7 @@ server can read them. The free plays switch off by themselves the moment Stripe 
 | `supabase/migrations/0017_whole_bar.sql` | The whole bar scores: distance to the line as a fraction of the bar, 999 on the line, the floor only half a bar away |
 | `supabase/migrations/0018_first_curve.sql` | The first game's curve back: the cube of the closeness over the whole bar, 999 ceiling, cusp at the top |
 | `supabase/migrations/0019_any_school_email.sql` | Any local part on a school email; the general email check only asks for something@something.tld |
+| `supabase/migrations/0021_even_curve.sql` | Scores spread evenly over the whole bar: 999 on the line down to about 60 at the far end, by the square of the distance |
 | `supabase/migrations/0020_email_spaces_case.sql` | Emails are lower-cased and stripped of every space before the check, so capitals and stray spaces never turn an address away |
 | `site/poster.html` | A3 poster preview with a large QR code (vendored encoder in `site/vendor/`); its Save as PDF button downloads the file below |
 | `site/poster.pdf` | The poster rendered to A3 PDF for the printer, QR pointing at preslink.netlify.app (re-render it if the address changes) |
@@ -114,7 +115,7 @@ Do these in order. Steps 1 and 2 are a one-off technical setup; 3 to 6 are the l
 
 ### 1. Supabase (database + functions): already done
 
-The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all twenty migrations applied,
+The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all twenty-one migrations applied,
 both functions deployed, and `site/config.js` points at it. The committee code was set at deployment
 and handed over privately; change it any time from the Committee screen.
 
@@ -214,11 +215,12 @@ hash in the database and locks for 15 minutes after 8 wrong tries. From there th
   `0002_names_signin_admin.sql` (table `blocked_initials`), the committee can add more, and can reset a
   player's name to a random one.
 - The game: a play is three lights. Each light sweeps the bar once a second and has its own mark and starting
-  point; you tap when the light is on the mark. The first game's curve: what counts is how far the light stopped from the line, as a fraction of the bar.
-  With u = max(0, 1 − distance ÷ half a bar), a light scores 999 × u³ − 12 × √(min(error, 3 ms) ÷ 3), kept between 50
-  and 999. 999 is the ceiling (there is no 1,000, though the screen says "out of 1,000"): on the line 999, 10 ms off
-  928, 20 ms 872, 30 ms 818, 50 ms 716, a tenth of the bar 499, a fifth 204, a quarter 113, and from about a third of
-  the bar 50, never zero. Taps are whole milliseconds and the line is a random fraction, so a 999 needs the tap within
+  point; you tap when the light is on the mark. The score is spread evenly over the whole bar: what counts is how far
+  the light stopped from the line, as a fraction of the bar, and the score falls with the square of that distance.
+  With u = max(0, 1 − distance), a light scores 50 + 949 × u² − 12 × √(min(error, 3 ms) ÷ 3), kept between 50 and
+  999. 999 is the ceiling (there is no 1,000, though the screen says "out of 1,000"): on the line 999, 10 ms off 968,
+  30 ms 931, 50 ms 894, a tenth of the bar 807, a fifth 645, three tenths 503, half the bar 275, seven tenths 123 and
+  the far end about 60, never zero, so a tap anywhere on the bar earns a readable number. Taps are whole milliseconds and the line is a random fraction, so a 999 needs the tap within
   a few microseconds of the line, which keeps the top of the board to one person (equal scores: the earlier one wins).
   The play's score is the average of the three lights. The sweep is a fixed second
   per pass. The light is drawn by the first game's frame loop: each light notes the moment it starts and every frame

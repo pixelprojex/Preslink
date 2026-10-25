@@ -26,7 +26,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=27">
+  <link rel="stylesheet" href="styles.css?v=28">
 </head>
 <body>
 <div class="splash" id="splash" aria-hidden="true">
@@ -60,8 +60,8 @@
   <header class="appbar">
     <a class="brand" href="#home" aria-label="PresLink Arcade home"><img src="assets/cross.svg?v=10" alt=""><span>PresLink</span></a>
     <div class="raised" id="raised" aria-live="polite">
-      <svg class="ring" viewBox="0 0 36 36" aria-hidden="true"><circle class="ring-bg" cx="18" cy="18" r="15.5"/><circle class="ring-fg" id="ring-fg" cx="18" cy="18" r="15.5" stroke-dasharray="0 97.4"/></svg>
-      <span class="raised-t"><span class="raised-n odo" id="raised-n" aria-label="€0">€0</span><span class="raised-l">raised</span></span>
+      <span class="raised-t"><span class="raised-n odo" id="raised-n" aria-label="€0">€0</span><span class="raised-l" id="raised-l">raised</span></span>
+      <span class="raised-bar" aria-hidden="true"><i id="raised-fill"></i></span>
     </div>
   </header>
 
@@ -72,7 +72,7 @@
       <p class="hero-p">Every play funds schools in Ghana and Nigeria.</p>
       <div class="demo-track" aria-hidden="true"><span class="demo-pin"></span><span class="demo-marker"></span></div>
       <button class="btn btn-primary btn-xl" id="home-play" type="button">Play · €2</button>
-      <p class="bundles-line"><button class="link" type="button" data-bundle="triple">3 plays €5</button><span>·</span><button class="link" type="button" data-bundle="seven">7 plays €10</button></p>
+      <p class="bundles-line"><button class="link" type="button" data-bundle="triple">3 plays · €5<small>Save €1</small></button><button class="link" type="button" data-bundle="seven">7 plays · €10<small>Save €4</small></button></p>
     </div>
     <div class="card">
       <button class="cell" type="button" data-go="prize"><span>Prizes<small id="home-ends"></small></span> <span class="chev">›</span></button>
@@ -85,7 +85,7 @@
     <div class="cabinet" aria-hidden="true">
       <div class="cab-panel" id="cab-panel">
         <div class="cab-slot-wrap"><div class="cab-coin" id="coin">€</div><div class="cab-slot" id="cab-slot"></div></div>
-        <div class="cab-led"><strong id="cab-credits">0</strong><span>plays</span></div>
+        <div class="cab-led"><strong id="cab-credits" class="odo">0</strong><span>plays</span></div>
       </div>
       <div class="cab-tray-wrap"><div class="cab-tray"></div><div class="cab-token" id="token">1</div></div>
     </div>
@@ -132,7 +132,7 @@
       <p class="result-note" id="result-note" hidden></p>
       <div class="card pad cta-card">
         <button class="btn btn-primary btn-xl" type="button" id="result-again">Play again</button>
-        <p class="bundles-line" id="result-topup" hidden><button class="link" type="button" data-bundle="triple">3 plays €5</button><span>·</span><button class="link" type="button" data-bundle="seven">7 plays €10</button></p>
+        <p class="bundles-line" id="result-topup" hidden><button class="link" type="button" data-bundle="triple">3 plays · €5<small>Save €1</small></button><button class="link" type="button" data-bundle="seven">7 plays · €10<small>Save €4</small></button></p>
       </div>
       <div class="card">
         <button class="cell" type="button" id="result-email" hidden><span>Add your email<small>So we can tell you if you win</small></span> <span class="chev">›</span></button>
@@ -169,7 +169,7 @@
   <!-- ================= PRIZES ================= -->
   <section class="screen" data-screen="prize" hidden>
     <div class="title"><h1>Prizes</h1></div>
-    <div class="card pad"><p class="lead-p" id="prize-sub">Winners are emailed when the arcade closes.</p><p class="lead-p quiet">The top score on each board wins. Equal scores: the earlier one. Winners show their code to collect.</p></div>
+    <div class="card pad"><p class="lead-p" id="prize-sub">Winners are emailed when the arcade closes.</p><p class="lead-p quiet">Top score on each board wins; a tie goes to the earlier score. Winners show their code to collect.</p></div>
     <div class="card">
       <h2 class="card-h">Top of each board</h2>
       <div class="cell"><span>Everyone<small id="prize-everyone">To be announced</small></span><span class="lead" id="lead-everyone"></span></div>
@@ -264,7 +264,7 @@
     <div class="title"><h1>Sign in</h1></div>
     <form id="signin-form" autocomplete="off" novalidate>
       <div class="card">
-        <label class="field"><span>Initials</span><input id="signin-name" autocapitalize="characters" autocorrect="off" spellcheck="false" maxlength="7" placeholder="JAK or JAK#2" autocomplete="off"></label>
+        <label class="field"><span>Initials</span><input id="signin-name" autocapitalize="characters" autocorrect="off" spellcheck="false" maxlength="7" placeholder="JAK" autocomplete="off"></label>
         <label class="field"><span>Code</span><input id="signin-code" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="0000" autocomplete="off"></label>
       </div>
       <p class="field-error" id="signin-error" role="alert" hidden></p>
@@ -342,7 +342,7 @@
       <div>
         <h2 class="section">Find a player</h2>
         <form id="admin-find" class="row-form" autocomplete="off">
-          <input id="adm-find-initials" maxlength="7" autocapitalize="characters" placeholder="JAK or JAK#2" aria-label="Name">
+          <input id="adm-find-initials" maxlength="7" autocapitalize="characters" placeholder="JAK" aria-label="Name">
           <button class="btn btn-primary" type="submit">Find</button>
         </form>
         <div class="card" id="adm-player" hidden style="margin-top:10px"></div>
@@ -441,7 +441,7 @@
     <p class="sheet-note" id="contact-note">Winners are emailed when the arcade closes.</p>
     <form class="card step" id="contact-form" autocomplete="on" novalidate>
       <div class="step-h"><span class="step-n">1</span><h3>Your email</h3></div>
-      <label class="field"><span>Email</span><input id="contact-email" type="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="name@example.com" autocomplete="email"></label>
+      <label class="field"><input id="contact-email" aria-label="Email" type="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="name@example.com" autocomplete="email"></label>
       <label class="cell switch" for="contact-pbc"><span class="pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">I'm at Presentation Brothers College</span><input type="checkbox" id="contact-pbc" role="switch"><span class="sw" aria-hidden="true"></span></label>
       <div id="contact-school-wrap" hidden><label class="field"><span>School email</span><input id="contact-school" type="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Your school email"></label></div>
       <div class="pad-x">
@@ -495,7 +495,7 @@
 <div class="overlay" id="overlay" hidden><div class="overlay-card"><div class="spinner" aria-hidden="true"></div><p id="overlay-text">One moment</p></div></div>
 
 <script src="config.js"></script>
-<script src="mock.js?v=27"></script>
-<script src="app.js?v=27"></script>
+<script src="mock.js?v=28"></script>
+<script src="app.js?v=28"></script>
 </body>
 </html>

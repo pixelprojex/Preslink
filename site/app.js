@@ -22,6 +22,8 @@
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const euro = (cents) => '€' + Math.round((cents || 0) / 100).toLocaleString('en-IE');
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // "JAK", "jak 2", "JAK2" and "JAK#2" all mean the same name.
+  const normTag = (raw) => String(raw || '').toUpperCase().replace(/[\s#]/g, '').replace(/^([A-Z]{2,3})(\d{1,3})$/, '$1#$2');
   const vibrate = (p) => { try { if (navigator.vibrate) navigator.vibrate(p); } catch (_) { /* ignore */ } };
   const reduceMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   // "JAK#2" -> JAK with a small #2
@@ -151,6 +153,7 @@
   function ensurePlayer(bundle, after) {
     if (player) return true;
     pendingBundle = bundle || 'single';
+    $('#name-submit').textContent = { single: 'Play · €2', triple: '3 plays · €5', seven: '7 plays · €10' }[pendingBundle] || 'Play';
     pendingAfter = after || null;
     showError('name-error', '');
     nameInitials.set('');
@@ -167,7 +170,7 @@
     const t = $('#toast');
     t.textContent = text;
     t.classList.toggle('error', isError);
-    t.classList.toggle('top', !$('#sheet-backdrop').hidden || $('#tabbar').hidden);
+    t.classList.toggle('top', !$('#sheet-backdrop').hidden); // over a sheet it sits under the app bar; otherwise above the tab bar
     t.hidden = false;
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => { t.hidden = true; }, ms);
@@ -184,6 +187,7 @@
     $('#toast').classList.add('top'); // a toast already showing must not sit on the sheet's buttons
   }
   function closeSheets() {
+    $('#toast').classList.remove('top'); // a toast that was held clear of a sheet drops back above the tab bar
     $$('.sheet').forEach((s) => { s.hidden = true; });
     $('#sheet-backdrop').hidden = true;
   }
@@ -226,6 +230,7 @@
     // Made and woken on the tap that starts a play, so the first light's tap has nothing to set up.
     prime: () => { try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); } catch (_) { /* no sound on this device */ } },
     tap: () => beep(640, 50, 0.04, 'square', 0),
+    coin: () => { beep(1320, 60, 0.04, 'triangle', 0); beep(1760, 110, 0.04, 'triangle', 0.07); },
     good: () => { beep(880, 140, 0.05, 'sine', 0); beep(1320, 220, 0.05, 'sine', 0.11); },
     best: () => [660, 880, 1100, 1320].forEach((f, i) => beep(f, 180, 0.05, 'sine', i * 0.1)),
   };
@@ -329,7 +334,7 @@
     if (ti >= 0) $('#tabbar').style.setProperty('--i', ti);
     $('#tabbar').hidden = name === 'play' || name === 'admin' || name === 'cabinet';
     if (name !== 'play' && game.state !== 'idle' && game.state !== 'done') abandonGame();
-    if (name === 'home') { renderHome(); refreshStats(); refreshMe(); }
+    if (name === 'home') { renderHome(); refreshStats(); refreshMe(); sizeDemo(); }
     if (name === 'cabinet' && !cabinetBusy) { go('home'); return; }
     if (name === 'play') {
       // Only an explicit tap starts a play; arriving here by Back/Forward shows the last result or goes home.
@@ -382,18 +387,19 @@
   // eased motion whose length grows with the jump (a €2 nudge takes about 0.7 s, a €40 catch-up about
   // two and a half), so it winds up, spins and settles as one movement, never a run of separate ticks.
   const fmtEuro = (n) => '€' + n.toLocaleString('en-IE');
-  function odoStatic(el, value) {
-    const txt = fmtEuro(value);
+  const fmtPlain = (n) => String(n);
+  function odoStatic(el, value, fmt = fmtEuro) {
+    const txt = fmt(value);
     el.innerHTML = Array.from(txt).map((c) => /\d/.test(c) ? `<span class="dg"><span class="strip"><span>${c}</span></span></span>` : `<span class="sep">${esc(c)}</span>`).join('');
     el.setAttribute('aria-label', txt);
   }
-  function odoRoll(el, from, to) {
+  function odoRoll(el, from, to, fmt = fmtEuro) {
     clearTimeout(el._settle);
-    if (reduceMotion() || to <= from) { odoStatic(el, to); return; }
+    if (reduceMotion() || to <= from) { odoStatic(el, to, fmt); return; }
     const toS = String(to), L = toS.length;
     const fromS = String(from).padStart(L, ' ');
     const ms = Math.min(2600, 520 + 95 * (to - from));
-    let html = '<span class="sep">€</span>';
+    let html = fmt(0).replace(/[\d,]/g, '') ? '<span class="sep">€</span>' : '';
     const turns = [];
     for (let i = 0; i < L; i++) {
       if (i > 0 && (L - i) % 3 === 0) html += '<span class="sep">,</span>';
@@ -407,10 +413,10 @@
       html += `<span class="dg"><span class="strip">${seq.map((d) => `<span>${d}</span>`).join('')}</span></span>`;
     }
     el.innerHTML = html;
-    el.setAttribute('aria-label', fmtEuro(to));
+    el.setAttribute('aria-label', fmt(to));
     void el.offsetWidth; // the strips sit on their first digit, then roll
     el.querySelectorAll('.strip').forEach((st, i) => { st.style.transitionDuration = ms + 'ms'; st.style.transform = `translateY(-${(turns[i] * 1.1).toFixed(2)}em)`; });
-    el._settle = setTimeout(() => odoStatic(el, to), ms + 80);
+    el._settle = setTimeout(() => odoStatic(el, to, fmt), ms + 80);
   }
   // A plain count-up for the big score on the result screen.
   function countUp(el, to, ms) {
@@ -425,11 +431,11 @@
     requestAnimationFrame(frame);
   }
   let shownRaised = null; // whole euro shown in the app bar
-  function showRing(cents, goalCents) {
-    const ring = $('#ring-fg');
-    const circ = 97.4;
-    const pct = goalCents > 0 ? Math.min(1, cents / goalCents) : (cents > 0 ? 1 : 0);
-    ring.setAttribute('stroke-dasharray', `${Math.max(pct > 0 ? 3 : 0, pct * circ).toFixed(1)} ${circ}`);
+  // Under the amount: the goal, and a bar that fills towards it.
+  function showGoal(cents, goalCents) {
+    const pct = goalCents > 0 ? Math.min(1, cents / goalCents) : 0;
+    $('#raised-fill').style.width = (pct * 100).toFixed(1) + '%';
+    $('#raised-l').textContent = goalCents > 0 ? `raised of ${fmtEuro(Math.round(goalCents / 100))}` : 'raised';
   }
   // The raised total only ever rolls up; a lower total (demo plays cleared) just sets.
   function showRaised(cents) {
@@ -463,7 +469,7 @@
     if (seq !== statsSeq) return; // a newer answer is on its way (e.g. right after a payment)
     stats = fresh;
     showRaised(Number(stats.total_raised_cents || 0));
-    showRing(Number(stats.total_raised_cents || 0), Number(stats.goal_cents || 0));
+    showGoal(Number(stats.total_raised_cents || 0), Number(stats.goal_cents || 0));
     const ends = endsText();
     $('#board-sub').textContent = ends ? `Prizes at the end · ${ends.replace('Ends', 'ends')}` : 'Prizes at the end';
     const closes = closesText();
@@ -535,6 +541,7 @@
     await wait(120);
     prefetchPlay(); // ready before the Start button is
     await coinDrop(n);
+    $('#cab-text').textContent = n === 1 ? '1 play added' : `${n} plays added`;
     // The player starts the play themselves: the button pops in and waits.
     const btn = $('#cab-play');
     btn.hidden = false; btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop');
@@ -543,29 +550,32 @@
   $('#cab-play').addEventListener('click', () => startPlay());
 
   // A coin goes into the slot at the top, a play token pops out of the tray at the bottom.
+  // The coin (marked with what was paid) drops, spins, lands on the slot and slips in; the slot flashes,
+  // the plays counter winds up to the new total in one motion, and a token pops into the tray for each play.
   async function coinDrop(n) {
     const coin = $('#coin'), slot = $('#cab-slot'), panel = $('#cab-panel'), token = $('#token'), val = $('#cab-credits');
     const target = credits;
     const from = Math.max(0, target - n);
-    val.textContent = from;
+    odoStatic(val, from, fmtPlain);
+    coin.textContent = n >= 7 ? '€10' : n >= 3 ? '€5' : '€2';
     coin.classList.remove('drop'); void coin.offsetWidth; coin.classList.add('drop');
-    await wait(760);
+    await wait(620);
     slot.classList.add('glow');
     panel.classList.remove('hit'); void panel.offsetWidth; panel.classList.add('hit');
+    sounds.coin();
     vibrate(30);
-    await wait(280);
+    await wait(260);
     slot.classList.remove('glow');
     coin.classList.remove('drop');
-    const step = n > 3 ? 240 : 420;
+    odoRoll(val, from, target, fmtPlain);
+    const step = n > 3 ? 200 : 380;
     for (let i = 0; i < n; i++) {
       token.textContent = String(from + i + 1);
       token.classList.remove('out'); void token.offsetWidth; token.classList.add('out');
+      vibrate(12);
       await wait(step);
-      val.textContent = from + i + 1;
-      val.classList.remove('bump'); void val.offsetWidth; val.classList.add('bump');
-      vibrate(15);
     }
-    await wait(150);
+    await wait(120);
   }
 
   // ---------------------------------------------------------------------------
@@ -579,27 +589,29 @@
     x = x - 2 * Math.floor(x / 2);
     return x < 1 ? x : 2 - x;
   }
-  // Mirrors round_score() in the database: the first game's curve. The score is the cube of how close
-  // the light stopped to the line, over the whole bar: 999 on the line, 10 ms off 928, 20 ms 872,
-  // 30 ms 818, 50 ms 716, 100 ms 499, 200 ms 204, 300 ms 52, the floor of 50 from about a third of the bar.
-  // A cusp over the first 3 ms keeps 999 itself to one person.
+  // Mirrors round_score() in the database: scores spread evenly over the whole bar. The score falls with
+  // the square of the distance from the line: 999 on the line, 10 ms off 968, 30 ms 931, 50 ms 894, 100 ms 807,
+  // 200 ms 645, 300 ms 503, half the bar 275, 700 ms 123, the far end about 60. A cusp over the first 3 ms
+  // keeps 999 to one person.
   const roundScore = (pos, target, speed) => {
     const d = Math.abs(pos - target);
-    const u = Math.max(0, 1 - d / 0.5);
-    return Math.min(999, Math.max(50, Math.round(999 * u ** 3 - 12 * Math.sqrt(Math.min(d * speed, 3) / 3))));
+    const u = Math.max(0, 1 - d);
+    return Math.min(999, Math.max(50, Math.round(50 + 949 * u ** 2 - 12 * Math.sqrt(Math.min(d * speed, 3) / 3))));
   };
+  // A light is a hit (green) from 850: within about 75 ms of the line.
+  const HIT = 850;
   function titleFor(s) {
-    if (s >= 850) return 'Outstanding';
-    if (s >= 700) return 'Superb';
-    if (s >= 550) return 'Great run';
-    if (s >= 400) return 'Good effort';
+    if (s >= 920) return 'Outstanding';
+    if (s >= 850) return 'Superb';
+    if (s >= 700) return 'Great run';
+    if (s >= 500) return 'Good effort';
     return 'Next time';
   }
   function verdictFor(s) {
-    if (s >= 900) return 'Perfect';
-    if (s >= 750) return 'So close';
-    if (s >= 550) return 'Nice';
-    if (s >= 350) return 'Not bad';
+    if (s >= 960) return 'Perfect';
+    if (s >= HIT) return 'So close';
+    if (s >= 700) return 'Nice';
+    if (s >= 450) return 'Not bad';
     return 'Unlucky';
   }
   function setMarker(pos) { marker.style.transform = `translateX(${pos * game.trackW}px)`; }
@@ -608,12 +620,16 @@
   }
   function measure() { game.trackW = track.clientWidth; }
   window.addEventListener('resize', measure);
+  // The home preview light sweeps the width of its bar by a transform, whatever the screen width.
+  const demoTrack = $('.demo-track');
+  function sizeDemo() { if (demoTrack && demoTrack.clientWidth) demoTrack.style.setProperty('--sweep', (demoTrack.clientWidth - 10) + 'px'); }
+  window.addEventListener('resize', sizeDemo);
 
   function renderDots() {
     $$('#rounds .dot').forEach((d, i) => {
       d.className = 'dot';
       d.textContent = i < game.scores.length ? game.scores[i] : i + 1;
-      if (i < game.scores.length) d.classList.add('done', game.scores[i] < 400 ? 'low' : 'high');
+      if (i < game.scores.length) d.classList.add('done', game.scores[i] < HIT ? 'low' : 'high');
       else if (i === game.round && (game.state === 'sweeping' || game.state === 'countdown')) d.classList.add('live');
     });
   }
@@ -624,7 +640,7 @@
     $('#game-msg').textContent = 'Ready';
     $('#game-msg').classList.remove('go', 'coach');
     $('#score-value').textContent = '';
-    $('.score').classList.remove('pop');
+    $('.score').classList.remove('pop', 'hit');
     $('#verdict').textContent = '';
     $('#coach').textContent = '';
     $('#verdict').classList.remove('miss');
@@ -722,7 +738,7 @@
   // One line of coaching after a light, so the next one can be better.
   function coachFor(s, err) {
     const a = Math.abs(err);
-    if (s >= 900 || a <= 10) return '';
+    if (s >= 960 || a <= 10) return '';
     if (a < 40) return err > 0 ? 'A touch late' : 'A touch early';
     return err > 0 ? 'Late · tap a bit sooner' : 'Early · tap a bit later';
   }
@@ -754,7 +770,7 @@
     const pos = posAt(ms, r.phase, game.play.speed_ms);
     const s = roundScore(pos, r.target, game.play.speed_ms);
     setMarker(pos); // the light stops, this frame, where it was when the finger landed
-    marker.classList.add(s >= 550 ? 'hit' : 'miss');
+    marker.classList.add(s >= HIT ? 'hit' : 'miss');
     sounds.tap();
     game.taps.push(ms);
     game.scores.push(s);
@@ -768,15 +784,16 @@
   // After the stop: the light's number under the bar, a verdict, a line of coaching; then the next light.
   async function afterRound(s, err) {
     if (game.state !== 'between') return;
-    if (s >= 750) sounds.good();
-    vibrate(s >= 900 ? [20, 30, 20] : 25);
+    if (s >= HIT) sounds.good();
+    vibrate(s >= 960 ? [20, 30, 20] : 25);
     renderDots();
     const el = $('#score-value');
     el.textContent = s;
+    $('.score').classList.toggle('hit', s >= HIT);
     $('.score').classList.remove('pop'); void el.offsetWidth; $('.score').classList.add('pop');
     const v = $('#verdict');
     v.textContent = verdictFor(s);
-    v.classList.toggle('miss', s < 550);
+    v.classList.toggle('miss', s < HIT);
     $('#game-msg').textContent = '';
     $('#coach').textContent = coachFor(s, err);
     await wait(850);
@@ -785,7 +802,7 @@
       v.textContent = '';
       $('#coach').textContent = '';
       $('#score-value').textContent = '';
-      $('.score').classList.remove('pop');
+      $('.score').classList.remove('pop', 'hit');
       marker.classList.add('hide'); // the light blinks off, then reappears at the next start, already moving
       await wait(150);
       if (game.state !== 'between') return;
@@ -1145,9 +1162,11 @@
       [rows] = await Promise.all([rpc('leaderboard', { p_role: boardRole === 'everyone' ? null : boardRole }), loadSpot(), refreshStats()]);
     } catch (ex) { toast(msg(ex), true); return; }
     if (seq !== boardSeq) return; // a newer tab tap is in flight
+    const same = boardCache[boardRole] && JSON.stringify(boardCache[boardRole]) === JSON.stringify(rows);
     boardCache[boardRole] = rows;
-    renderBoard(rows);
+    if (!same || !$('#board-list').children.length) renderBoard(rows);
   }
+  setInterval(() => { if (current === 'board' && !document.hidden) loadBoard(); }, 20000); // the board stays live while it is open
   const boardCache = {};
   function prefetchBoards() {
     for (const role of ['everyone', isSchool() ? player.role : null]) {
@@ -1323,9 +1342,9 @@
 
   $('#signin-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const initials = $('#signin-name').value.toUpperCase().replace(/\s/g, '');
+    const initials = normTag($('#signin-name').value);
     const code = $('#signin-code').value.replace(/\D/g, '');
-    if (!/^[A-Z]{2,3}(#\d{1,3})?$/.test(initials)) { showError('signin-error', 'Two or three initials, like JAK or JAK#2.'); return; }
+    if (!/^[A-Z]{2,3}(#\d{1,3})?$/.test(initials)) { showError('signin-error', 'Two or three letters, like JAK. A second JAK types JAK 2.'); return; }
     if (!/^\d{4}$/.test(code)) { showError('signin-error', 'Your code is four digits.'); return; }
     const btn = $('#signin-submit');
     btn.disabled = true;
@@ -1523,8 +1542,8 @@
   });
   $('#admin-find').addEventListener('submit', (e) => { e.preventDefault(); findPlayer(); });
   async function findPlayer() {
-    const initials = $('#adm-find-initials').value.toUpperCase().replace(/\s/g, '');
-    if (!/^[A-Z]{2,3}(#\d{1,3})?$/.test(initials)) { toast('Type a name like JAK or JAK#2.', true); return; }
+    const initials = normTag($('#adm-find-initials').value);
+    if (!/^[A-Z]{2,3}(#\d{1,3})?$/.test(initials)) { toast('Type a name like JAK, or JAK 2 for a second JAK.', true); return; }
     const box = $('#adm-player');
     try {
       const res = await adminCall('player', { initials });
