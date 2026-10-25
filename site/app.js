@@ -978,9 +978,8 @@
     ctx.fillStyle = '#1f9d5a'; ctx.font = font(200, 800); ctx.fillText(player.claim_code.split('').join(' '), W / 2, 1000);
     // rule, then the condition first so nobody reads the ticket as a prize
     ctx.fillStyle = '#e5e5ea'; ctx.fillRect(160, 1064, W - 320, 3);
-    ctx.fillStyle = '#1c1c1e'; ctx.font = font(36, 800); ctx.fillText('If you win, show this to collect your prize.', W / 2, 1130);
-    ctx.fillStyle = '#3a3a3c'; ctx.font = font(28, 600); ctx.fillText('Prizes go to the top of each board when the arcade closes.', W / 2, 1184);
-    ctx.fillStyle = '#8e8e93'; ctx.font = font(28, 600); ctx.fillText(location.host || 'preslink.netlify.app', W / 2, 1236);
+    ctx.fillStyle = '#1c1c1e'; ctx.font = font(36, 800); ctx.fillText('Show this to collect a prize.', W / 2, 1140);
+    ctx.fillStyle = '#8e8e93'; ctx.font = font(28, 600); ctx.fillText(location.host || 'preslink.netlify.app', W / 2, 1200);
     return c;
   }
   // One rendered ticket per player, kept as a blob so the save button has nothing left to wait for.

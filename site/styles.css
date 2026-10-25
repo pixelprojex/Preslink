@@ -60,11 +60,10 @@ h1, h2, h3 { margin: 0; line-height: 1.15; color: var(--ink); font-weight: 700; 
 .home-title { padding-top: 28px; padding-bottom: 26px; }
 .home-title h1 { font-size: 42px; }
 .btn-hero { min-height: 68px; font-size: 21px; border-radius: 20px; }
-/* The two bundles are tiles: what you get, what it costs, what you save. */
+/* The two bundles are tiles: what you get and what it costs. */
 .bundles-line { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0 0; }
 .bundles-line > span { display: none; }
 .bundles-line .link { display: grid; justify-items: center; gap: 2px; font-size: 15px; color: var(--ink); font-weight: 700; background: var(--fill); border-radius: 14px; padding: 10px 12px; transition: transform .12s ease, background .18s ease; }
-.bundles-line .link small { font-size: 12px; font-weight: 600; color: var(--green-d); }
 .bundles-line .link:active { transform: scale(.97); background: var(--fill-2); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .section { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin: 28px 16px 10px; }

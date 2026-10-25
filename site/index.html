@@ -26,7 +26,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=30">
+  <link rel="stylesheet" href="styles.css?v=31">
 </head>
 <body>
 <div class="splash" id="splash" aria-hidden="true">
@@ -47,10 +47,10 @@
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
-    <!-- Tab icons: flat shapes in two tones (a body and a darker lower part), no gradients, no shine. -->
-    <symbol id="i-play" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="6" fill="#58cc02"/><path d="M2 16h20a6 6 0 0 1-6 6H8a6 6 0 0 1-6-6z" fill="#46a302"/><path d="M9.8 7.6v8.8a.8.8 0 0 0 1.2.7l7-4.4a.8.8 0 0 0 0-1.4l-7-4.4a.8.8 0 0 0-1.2.7z" fill="#fff"/></symbol>
-    <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M12 2l8 3v6.5c0 4.6-3.3 8.3-8 10.5-4.7-2.2-8-5.9-8-10.5V5z" fill="#ffc800"/><path d="M12 22c-4.7-2.2-8-5.9-8-10.5V11h16v.5c0 4.6-3.3 8.3-8 10.5z" fill="#ff9600"/><path d="M12 6.4l1.6 3.3 3.6.5-2.6 2.5.6 3.6-3.2-1.7-3.2 1.7.6-3.6-2.6-2.5 3.6-.5z" fill="#fff"/></symbol>
-    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="#ff4b4b"/><path d="M12 21.35l-1.45-1.32C7.3 17.05 4.8 14.6 3.6 12.3h16.8c-1.2 2.3-3.7 4.75-6.95 7.73L12 21.35z" fill="#ea2b2b"/></symbol>
+    <!-- Tab icons: flat shapes, one colour each plus white, no shading. -->
+    <symbol id="i-play" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="6" fill="#58cc02"/><path d="M9.8 7.6v8.8a.8.8 0 0 0 1.2.7l7-4.4a.8.8 0 0 0 0-1.4l-7-4.4a.8.8 0 0 0-1.2.7z" fill="#fff"/></symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M12 2l8 3v6.5c0 4.6-3.3 8.3-8 10.5-4.7-2.2-8-5.9-8-10.5V5z" fill="#ffc800"/><path d="M12 6.4l1.6 3.3 3.6.5-2.6 2.5.6 3.6-3.2-1.7-3.2 1.7.6-3.6-2.6-2.5 3.6-.5z" fill="#fff"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="#ff4b4b"/></symbol>
     <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#1cb0f6"/><circle cx="12" cy="9.2" r="3.6" fill="#fff"/><path d="M5.2 19a7 7 0 0 1 13.6 0 10 10 0 0 1-13.6 0z" fill="#fff"/></symbol>
     <symbol id="i-flash" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z" fill="currentColor"/></symbol>
     <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M12 5a7 7 0 0 1 6.3 4H16l4 4 4-4h-2.6A9 9 0 0 0 3.5 8.5l1.8.9A7 7 0 0 1 12 5zm0 14a7 7 0 0 1-6.3-4H8l-4-4-4 4h2.6a9 9 0 0 0 17.9.5l-1.8-.9A7 7 0 0 1 12 19z" fill="currentColor"/></symbol>
@@ -73,7 +73,7 @@
       <p class="hero-p">Every play funds schools in Ghana and Nigeria.</p>
       <div class="demo-track" aria-hidden="true"><span class="demo-pin"></span><span class="demo-marker"></span></div>
       <button class="btn btn-primary btn-xl" id="home-play" type="button">Play · €2</button>
-      <p class="bundles-line"><button class="link" type="button" data-bundle="triple">3 plays · €5<small>Save €1</small></button><button class="link" type="button" data-bundle="seven">7 plays · €10<small>Save €4</small></button></p>
+      <p class="bundles-line"><button class="link" type="button" data-bundle="triple">3 plays · €5</button><button class="link" type="button" data-bundle="seven">7 plays · €10</button></p>
     </div>
     <div class="card">
       <button class="cell" type="button" data-go="prize"><span>Prizes<small id="home-ends"></small></span> <span class="chev">›</span></button>
@@ -133,10 +133,10 @@
       <p class="result-note" id="result-note" hidden></p>
       <div class="card pad cta-card">
         <button class="btn btn-primary btn-xl" type="button" id="result-again">Play again</button>
-        <p class="bundles-line" id="result-topup" hidden><button class="link" type="button" data-bundle="triple">3 plays · €5<small>Save €1</small></button><button class="link" type="button" data-bundle="seven">7 plays · €10<small>Save €4</small></button></p>
+        <p class="bundles-line" id="result-topup" hidden><button class="link" type="button" data-bundle="triple">3 plays · €5</button><button class="link" type="button" data-bundle="seven">7 plays · €10</button></p>
       </div>
       <div class="card">
-        <button class="cell" type="button" id="result-email" hidden><span>Add your email<small>So we can tell you if you win</small></span> <span class="chev">›</span></button>
+        <button class="cell" type="button" id="result-email" hidden><span>Add your email</span> <span class="chev">›</span></button>
         <button class="cell" type="button" data-go="board"><span>Leaderboard</span> <span class="chev">›</span></button>
       </div>
     </div>
@@ -495,7 +495,7 @@
 <div class="overlay" id="overlay" hidden><div class="overlay-card"><div class="spinner" aria-hidden="true"></div><p id="overlay-text">One moment</p></div></div>
 
 <script src="config.js"></script>
-<script src="mock.js?v=30"></script>
-<script src="app.js?v=30"></script>
+<script src="mock.js?v=31"></script>
+<script src="app.js?v=31"></script>
 </body>
 </html>
