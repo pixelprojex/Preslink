@@ -25,9 +25,10 @@
   const vibrate = (p) => { try { if (navigator.vibrate) navigator.vibrate(p); } catch (_) { /* ignore */ } };
   const reduceMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   // "JAK#2" -> JAK with a small #2
-  const nameHtml = (display) => { const [l, n] = String(display || '').split('#'); return esc(l) + (n ? `<span class="sfx">#${esc(n)}</span>` : ''); };
-  // A coloured circle with the letters; the tint comes from the letters so it is stable.
-  const avatarHtml = (display, big) => { const l = String(display || '').split('#')[0]; let h = 0; for (const c of l) h = (h * 31 + c.charCodeAt(0)) % 5; return `<span class="avatar c${h + 1}${big ? ' big' : ''}">${nameHtml(display)}</span>`; };
+  // Two people with the same initials: the second is the letters with a 2 in a bubble, never "FB#2" on screen.
+  const nameHtml = (display) => { const [l, n] = String(display || '').split('#'); return esc(l) + (n ? `<span class="dup inline">${esc(n)}</span>` : ''); };
+  // A coloured circle with the letters; the tint comes from the letters so it is stable. The bubble sits on the rim.
+  const avatarHtml = (display, big) => { const [l, n] = String(display || '').split('#'); let h = 0; for (const c of l) h = (h * 31 + c.charCodeAt(0)) % 5; return `<span class="avatar c${h + 1}${big ? ' big' : ''}">${esc(l)}${n ? `<span class="dup">${esc(n)}</span>` : ''}</span>`; };
   const boardName = (role) => BOARD_NAMES[role] || 'Everyone';
   const CREST_IMG = '<img class="crest-ic" src="assets/crest.svg?v=10" alt="">';
 
@@ -365,44 +366,39 @@
   }
 
   // Rolling-digit counter, like a follower ticker: each changed digit slides up.
-  function setOdometer(el, text) {
-    const chars = Array.from(text);
-    const cur = Array.from(el.querySelectorAll('.dg, .sep'));
-    if (cur.length !== chars.length || cur.some((c, i) => /\d/.test(chars[i]) !== c.classList.contains('dg'))) {
-      el.innerHTML = chars.map((c) => /\d/.test(c) ? `<span class="dg"><span>${c}</span></span>` : `<span class="sep">${esc(c)}</span>`).join('');
-      el.setAttribute('aria-label', text);
-      return;
-    }
-    chars.forEach((c, i) => {
-      const slot = cur[i];
-      if (!slot.classList.contains('dg')) { slot.textContent = c; return; }
-      const old = slot.querySelector('span:not(.out)');
-      if (old && old.textContent === c) return;
-      if (old) { old.className = 'out'; setTimeout(() => old.remove(), 500); }
-      const nu = document.createElement('span'); nu.className = 'in'; nu.textContent = c; slot.appendChild(nu);
-    });
-    el.setAttribute('aria-label', text);
+  // The app-bar counter is an odometer: every digit is a strip that rolls, and all strips roll in one
+  // eased motion whose length grows with the jump (a €2 nudge takes about 0.7 s, a €40 catch-up about
+  // two and a half), so it winds up, spins and settles as one movement, never a run of separate ticks.
+  const fmtEuro = (n) => '€' + n.toLocaleString('en-IE');
+  function odoStatic(el, value) {
+    const txt = fmtEuro(value);
+    el.innerHTML = Array.from(txt).map((c) => /\d/.test(c) ? `<span class="dg"><span class="strip"><span>${c}</span></span></span>` : `<span class="sep">${esc(c)}</span>`).join('');
+    el.setAttribute('aria-label', txt);
   }
-  // Rolls like a mechanical counter: the digits slide to a stop, rest, slide again. At most eight
-  // stops, and the rests get a little longer towards the end so the last digit settles.
-  function tickTo(el, from, to, fmt) {
-    return new Promise((resolve) => {
-      clearTimeout(el._tick);
-      if (reduceMotion() || to === from) { setOdometer(el, fmt(to)); resolve(); return; }
-      const delta = to - from;
-      const n = Math.min(8, Math.abs(delta));
-      const vals = [];
-      for (let i = 1; i <= n; i++) vals.push(Math.round(from + delta * (i / n)));
-      let i = 0;
-      const step = () => {
-        setOdometer(el, fmt(vals[i]));
-        i++;
-        if (i >= n) { resolve(); return; }
-        const k = i / n;
-        el._tick = setTimeout(step, 460 + 300 * k * k);
-      };
-      el._tick = setTimeout(step, 140);
-    });
+  function odoRoll(el, from, to) {
+    clearTimeout(el._settle);
+    if (reduceMotion() || to <= from) { odoStatic(el, to); return; }
+    const toS = String(to), L = toS.length;
+    const fromS = String(from).padStart(L, ' ');
+    const ms = Math.min(2600, 520 + 95 * (to - from));
+    let html = '<span class="sep">€</span>';
+    const turns = [];
+    for (let i = 0; i < L; i++) {
+      if (i > 0 && (L - i) % 3 === 0) html += '<span class="sep">,</span>';
+      const want = Number(toS.slice(0, i + 1)) - Number(fromS.slice(0, i + 1).trim() || '0'); // positions this column rolls
+      const steps = want > 29 ? 20 + (want % 10) : want; // more than two turns looks the same as two, and ends on the same digit
+      const end = Number(toS[i]);
+      const seq = [];
+      for (let k = steps; k >= 0; k--) seq.push(((end - k) % 10 + 10) % 10);
+      if (fromS[i] === ' ') seq[0] = ''; // a new leading column rolls in from blank
+      turns.push(steps);
+      html += `<span class="dg"><span class="strip">${seq.map((d) => `<span>${d}</span>`).join('')}</span></span>`;
+    }
+    el.innerHTML = html;
+    el.setAttribute('aria-label', fmtEuro(to));
+    void el.offsetWidth; // the strips sit on their first digit, then roll
+    el.querySelectorAll('.strip').forEach((st, i) => { st.style.transitionDuration = ms + 'ms'; st.style.transform = `translateY(-${(turns[i] * 1.1).toFixed(2)}em)`; });
+    el._settle = setTimeout(() => odoStatic(el, to), ms + 80);
   }
   // A plain count-up for the big score on the result screen.
   function countUp(el, to, ms) {
@@ -423,20 +419,15 @@
     const pct = goalCents > 0 ? Math.min(1, cents / goalCents) : (cents > 0 ? 1 : 0);
     ring.setAttribute('stroke-dasharray', `${Math.max(pct > 0 ? 3 : 0, pct * circ).toFixed(1)} ${circ}`);
   }
-  // The raised total only ever rolls: digits slide to the new value, nothing else changes.
+  // The raised total only ever rolls up; a lower total (demo plays cleared) just sets.
   function showRaised(cents) {
     const el = $('#raised-n');
     const target = Math.round((cents || 0) / 100);
-    const fmt = (n) => '€' + n.toLocaleString('en-IE');
     const from = shownRaised;
     shownRaised = target;
-    if (from === null) { tickTo(el, 0, target, fmt); return; }
-    if (target === from) return;
-    if (target > from) tickTo(el, from, target, fmt);
-    else setOdometer(el, fmt(target));
+    if (from === null) { odoRoll(el, 0, target); return; }
+    if (target !== from) odoRoll(el, from, target);
   }
-  // Live total: every open page asks for the total every few seconds, so a payment anywhere rolls
-  // the counter on everyone's screen within that time. Paused while the tab is hidden.
   const STATS_EVERY = 5000;
   let statsTimer = 0;
   const inPlay = () => ['loading', 'countdown', 'sweeping', 'between'].includes(game.state);
@@ -525,13 +516,15 @@
     $('#cab-title').textContent = result.demo ? 'Demo play' : 'Thank you';
     $('#cab-text').textContent = '';
     cabinetBusy = true;
+    $('#cab-play').hidden = true;
     await splashDone;
     go('cabinet');
     refreshStats();
-    await wait(300);
+    await wait(120);
     await coinDrop(n);
-    await wait(1200);
-    if (current === 'cabinet') startPlay();
+    // The player starts the play themselves: the button pops in and waits.
+    const btn = $('#cab-play');
+    btn.hidden = false; btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop');
     cabinetBusy = false;
   }
   $('#cab-play').addEventListener('click', () => startPlay());
@@ -542,16 +535,15 @@
     const target = credits;
     const from = Math.max(0, target - n);
     val.textContent = from;
-    $('#cab-hint').textContent = '';
     coin.classList.remove('drop'); void coin.offsetWidth; coin.classList.add('drop');
-    await wait(1250);
+    await wait(760);
     slot.classList.add('glow');
     panel.classList.remove('hit'); void panel.offsetWidth; panel.classList.add('hit');
     vibrate(30);
-    await wait(500);
+    await wait(280);
     slot.classList.remove('glow');
     coin.classList.remove('drop');
-    const step = n > 3 ? 420 : 750;
+    const step = n > 3 ? 240 : 420;
     for (let i = 0; i < n; i++) {
       token.textContent = String(from + i + 1);
       token.classList.remove('out'); void token.offsetWidth; token.classList.add('out');
@@ -560,31 +552,29 @@
       val.classList.remove('bump'); void val.offsetWidth; val.classList.add('bump');
       vibrate(15);
     }
-    await wait(500);
-    $('#cab-hint').textContent = n === 1 ? '1 play ready' : `${n} plays ready`;
+    await wait(150);
   }
 
   // ---------------------------------------------------------------------------
   // Game: three lights, line each one up with the mark
   // ---------------------------------------------------------------------------
   const game = { state: 'idle', play: null, round: 0, taps: [], scores: [], sweepStart: 0, trackW: 0, pending: null, lastScore: 0 };
-  const marker = $('#marker'), track = $('#track'), pin = $('#pin'), swatch = $('#swatch'), zone = $('#zone');
-  const ZONE_HALF = 0.025; // the sweet spot drawn on the track: 25 ms either side of the mark at a one-second sweep
+  const marker = $('#marker'), track = $('#track'), pin = $('#pin'), swatch = $('#swatch');
 
   function posAt(ms, phase, speed) {
     let x = ms / speed + phase;
     x = x - 2 * Math.floor(x / 2);
     return x < 1 ? x : 2 - x;
   }
-  // Mirrors round_score() in the database: a bell over the timing error in milliseconds, not a spike.
-  //   score = max(50, round(50 + 949 * exp(-(err/40)^2) - 12 * sqrt(min(err, 3) / 3))),  err = |pos - target| * speed_ms
-  // 999 on the mark, then a fine ruler over the first 3 ms (0.5 ms = 994, 1 ms = 991, 3 ms = 982) so the top of the
-  // board stays one person; the bell underneath keeps it fair: 10 ms = 930, 20 ms = 777, 30 ms = 579, 40 ms = 387,
-  // 60 ms = 138, 80 ms = 55, further = 50. 1,000 is not a score: 999 is the ceiling.
-  const SCORE_WIDTH_MS = 40;
+  // Mirrors round_score() in the database. The whole bar scores: the distance from the light to the
+  // line, as a fraction of the bar, is what counts. On the line 999; the floor of 50 only half a bar
+  // away. A sharp part (closeness^6) makes the top hard, a long part (closeness^1.5) keeps the rest of
+  // the bar alive, and a cusp over the first 3 ms makes 999 itself a one-off. At a one-second sweep:
+  // 10 ms off = 908, 20 ms = 836, 30 ms = 770, 50 ms = 656, 100 ms = 446, 200 ms = 229, 300 ms = 129, 400 ms = 69.
   const roundScore = (pos, target, speed) => {
-    const err = Math.abs(pos - target) * speed;
-    return Math.max(50, Math.round(50 + 949 * Math.exp(-((err / SCORE_WIDTH_MS) ** 2)) - 12 * Math.sqrt(Math.min(err, 3) / 3)));
+    const d = Math.abs(pos - target);
+    const u = Math.max(0, 1 - d / 0.5);
+    return Math.min(999, Math.max(50, Math.round(50 + 949 * (0.63 * u ** 6 + 0.37 * u ** 1.5) - 12 * Math.sqrt(Math.min(d * speed, 3) / 3))));
   };
   function titleFor(s) {
     if (s >= 850) return 'Outstanding';
@@ -603,7 +593,6 @@
   function setMarker(pos) { marker.style.transform = `translateX(${pos * game.trackW}px)`; }
   function setPin(target) {
     pin.style.left = (target * 100) + '%';
-    zone.style.left = ((target - ZONE_HALF) * 100) + '%';
     swatch.style.background = `color-mix(in srgb, #ffe08a ${Math.round((1 - target) * 100)}%, #f26a1b)`;
   }
   function measure() { game.trackW = track.clientWidth; marker.style.setProperty('--w', game.trackW + 'px'); }
@@ -630,7 +619,8 @@
     $('#tap-hint').textContent = 'Tap when the light is on the mark';
     $('#tap-hint').classList.remove('live');
     $('#result-note').hidden = true;
-    marker.classList.remove('hit', 'miss', 'run');
+    pin.style.opacity = '';
+    marker.classList.remove('hit', 'miss', 'run', 'wait', 'glide');
     game.round = 0; game.taps = []; game.scores = [];
     renderDots();
     measure();
@@ -654,7 +644,11 @@
     fetching.catch(() => {});
     const m = $('#game-msg');
     m.classList.remove('count', 'go', 'coach');
-    m.textContent = '';
+    // The track is live at once: the light breathes mid-bar while the play is fetched, so nothing looks stuck.
+    m.textContent = 'Light 1 of 3';
+    pin.style.opacity = '0';
+    measure(); setMarker(0.5);
+    marker.classList.add('wait');
     // The first time, the rules sit over the game until Got it is tapped; nothing moves meanwhile.
     if (!store.get(HOW_SEEN_KEY) && best == null) { await showIntro(); if (game.state !== 'loading') return; }
     let res;
@@ -686,7 +680,9 @@
     m.classList.remove('count', 'go', 'coach');
     m.textContent = `Light ${i + 1} of 3`;
     setPin(r.target);
-    marker.classList.remove('hit', 'miss', 'run');
+    marker.classList.remove('hit', 'miss', 'run', 'wait', 'glide');
+    pin.style.opacity = '';
+    marker.classList.add('glide'); // the light slides to its starting point instead of jumping there
     measure();
     setMarker(posAt(0, r.phase, game.play.speed_ms));
     marker.classList.remove('settle'); void marker.offsetWidth; marker.classList.add('settle');
@@ -698,7 +694,7 @@
     const r = game.play.rounds[i];
     if (i > 0) { const m = $('#game-msg'); m.classList.remove('go', 'count', 'coach'); m.textContent = `Light ${i + 1} of 3`; }
     setPin(r.target);
-    marker.classList.remove('hit', 'miss', 'run');
+    marker.classList.remove('hit', 'miss', 'run', 'wait', 'glide');
     measure();
     game.state = 'sweeping';
     $('#game').classList.add('sweeping');
@@ -858,6 +854,7 @@
     updatePlayCredits();
     refreshStats();
     pollStats();
+    prefetchBoards();
     $('#game').classList.add('done');
     $('#game').hidden = true;
     $('#tabbar').hidden = false; // the game is over: let people move around again
@@ -974,7 +971,14 @@
     ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#1c1c1e'; ctx.lineWidth = 4; roundRect(ctx, bx + bw * 0.62 - 13, by - 6, 26, bh + 12, 13); ctx.fill(); ctx.stroke();
     // name
     ctx.fillStyle = '#8e8e93'; ctx.font = font(28, 700); ctx.fillText('Y O U R   I N I T I A L S', W / 2, 560);
-    ctx.fillStyle = '#1c1c1e'; ctx.font = font(170, 800); ctx.fillText(player.display, W / 2, 712);
+    const [lt, sx] = String(player.display).split('#');
+    ctx.fillStyle = '#1c1c1e'; ctx.font = font(170, 800); ctx.fillText(lt, W / 2, 712);
+    if (sx) { // the same initials as someone else: a numbered bubble on the shoulder of the name
+      const w = ctx.measureText(lt).width;
+      const cx = W / 2 + w / 2 + 34, cy = 712 - 150;
+      ctx.fillStyle = '#2a7de1'; ctx.beginPath(); ctx.arc(cx, cy, 44, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = font(52, 800); ctx.textBaseline = 'middle'; ctx.fillText(sx, cx, cy + 2); ctx.textBaseline = 'alphabetic';
+    }
     // code
     ctx.fillStyle = '#8e8e93'; ctx.font = font(28, 700); ctx.fillText('Y O U R   C O D E', W / 2, 820);
     ctx.fillStyle = '#1f9d5a'; ctx.font = font(200, 800); ctx.fillText(player.claim_code.split('').join(' '), W / 2, 1000);
@@ -1014,8 +1018,7 @@
   const HINT_TAP = 'Then tap Save Image on the menu that opens.';
   const HINT_HOLD = 'Or hold your finger on the ticket, then tap Add to Photos.';
   $$('.save-btn').forEach((b) => { b.textContent = SAVE_LABEL; });
-  $('#save-hint').textContent = HINT_TAP;
-  $('#save-hint').hidden = !IS_APPLE_MOBILE;
+  $$('#save-hint, #contact-save-hint').forEach((h) => { h.textContent = HINT_TAP; h.hidden = !IS_APPLE_MOBILE; });
   function downloadBlob(blob, name) {
     const a = document.createElement('a');
     const url = URL.createObjectURL(blob);
@@ -1063,8 +1066,9 @@
     $('#contact-school').value = player.school_email || '';
     $('#contact-school-wrap').hidden = !player.school_email;
     $('#contact-more').hidden = !!player.school_email;
-    $('#contact-skip').hidden = !first;
     $('#contact-close').hidden = !!first;
+    $('#contact-code').textContent = player.claim_code;
+    renderContactSaved();
     const closes = closesText();
     $('#contact-note').textContent = closes ? `Winners are emailed when the arcade closes on ${closes}.` : 'Winners are emailed when the arcade closes.';
     openSheet('contact');
@@ -1083,7 +1087,8 @@
     try {
       adoptPlayer(await api('contact', { player_id: player.id, email, school_email: school || null }));
       store.set(CONTACT_ASKED_KEY, true);
-      closeSheets();
+      showError('contact-error', '');
+      renderContactSaved(); // the sheet stays open: the code is the other thing to keep
       renderYou();
       renderResultEmail();
       toast(isSchool() ? `Saved. You are on the ${boardName(player.role)} board.` : 'Saved. We will email you if you win.');
@@ -1091,6 +1096,14 @@
       showError('contact-error', msg(ex));
     } finally { btn.disabled = false; }
   });
+  function renderContactSaved() {
+    const on = !!(player && player.contact_email);
+    const line = $('#contact-saved');
+    line.hidden = !on;
+    line.textContent = on ? `Saved · ${player.contact_email}` : '';
+    $('#contact-submit').textContent = on ? 'Update email' : 'Save email';
+  }
+  $('#contact-save').addEventListener('click', () => saveCodeImage());
   const skipContact = () => { store.set(CONTACT_ASKED_KEY, true); closeSheets(); renderResultEmail(); };
   $('#contact-skip').addEventListener('click', skipContact);
   $('#contact-close').addEventListener('click', closeSheets);
@@ -1129,13 +1142,24 @@
   async function loadBoard() {
     if (!boardTouched) boardRole = isSchool() ? player.role : 'everyone';
     $$('[data-screen="board"] .tab').forEach((x) => { x.classList.toggle('active', x.dataset.role === boardRole); x.setAttribute('aria-selected', x.dataset.role === boardRole); });
-    const list = $('#board-list');
+    if (boardCache[boardRole]) renderBoard(boardCache[boardRole]); // the last known rows at once; fresh ones follow
     const seq = ++boardSeq;
     let rows = [];
     try {
       [rows] = await Promise.all([rpc('leaderboard', { p_role: boardRole === 'everyone' ? null : boardRole }), loadSpot(), refreshStats()]);
     } catch (ex) { toast(msg(ex), true); return; }
     if (seq !== boardSeq) return; // a newer tab tap is in flight
+    boardCache[boardRole] = rows;
+    renderBoard(rows);
+  }
+  const boardCache = {};
+  function prefetchBoards() {
+    for (const role of ['everyone', isSchool() ? player.role : null]) {
+      if (role) rpc('leaderboard', { p_role: role === 'everyone' ? null : role }).then((rows) => { boardCache[role] = rows; }).catch(() => {});
+    }
+  }
+  function renderBoard(rows) {
+    const list = $('#board-list');
     list.innerHTML = '';
     $('#board-empty').hidden = rows.length > 0;
     const lightTag = spot && spot.best_light ? spot.best_light.tag : null;
@@ -1155,13 +1179,14 @@
   async function loadPrizes() {
     refreshStats();
     loadSpot();
-    for (const role of ['everyone', 'student', 'teacher']) {
+    await Promise.all(['everyone', 'student', 'teacher'].map(async (role) => {
       try {
         const rows = await rpc('leaderboard', { p_role: role === 'everyone' ? null : role });
+        boardCache[role] = rows;
         const top = rows[0];
         $('#lead-' + role).innerHTML = top ? `Leading: ${nameHtml(top.initials)} · ${top.score}` : '';
       } catch (_) { /* leave blank */ }
-    }
+    }));
   }
 
   // ---------------------------------------------------------------------------
@@ -1600,4 +1625,5 @@
     else if (cancelled) toast('Payment cancelled. Nothing was charged.');
   }
   boot();
+  setTimeout(prefetchBoards, 1500); // the leaderboard opens with rows already in hand
 })();

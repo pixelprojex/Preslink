@@ -8,8 +8,8 @@ One campaign, three boards (Everyone, Students, Teachers) and prizes at the end,
 
 There is no sign-up. On the first tap a small sheet asks for two or three letters (your initials),
 picked on an on-screen letter pad (tap a box to clear that letter), so the phone keyboard never covers
-the boxes; then it goes straight to payment. After the first play an "If you win" sheet asks for an email, because winners are emailed when the
-arcade closes; a school email, in that field or the optional one under "At Presentation Brothers
+the boxes; then it goes straight to payment. After the first play a "Keep your details" sheet asks for an email, because winners are emailed when the
+arcade closes, and shows the code with Save to Photos beside it; a school email, in that field or the optional one under "At Presentation Brothers
 College?", puts the player on the Students or Teachers board on its own (no student/teacher choice to
 make). "Not now" leaves a reminder row on the result screen and the You tab. The four-digit **code**
 lives on the You tab, where "Save to Photos" keeps it as a ticket picture (on an iPhone or iPad through
@@ -95,6 +95,7 @@ server can read them. The free plays switch off by themselves the moment Stripe 
 | `supabase/migrations/0014_fair_scores_contact.sql` | Bell-shaped score curve over milliseconds (40 ms wide), one-second sweep, `contact_email` and the committee's email list |
 | `supabase/migrations/0015_tolerant_submit.sql` | The server scores the taps itself and ignores the browser's number, so an older build keeps working when the curve changes; taps count from 60 ms |
 | `supabase/migrations/0016_top_is_999.sql` | 999 is the ceiling; a cusp over the first 3 ms of error makes the top a fine ruler, so the best score is one person's |
+| `supabase/migrations/0017_whole_bar.sql` | The whole bar scores: distance to the line as a fraction of the bar, 999 on the line, the floor only half a bar away |
 | `site/poster.html` | A3 poster preview with a large QR code (vendored encoder in `site/vendor/`); its Save as PDF button downloads the file below |
 | `site/poster.pdf` | The poster rendered to A3 PDF for the printer, QR pointing at preslink.netlify.app (re-render it if the address changes) |
 | `site/assets/` | Logo (`logo.svg`, `cross.svg`), icons, and the photo slots `photo-*.svg` to replace with real photos |
@@ -109,7 +110,7 @@ Do these in order. Steps 1 and 2 are a one-off technical setup; 3 to 6 are the l
 
 ### 1. Supabase (database + functions): already done
 
-The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all sixteen migrations applied,
+The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all seventeen migrations applied,
 both functions deployed, and `site/config.js` points at it. The committee code was set at deployment
 and handed over privately; change it any time from the Committee screen.
 
@@ -164,7 +165,7 @@ the request came from.
 
 1. Open the site on your device. Tap **Play · €2**. Stripe's test page opens.
 2. Pay with card number `4242 4242 4242 4242`, any future expiry, any CVC, any postcode.
-3. You land back in the coin cabinet, see the coin go in and a token come out, and the game starts: three lights, then the result, then the If you win sheet asking for an email (a school email joins the Students or Teachers board on its own). Check the leaderboard after.
+3. You land back in the coin cabinet, see the coin go in and a token come out, and tap Start: three lights, then the result, then the If you win sheet asking for an email (a school email joins the Students or Teachers board on its own). Check the leaderboard after.
 4. In Supabase → **Table Editor** you will see the player, the payment and the play.
 5. In Stripe → **Developers → Webhooks** the endpoint should show a successful delivery.
 
@@ -208,13 +209,13 @@ hash in the database and locks for 15 minutes after 8 wrong tries. From there th
   `0002_names_signin_admin.sql` (table `blocked_initials`), the committee can add more, and can reset a
   player's name to a random one.
 - The game: a play is three lights. Each light sweeps the bar once a second and has its own mark and starting
-  point; you tap when the light is on the mark. The score for a light is a bell over the timing error in milliseconds with a sharp cusp at the top:
-  max(50, 50 + 949 × e^−(error ÷ 40 ms)² − 12 × √(min(error, 3 ms) ÷ 3)). 999 is the ceiling (there is no 1,000,
-  though the screen says "out of 1,000"): on the mark is 999, half a millisecond off 994, 1 ms 991, 3 ms 982, 10 ms 930,
-  20 ms 777, 30 ms 579, 40 ms 387, 60 ms 138, and a wild tap still scores 50, never zero. Taps are whole milliseconds
-  and the mark is a random fraction, so a 999 needs the tap within a few microseconds of the mark, which keeps the
-  top of the board to one person (equal scores: the earlier one wins). The play's score is the average of the three;
-  most plays land between 300 and 800. The sweep is a fixed second
+  point; you tap when the light is on the mark. The whole bar scores: what counts is how far the light stopped from the line, as a fraction of the bar.
+  With u = max(0, 1 − distance ÷ half a bar), a light scores 50 + 949 × (0.63 × u⁶ + 0.37 × u^1.5) − 12 × √(min(error, 3 ms) ÷ 3),
+  kept between 50 and 999. 999 is the ceiling (there is no 1,000, though the screen says "out of 1,000"): on the line
+  999, 10 ms off 908, 20 ms 836, 30 ms 770, 50 ms 656, a tenth of the bar 446, a fifth 229, 300 ms 129, and half a bar
+  or more 50, never zero. Taps are whole milliseconds and the line is a random fraction, so a 999 needs the tap within
+  a few microseconds of the line, which keeps the top of the board to one person (equal scores: the earlier one wins).
+  The play's score is the average of the three lights. The sweep is a fixed second
   per pass. The light is moved by a CSS animation, so the browser's compositor draws it on its own thread at the
   screen's full frame rate whatever the page is doing, and a tap reads the animation's own clock, with the input
   lag (handler time minus the touch's hardware timestamp) and the age of the frame on screen taken off. After each

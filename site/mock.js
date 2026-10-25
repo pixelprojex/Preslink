@@ -28,8 +28,9 @@
   function roundScore(tapMs, phase, target, speedMs) {
     let x = tapMs / speedMs + phase; x = x - 2 * Math.floor(x / 2);
     const pos = x < 1 ? x : 2 - x;
-    const err = Math.abs(pos - target) * speedMs;
-    return Math.max(50, Math.round(50 + 949 * Math.exp(-((err / 40) ** 2)) - 12 * Math.sqrt(Math.min(err, 3) / 3)));
+    const d = Math.abs(pos - target);
+    const u = Math.max(0, 1 - d / 0.5);
+    return Math.min(999, Math.max(50, Math.round(50 + 949 * (0.63 * u ** 6 + 0.37 * u ** 1.5) - 12 * Math.sqrt(Math.min(d * speedMs, 3) / 3))));
   }
   const newRounds = () => Array.from({ length: 3 }, () => ({ phase: Math.random(), target: 0.15 + Math.random() * 0.7 }));
 

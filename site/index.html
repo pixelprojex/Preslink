@@ -26,7 +26,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20">
+  <link rel="stylesheet" href="styles.css?v=22">
 </head>
 <body>
 <div class="splash" id="splash" aria-hidden="true">
@@ -87,12 +87,12 @@
         <div class="cab-slot-wrap"><div class="cab-coin" id="coin">€</div><div class="cab-slot" id="cab-slot"></div></div>
         <div class="cab-led"><strong id="cab-credits">0</strong><span>plays</span></div>
       </div>
-      <div class="cab-tray-wrap"><div class="cab-tray"></div><div class="cab-token" id="token">1</div><span class="cab-hint" id="cab-hint"></span></div>
+      <div class="cab-tray-wrap"><div class="cab-tray"></div><div class="cab-token" id="token">1</div></div>
     </div>
     <div class="card pad cab-text">
       <h2 id="cab-title">Thank you</h2>
       <p id="cab-text"></p>
-      <button class="btn btn-primary btn-xl" id="cab-play" type="button">Play</button>
+      <button class="btn btn-primary btn-xl" id="cab-play" type="button" hidden>Start</button>
     </div>
   </section>
 
@@ -108,7 +108,6 @@
         <div class="game-msg" id="game-msg">Ready</div>
         <div class="track-wrap">
           <div class="track" id="track">
-            <div class="zone" id="zone" aria-hidden="true"></div>
             <div class="pin" id="pin" style="left:50%"><span class="swatch" id="swatch"></span></div>
             <div class="marker" id="marker"></div>
           </div>
@@ -434,18 +433,31 @@
 </div>
 
 <!-- Optional: people at the school join the Students or Teachers board with their school email. -->
-<!-- After the first play: where to send the news if they win. A school email joins a board. -->
-<div class="sheet" id="sheet-contact" role="dialog" aria-modal="true" aria-labelledby="contact-title" hidden>
-  <div class="sheet-head"><h2 id="contact-title">If you win</h2><button class="close" type="button" id="contact-close" aria-label="Close">×</button></div>
-  <form class="sheet-body" id="contact-form" autocomplete="on" novalidate>
+<!-- After the first play: the two things to keep, an email for the news and the code that collects. -->
+<div class="sheet sheet-tall" id="sheet-contact" role="dialog" aria-modal="true" aria-labelledby="contact-title" hidden>
+  <div class="sheet-head"><h2 id="contact-title">Keep your details</h2><button class="close" type="button" id="contact-close" aria-label="Close">×</button></div>
+  <div class="sheet-body">
     <p class="sheet-note" id="contact-note">Winners are emailed when the arcade closes.</p>
-    <div class="card"><label class="field"><span>Your email</span><input id="contact-email" type="email" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="name@example.com" autocomplete="email"></label></div>
-    <div class="card"><button class="cell pres" type="button" id="contact-more"><span><img class="crest-ic" src="assets/crest.svg?v=10" alt="">At Presentation Brothers College?</span> <span class="chev">›</span></button></div>
-    <div class="card" id="contact-school-wrap" hidden><label class="field"><span class="pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">School email · joins the Students or Teachers board</span><input id="contact-school" type="email" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Your school email"></label></div>
-    <p class="field-error" id="contact-error" role="alert" hidden></p>
-    <button class="btn btn-primary btn-xl page-cta" type="submit" id="contact-submit">Save</button>
-    <button class="btn btn-xl" type="button" id="contact-skip">Not now</button>
-  </form>
+    <form class="card keep" id="contact-form" autocomplete="on" novalidate>
+      <h3 class="card-h">1 · Your email</h3>
+      <label class="field"><span>Email</span><input id="contact-email" type="email" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="name@example.com" autocomplete="email"></label>
+      <button class="cell pres" type="button" id="contact-more"><span><img class="crest-ic" src="assets/crest.svg?v=10" alt="">At Presentation Brothers College?</span> <span class="chev">›</span></button>
+      <div id="contact-school-wrap" hidden><label class="field"><span class="pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">School email · joins the Students or Teachers board</span><input id="contact-school" type="email" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Your school email"></label></div>
+      <div class="pad-x">
+        <p class="field-error" id="contact-error" role="alert" hidden></p>
+        <button class="btn btn-primary" type="submit" id="contact-submit">Save email</button>
+        <p class="saved-line" id="contact-saved" hidden></p>
+      </div>
+    </form>
+    <div class="card code-card">
+      <span class="profile-label">2 · Your code</span>
+      <strong id="contact-code">0000</strong>
+      <p class="small">Winners show this code to collect their prize.</p>
+      <button class="btn btn-small save-btn" type="button" id="contact-save">Save to Photos</button>
+      <p class="save-hint" id="contact-save-hint" hidden>Then tap Save Image on the menu that opens.</p>
+    </div>
+    <button class="btn btn-xl" type="button" id="contact-skip">Done</button>
+  </div>
 </div>
 
 <div class="sheet" id="sheet-terms" role="dialog" aria-modal="true" aria-labelledby="terms-title" hidden>
@@ -481,7 +493,7 @@
 <div class="overlay" id="overlay" hidden><div class="overlay-card"><div class="spinner" aria-hidden="true"></div><p id="overlay-text">One moment</p></div></div>
 
 <script src="config.js"></script>
-<script src="mock.js?v=20"></script>
-<script src="app.js?v=20"></script>
+<script src="mock.js?v=22"></script>
+<script src="app.js?v=22"></script>
 </body>
 </html>
