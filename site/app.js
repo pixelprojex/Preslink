@@ -431,11 +431,11 @@
     requestAnimationFrame(frame);
   }
   let shownRaised = null; // whole euro shown in the app bar
-  // Under the amount: the goal, and a bar that fills towards it.
-  function showGoal(cents, goalCents) {
-    const pct = goalCents > 0 ? Math.min(1, cents / goalCents) : 0;
-    $('#raised-fill').style.width = (pct * 100).toFixed(1) + '%';
-    $('#raised-l').textContent = goalCents > 0 ? `raised of ${fmtEuro(Math.round(goalCents / 100))}` : 'raised';
+  function showRing(cents, goalCents) {
+    const ring = $('#ring-fg');
+    const circ = 97.4;
+    const pct = goalCents > 0 ? Math.min(1, cents / goalCents) : (cents > 0 ? 1 : 0);
+    ring.setAttribute('stroke-dasharray', `${Math.max(pct > 0 ? 3 : 0, pct * circ).toFixed(1)} ${circ}`);
   }
   // The raised total only ever rolls up; a lower total (demo plays cleared) just sets.
   function showRaised(cents) {
@@ -469,7 +469,7 @@
     if (seq !== statsSeq) return; // a newer answer is on its way (e.g. right after a payment)
     stats = fresh;
     showRaised(Number(stats.total_raised_cents || 0));
-    showGoal(Number(stats.total_raised_cents || 0), Number(stats.goal_cents || 0));
+    showRing(Number(stats.total_raised_cents || 0), Number(stats.goal_cents || 0));
     const ends = endsText();
     $('#board-sub').textContent = ends ? `Prizes at the end · ${ends.replace('Ends', 'ends')}` : 'Prizes at the end';
     const closes = closesText();
@@ -919,16 +919,6 @@
       if (above) { el.textContent = `${above.score - best + 1} to #${rank - 1}`; el.className = ''; }
     } catch (_) { /* leave blank */ }
   }
-
-  $('#result-share').addEventListener('click', async () => {
-    const text = `I scored ${game.lastScore} in the PresLink Arcade. Can you beat me? Every play funds schools in Ghana and Nigeria.`;
-    const url = location.origin + location.pathname;
-    try {
-      if (navigator.share) { await navigator.share({ title: 'PresLink Arcade', text, url }); return; }
-      await navigator.clipboard.writeText(text + ' ' + url);
-      toast('Copied');
-    } catch (_) { /* cancelled */ }
-  });
 
   // ---------------------------------------------------------------------------
   // The code: shown once after the first play, saved as an image, copied, and always on the You tab

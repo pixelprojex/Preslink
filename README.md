@@ -21,8 +21,8 @@ already has the same letters you still get them, shown with a small blue numbere
 carries a 2), so nobody is ever refused.
 
 The look follows the conventions of native apps (grouped white cards on a soft grey canvas, large titles,
-segmented controls, avatars, a progress bar under the running total) in PresLink's colours: green for actions, orange for the
-light, the yellow of the Presentation Brothers cross for the logo. The logo and the running
+segmented controls, avatars, a progress ring) in PresLink's colours: green for actions, orange for the
+light and the ring, the yellow of the Presentation Brothers cross for the logo. The logo and the running
 total raised sit at the top of every screen; there is a tab bar (Play, Board, About, You), a Prize page
 with a photo, and very little text.
 

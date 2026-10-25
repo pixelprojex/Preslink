@@ -26,7 +26,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=28">
+  <link rel="stylesheet" href="styles.css?v=29">
 </head>
 <body>
 <div class="splash" id="splash" aria-hidden="true">
@@ -47,12 +47,20 @@
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
-    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 8 5.5z" fill="currentColor"/></symbol>
-    <symbol id="i-trophy" viewBox="0 0 24 24"><path fill="currentColor" d="M8 3h8a1 1 0 0 1 1 1v1h2.5a1 1 0 0 1 1 1V8a4 4 0 0 1-3.6 4 5 5 0 0 1-3.9 3.9V18H15a1 1 0 0 1 1 1v1H8v-1a1 1 0 0 1 1-1h2v-2.1A5 5 0 0 1 7.1 12 4 4 0 0 1 3.5 8V6a1 1 0 0 1 1-1H7V4a1 1 0 0 1 1-1zm9 4v3a2 2 0 0 0 1.5-2V7H17zM7 7H5.5v1A2 2 0 0 0 7 10V7z"/></symbol>
+    <!-- Flat, two-tone icons in the app's colours (Duolingo-style): each has a body, a shade and a highlight. -->
+    <symbol id="i-play" viewBox="0 0 24 24"><rect x="2" y="3.5" width="20" height="19" rx="6" fill="#17824a"/><rect x="2" y="2" width="20" height="19" rx="6" fill="#22ad64"/><path d="M9.6 7.4v8.2a.9.9 0 0 0 1.38.76l6.6-4.1a.9.9 0 0 0 0-1.52l-6.6-4.1a.9.9 0 0 0-1.38.76z" fill="#fff"/></symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M7 5.5H5a1.2 1.2 0 0 0-1.2 1.2v1A3.3 3.3 0 0 0 7 11" fill="none" stroke="#e0ad12" stroke-width="1.8" stroke-linecap="round"/><path d="M17 5.5h2a1.2 1.2 0 0 1 1.2 1.2v1A3.3 3.3 0 0 1 17 11" fill="none" stroke="#e0ad12" stroke-width="1.8" stroke-linecap="round"/><path d="M7 2.8h10v6.7a5 5 0 0 1-10 0z" fill="#f6c21f"/><path d="M10.6 13.4h2.8V17h-2.8z" fill="#d9a10f"/><rect x="6.5" y="17" width="11" height="4.2" rx="1.6" fill="#c7900c"/><rect x="6.5" y="17" width="11" height="2.6" rx="1.3" fill="#e0ad12"/><path d="M9.4 4.6c-.1 2 .2 3.3 1 4.4" stroke="#fff5c2" stroke-width="1.4" stroke-linecap="round" fill="none"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="#ef5a3c"/><path d="M11 18.4C7.4 15.2 4 12.3 4 8.9" stroke="#d94a2e" stroke-width="1.5" stroke-linecap="round" fill="none" opacity=".7"/><ellipse cx="8" cy="7.4" rx="1.8" ry="1" fill="#fff" opacity=".8" transform="rotate(-35 8 7.4)"/></symbol>
     <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 10.6v6M12 7.3v.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
-    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4.2" fill="currentColor"/><path d="M4 20a8 8 0 0 1 16 0z" fill="currentColor"/></symbol>
-    <symbol id="i-flash" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z" fill="currentColor"/></symbol>
-    <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M12 5a7 7 0 0 1 6.3 4H16l4 4 4-4h-2.6A9 9 0 0 0 3.5 8.5l1.8.9A7 7 0 0 1 12 5zm0 14a7 7 0 0 1-6.3-4H8l-4-4-4 4h2.6a9 9 0 0 0 17.9.5l-1.8-.9A7 7 0 0 1 12 19z" fill="currentColor"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="12.6" r="10" fill="#1f6fd0"/><circle cx="12" cy="11.4" r="10" fill="#3b8cf0"/><circle cx="12" cy="9" r="3.4" fill="#fff"/><path d="M5.6 18.4a6.6 6.6 0 0 1 12.8 0 10 10 0 0 1-12.8 0z" fill="#fff"/></symbol>
+    <symbol id="i-gift" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4.5" rx="1.2" fill="#f26a1b"/><rect x="4.5" y="12.5" width="15" height="8.5" rx="1.5" fill="#ef5a3c"/><rect x="10.3" y="8" width="3.4" height="13" fill="#f6c21f"/><path d="M12 8c-1.5-3.2-4.6-4.4-5.6-2.6C5.5 7 8.7 8 12 8zm0 0c1.5-3.2 4.6-4.4 5.6-2.6C18.5 7 15.3 8 12 8z" fill="#f6c21f"/></symbol>
+    <symbol id="i-bar" viewBox="0 0 24 24"><rect x="2" y="8.5" width="20" height="7" rx="3.5" fill="#ffb13d"/><rect x="2" y="8.5" width="11" height="7" rx="3.5" fill="#ffd36a"/><rect x="15.6" y="6" width="2" height="12" rx="1" fill="#1c1c1e"/><rect x="7.5" y="5.5" width="4" height="13" rx="2" fill="#fff" stroke="rgba(22,33,58,.3)" stroke-width="1"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="3" fill="#3b8cf0"/><path d="M4.5 8l7.5 5.2L19.5 8" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 17.5V20h2.5L17.8 8.7l-2.5-2.5z" fill="#f6c21f"/><path d="M16.4 5.1l2.5 2.5 1.4-1.4a1.2 1.2 0 0 0 0-1.7l-.8-.8a1.2 1.2 0 0 0-1.7 0z" fill="#ef5a3c"/><path d="M4 17.5V20h2.5l1.2-1.2-2.5-2.5z" fill="#e8b4a0"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="12" r="4.5" fill="#f6c21f"/><circle cx="8" cy="12" r="1.7" fill="#c7900c"/><path d="M12 10.5h9v3h-2.5V16h-3v-2.5H12z" fill="#e0ad12"/></symbol>
+    <symbol id="i-out" viewBox="0 0 24 24"><path d="M4 4h8a1.5 1.5 0 0 1 1.5 1.5v2h-3V7H6.5v10h4v-.5h3v2A1.5 1.5 0 0 1 12 20H4z" fill="#c7c7cc"/><path d="M14 8.5l5.5 3.5-5.5 3.5v-2.2H9.5v-2.6H14z" fill="#e5484d"/></symbol>
+    <symbol id="i-flash" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#fff1b8"/><path d="M13 4 6 13.5h5l-1 6.5 7-9.5h-5z" fill="#f6a300"/></symbol>
+    <symbol id="i-repeat" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#dcebff"/><path d="M12 6.5a5.5 5.5 0 0 1 4.9 3H15l3.2 3.2 3.2-3.2h-2.1A7.5 7.5 0 0 0 5.2 8.8l1.5.9A5.5 5.5 0 0 1 12 6.5zm0 11a5.5 5.5 0 0 1-4.9-3H9L5.8 11.3 2.6 14.5h2.1a7.5 7.5 0 0 0 14.1.7l-1.5-.9A5.5 5.5 0 0 1 12 17.5z" fill="#2a7de1"/></symbol>
   </defs>
 </svg>
 
@@ -60,8 +68,8 @@
   <header class="appbar">
     <a class="brand" href="#home" aria-label="PresLink Arcade home"><img src="assets/cross.svg?v=10" alt=""><span>PresLink</span></a>
     <div class="raised" id="raised" aria-live="polite">
-      <span class="raised-t"><span class="raised-n odo" id="raised-n" aria-label="€0">€0</span><span class="raised-l" id="raised-l">raised</span></span>
-      <span class="raised-bar" aria-hidden="true"><i id="raised-fill"></i></span>
+      <svg class="ring" viewBox="0 0 36 36" aria-hidden="true"><circle class="ring-bg" cx="18" cy="18" r="15.5"/><circle class="ring-fg" id="ring-fg" cx="18" cy="18" r="15.5" stroke-dasharray="0 97.4"/></svg>
+      <span class="raised-t"><span class="raised-n odo" id="raised-n" aria-label="€0">€0</span><span class="raised-l">raised</span></span>
     </div>
   </header>
 
@@ -75,8 +83,8 @@
       <p class="bundles-line"><button class="link" type="button" data-bundle="triple">3 plays · €5<small>Save €1</small></button><button class="link" type="button" data-bundle="seven">7 plays · €10<small>Save €4</small></button></p>
     </div>
     <div class="card">
-      <button class="cell" type="button" data-go="prize"><span>Prizes<small id="home-ends"></small></span> <span class="chev">›</span></button>
-      <button class="cell" type="button" data-sheet="how">How to play <span class="chev">›</span></button>
+      <button class="cell cell-ic" type="button" data-go="prize"><span class="ic"><svg><use href="#i-gift"/></svg></span><span>Prizes<small id="home-ends"></small></span> <span class="chev">›</span></button>
+      <button class="cell cell-ic" type="button" data-sheet="how"><span class="ic"><svg><use href="#i-bar"/></svg></span><span>How to play</span> <span class="chev">›</span></button>
     </div>
   </section>
 
@@ -136,8 +144,7 @@
       </div>
       <div class="card">
         <button class="cell" type="button" id="result-email" hidden><span>Add your email<small>So we can tell you if you win</small></span> <span class="chev">›</span></button>
-        <button class="cell" type="button" data-go="board">Leaderboard <span class="chev">›</span></button>
-        <button class="cell" type="button" id="result-share">Share <span class="chev">›</span></button>
+        <button class="cell cell-ic" type="button" data-go="board"><span class="ic"><svg><use href="#i-trophy"/></svg></span><span>Leaderboard</span> <span class="chev">›</span></button>
       </div>
     </div>
   </section>
@@ -156,13 +163,13 @@
     </div>
     <div class="card" id="board-spot">
       <h2 class="card-h" id="board-sub">Prizes at the end</h2>
-      <div class="acc"><button class="cell" type="button" aria-expanded="false">Spot prizes <span class="chev">›</span></button>
+      <div class="acc"><button class="cell cell-ic" type="button" aria-expanded="false"><span class="ic"><svg><use href="#i-flash"/></svg></span><span>Spot prizes</span> <span class="chev">›</span></button>
         <div class="acc-body">
           <div class="spot-row"><svg class="ico"><use href="#i-flash"/></svg><span>Best light<small>Closest to 1,000 with one light</small></span><strong id="spot-light">–</strong></div>
           <div class="spot-row"><svg class="ico"><use href="#i-repeat"/></svg><span>Most plays<small>The biggest supporter</small></span><strong id="spot-plays">–</strong></div>
         </div>
       </div>
-      <button class="cell" type="button" data-go="prize">All prizes <span class="chev">›</span></button>
+      <button class="cell cell-ic" type="button" data-go="prize"><span class="ic"><svg><use href="#i-gift"/></svg></span><span>All prizes</span> <span class="chev">›</span></button>
     </div>
   </section>
 
@@ -203,7 +210,7 @@
       <div class="story-body"><h2><img src="assets/crest.svg?v=10" alt="">Run by students</h2><p>PresLink is the student-run charity of Presentation Brothers College, Cork. Every cent raised here, after card fees, goes to PresLink.</p></div>
     </div>
     <div class="card">
-      <button class="cell" type="button" data-sheet="how">How to play <span class="chev">›</span></button>
+      <button class="cell cell-ic" type="button" data-sheet="how"><span class="ic"><svg><use href="#i-bar"/></svg></span><span>How to play</span> <span class="chev">›</span></button>
       <button class="cell" type="button" data-sheet="terms">Terms <span class="chev">›</span></button>
     </div>
   </section>
@@ -217,7 +224,7 @@
         <button class="btn btn-primary btn-xl js-play" type="button">Play · €2</button>
       </div>
       <div class="card">
-        <button class="cell" type="button" data-go="signin">Played before? Sign in <span class="chev">›</span></button>
+        <button class="cell cell-ic" type="button" data-go="signin"><span class="ic"><svg><use href="#i-key"/></svg></span><span>Played before? Sign in</span> <span class="chev">›</span></button>
         <button class="cell quiet" type="button" data-go="admin">Committee <span class="chev">›</span></button>
       </div>
     </div>
@@ -248,10 +255,10 @@
         <div class="grid-2"><button class="btn" type="button" id="edit-cancel">Cancel</button><button class="btn btn-primary" type="submit" id="edit-save">Save</button></div>
       </form>
       <div class="card">
-        <button class="cell" type="button" id="you-email"><span>Email<small id="you-email-text">Add your email</small></span> <span class="chev">›</span></button>
-        <button class="cell" type="button" id="you-edit">Change my initials <span class="chev">›</span></button>
-        <button class="cell" type="button" data-go="signin">Sign in as someone else <span class="chev">›</span></button>
-        <button class="cell danger" type="button" id="you-signout">Sign out</button>
+        <button class="cell cell-ic" type="button" id="you-email"><span class="ic"><svg><use href="#i-mail"/></svg></span><span>Email<small id="you-email-text">Add your email</small></span> <span class="chev">›</span></button>
+        <button class="cell cell-ic" type="button" id="you-edit"><span class="ic"><svg><use href="#i-pencil"/></svg></span><span>Change my initials</span> <span class="chev">›</span></button>
+        <button class="cell cell-ic" type="button" data-go="signin"><span class="ic"><svg><use href="#i-key"/></svg></span><span>Sign in as someone else</span> <span class="chev">›</span></button>
+        <button class="cell cell-ic danger" type="button" id="you-signout"><span class="ic"><svg><use href="#i-out"/></svg></span><span>Sign out</span></button>
       </div>
       <div class="card">
         <button class="cell quiet" type="button" data-go="admin">Committee <span class="chev">›</span></button>
@@ -384,7 +391,7 @@
   <span class="tab-ind" aria-hidden="true"></span>
   <button type="button" data-tab="play"><svg><use href="#i-play"/></svg><span>Play</span></button>
   <button type="button" data-tab="board"><svg><use href="#i-trophy"/></svg><span>Leaderboard</span></button>
-  <button type="button" data-tab="about"><svg><use href="#i-info"/></svg><span>About</span></button>
+  <button type="button" data-tab="about"><svg><use href="#i-heart"/></svg><span>About</span></button>
   <button type="button" data-tab="you"><svg><use href="#i-user"/></svg><span>You</span></button>
 </nav>
 
@@ -495,7 +502,7 @@
 <div class="overlay" id="overlay" hidden><div class="overlay-card"><div class="spinner" aria-hidden="true"></div><p id="overlay-text">One moment</p></div></div>
 
 <script src="config.js"></script>
-<script src="mock.js?v=28"></script>
-<script src="app.js?v=28"></script>
+<script src="mock.js?v=29"></script>
+<script src="app.js?v=29"></script>
 </body>
 </html>
