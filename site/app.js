@@ -1133,8 +1133,8 @@
   async function loadSpot() {
     try { spot = await rpc('spot_prizes'); } catch (_) { spot = null; }
     const l = spot && spot.best_light, p = spot && spot.most_plays;
-    $('#spot-light').innerHTML = l ? `${nameHtml(l.initials)} · ${l.score}` : '–';
-    $('#spot-plays').innerHTML = p ? `${nameHtml(p.initials)} · ${p.plays}` : '–';
+    if ($('#spot-light')) $('#spot-light').innerHTML = l ? `${nameHtml(l.initials)} · ${l.score}` : '–';
+    if ($('#spot-plays')) $('#spot-plays').innerHTML = p ? `${nameHtml(p.initials)} · ${p.plays}` : '–';
     $('#lead-light').innerHTML = l ? `Leading: ${nameHtml(l.initials)} · ${l.score}` : '';
     $('#lead-plays').innerHTML = p ? `Leading: ${nameHtml(p.initials)} · ${p.plays} ${Number(p.plays) === 1 ? 'play' : 'plays'}` : '';
   }
