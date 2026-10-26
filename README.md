@@ -21,7 +21,7 @@ already has the same letters you still get them, shown with a small blue numbere
 carries a 2), so nobody is ever refused.
 
 The look follows the conventions of native apps (grouped white cards on a soft grey canvas, large titles,
-segmented controls, initials tiles in one of eight flat colours that the player can change on the You tab, a progress ring) in PresLink's colours: green for actions, orange for the
+segmented controls, initials tiles in one of eight muted pastel colours that the player can change on the You tab, a progress ring) in PresLink's colours: green for actions, orange for the
 light and the ring, the yellow of the Presentation Brothers cross for the logo. The logo and the running
 total raised sit at the top of every screen; there is a tab bar (Play, Board, About, You), a Prizes page
 of boxed colour cards with a photo slot each, and very little text. The same pages lay themselves out for
@@ -361,4 +361,4 @@ real money):
 - **Children's data.** The email is optional, used only to tell winners, seen only by the committee and
   deleted once the prizes are given; under-16s are asked for a parent's email. After the prizes:
   `update public.players set contact_email = null;`
-- **Contrast.** Initials tiles pass 4.5:1 with their white letters.
+- **Contrast.** Initials tiles are muted pastels with letters in a deep shade of the same hue, each pair at 4.5:1 or better.
