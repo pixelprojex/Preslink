@@ -26,7 +26,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=42">
+  <link rel="stylesheet" href="styles.css?v=43">
 </head>
 <body>
 <div class="splash" id="splash" aria-hidden="true">
@@ -54,7 +54,7 @@
     <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#1cb0f6"/><circle cx="12" cy="9.2" r="3.6" fill="#fff"/><path d="M5.2 19a7 7 0 0 1 13.6 0 10 10 0 0 1-13.6 0z" fill="#fff"/></symbol>
     <symbol id="i-photo" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="4" fill="currentColor"/><circle cx="8.2" cy="9.3" r="1.9" fill="#fff"/><path d="M5 17.2l4.3-5.2 3 3.5 2.7-3.2 4.2 4.9z" fill="#fff"/></symbol>
     <symbol id="i-flash" viewBox="0 0 24 24"><path d="M13.2 2L4.5 13.5h6.1L9.8 22l8.7-11.5h-6.1z" fill="currentColor"/></symbol>
-    <symbol id="i-one" viewBox="0 0 24 24"><path d="M13.6 4.5h-2.4L7.9 7.2v2.9l3-2.3V19.5h2.7z" fill="currentColor"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 2.5c.5 4.7 2.8 7 7.5 7.5-4.7.5-7 2.8-7.5 7.5-.5-4.7-2.8-7-7.5-7.5 4.7-.5 7-2.8 7.5-7.5z" fill="currentColor"/><circle cx="18.5" cy="18.5" r="2" fill="currentColor"/></symbol>
     <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z" fill="currentColor"/></symbol>
   </defs>
 </svg>
@@ -257,7 +257,7 @@
         <div class="cell"><span>Plays left</span><strong id="you-credits">0</strong></div>
         <div class="cell"><span>Your best</span><strong id="you-best">–</strong></div>
         <div class="cell"><span>Best light</span><strong id="you-light">–</strong></div>
-        <div class="cell"><span>Spent</span><strong id="you-spent">€0</strong></div>
+        <div class="cell"><span>Donated</span><strong id="you-spent">€0</strong></div>
       </div>
       <form id="edit-form" class="card pad stack" autocomplete="off" novalidate hidden>
         <h2 class="card-h">Your initials</h2>
@@ -394,7 +394,7 @@
     <h3>6. Fair play</h3>
     <p>A play is three lights; the score is the average of the three. Each light scores up to 999 by how close to the mark you stop it, timed to the millisecond; everyone plays the same three lights on a given day, and nothing in the score is random. Phones differ very slightly in how fast they register a tap. Scores are checked by our server. Plays may be voided and players removed for cheating or tampering. The Committee's decision is final.</p>
     <h3>7. Payments and refunds</h3>
-    <p>Payments are processed by Stripe; we never see your card number. Each player can spend at most €20 a day and €100 in the campaign, and the You tab shows what you have spent. Plays are not refundable except where the law requires it or a fault on our side meant a paid play could not be used. Contact the Committee and we will put it right.</p>
+    <p>Payments are processed by Stripe; we never see your card number. Each player can spend at most €20 a day and €100 in the campaign, and the You tab shows what you have donated. Plays are not refundable except where the law requires it or a fault on our side meant a paid play could not be used. Contact the Committee and we will put it right.</p>
     <h3>8. Your data</h3>
     <p>We store your initials, your board, your school email if you give one, your scores and play times, and a record of each payment (amount, time, Stripe reference and the email you give Stripe for your receipt). Data is held by Supabase (UK/EU) and Stripe and is deleted when the campaign ends. An email you give us is used only to tell you if you win, is seen only by the Committee, and is deleted once the prizes are given; if you are under 16, give a parent's or guardian's email instead. To have your data removed sooner, contact the Committee with your initials and code.</p>
     <h3>9. Availability</h3>
@@ -411,6 +411,6 @@
 
 <script src="config.js"></script>
 <script src="mock.js?v=36"></script>
-<script src="app.js?v=36"></script>
+<script src="app.js?v=37"></script>
 </body>
 </html>

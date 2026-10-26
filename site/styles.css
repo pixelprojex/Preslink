@@ -628,7 +628,7 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
   /* Home: the top three under the links */
   .home-top { display: block; }
   .home-top .board li { padding: 8px 14px; }
-  .home-top .board li + li::before { left: 104px; }
+  .home-top .board li + li::before { left: 16px; right: 16px; }
   /* the photo a fixed width from here up */
   .prize-main { grid-template-columns: 200px 1fr; }
   .prize-photo { min-height: 132px; }
@@ -712,8 +712,9 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
   .boards-wide .card-h { padding: 14px 16px 6px; }
   .boards-wide .card-h.pres { color: var(--purple); }
   .boards-wide .card-h .crest-ic { display: inline-block; width: 12px; height: 15px; margin: 0 5px 0 0; vertical-align: -3px; }
-  .boards-wide .board li { grid-template-columns: 24px 44px 1fr auto; gap: 8px; padding: 9px 12px; }
-  .boards-wide .board li + li::before { left: 96px; }
+  .boards-wide .board li { grid-template-columns: 26px 44px 1fr auto; gap: 10px; padding: 9px 14px; }
+  .boards-wide .board li + li::before { left: 14px; right: 14px; }
+  .boards-wide .board li.me { margin: 2px 6px; padding: 9px 8px; }
   .boards-wide .board .avatar { width: 44px; height: 32px; font-size: 12px; }
   .boards-wide .board .name { font-size: 14px; }
   .boards-wide .board .pts { font-size: 16px; }
@@ -766,6 +767,22 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
 .field > span.pres .crest-ic { margin: 0; flex: none; }
 .segmented .tab[data-role="student"], .segmented .tab[data-role="teacher"] { color: var(--purple); }
 .segmented .tab .crest-ic { width: 12px; height: 15px; vertical-align: -2px; margin-right: 4px; }
+/* The board tabs: the crest sits on the line, beside its word. */
+.segmented .tab { display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+.segmented .tab .crest-ic { display: block; margin: 0; flex: none; }
+/* Leaderboard rows: round medals for the top three and plain numbers below, the initials tile, any badges,
+   and the score; hairlines inset on both sides; the player's own row a rounded green band. */
+.board li { grid-template-columns: 28px 44px 1fr auto; gap: 12px; padding: 9px 16px; min-height: 54px; }
+.board li + li::before { left: 16px; right: 16px; }
+.board li.me { margin: 2px 8px; padding: 9px 8px; border-radius: 12px; }
+.board li.me::before, .board li.me + li::before { display: none; }
+.board .rank { font-size: 15px; }
+.board .rank.r1, .board .rank.r2, .board .rank.r3 { font-size: 14px; font-weight: 800; }
+.board .pts { font-size: 17px; font-weight: 800; min-width: 3ch; text-align: right; }
+.board .name .badges { gap: 5px; }
+.badge { width: 22px; height: 22px; border-radius: 6px; }
+.badge svg { width: 13px; height: 13px; }
+.youtag { margin-left: 0; padding: 2px 9px; background: var(--surface); color: var(--green-d); }
 .profile-board .crest-ic { display: inline-block; vertical-align: -3px; margin-right: 5px; }
 .profile-mail { display: block; color: var(--muted); font-weight: 500; font-size: 13px; margin-top: 2px; overflow-wrap: anywhere; }
 

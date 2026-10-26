@@ -356,7 +356,7 @@ real money):
   score on a first play; the public boards show scores, not how many plays anyone has bought, and stop at
   the top 20 (a player further down sees their own row).
 - **Spending limits.** €20 a day and €100 in the campaign per player, checked by the server before every
-  checkout; the You tab shows what the player has spent. Change them with
+  checkout; the You tab shows what the player has donated. Change them with
   `update public.settings set value = '3000' where key = 'daily_cap_cents';` (and `campaign_cap_cents`).
 - **Children's data.** The email is optional, used only to tell winners, seen only by the committee and
   deleted once the prizes are given; under-16s are asked for a parent's email. After the prizes:

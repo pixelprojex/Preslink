@@ -1271,7 +1271,7 @@
       if (!r) { li.className = 'gap'; li.setAttribute('aria-hidden', 'true'); li.textContent = '···'; list.appendChild(li); return; }
       const me = player && r.tag === player.tag;
       li.className = (me ? 'me ' : '') + (r.rank <= 3 ? 'r' + r.rank : '');
-      const badges = [r.tag === lightTag ? ['i-flash', 'Best light', 'light'] : null, r.tag === firstTag ? ['i-one', 'First play', 'first'] : null].filter(Boolean)
+      const badges = [r.tag === lightTag ? ['i-flash', 'Best light', 'light'] : null, r.tag === firstTag ? ['i-spark', 'First play', 'first'] : null].filter(Boolean)
         .map(([i, t, k]) => `<button class="badge ${k}" type="button" data-badge="${k}" title="${t}" aria-label="${t}"><svg><use href="#${i}"/></svg></button>`).join('');
       li.innerHTML = `<span class="rank${r.rank <= 3 ? ' r' + r.rank : ''}">${r.rank}</span>${avatarHtml(r.initials, false, r.colour)}
         <span class="name"><span class="badges">${badges}${me ? '<span class="youtag">You</span>' : ''}</span></span>
