@@ -294,8 +294,29 @@ async function submit(req: Request, body: Body) {
     p_play_id: playId,
     p_score: score,
     p_taps: taps,
-    p_client: { ua: ua.slice(0, 200) },
+    // Kept with the score for checking: the kind of device only (so no one kind of phone can be seen to dominate
+    // the winners, without keeping anything that could pick out a child's phone), and the phone's
+    // practice-measured offset (already taken off the taps by the browser).
+    p_client: { device: deviceFamily(ua), offset: clampInt(body.offset, -80, 80, 0) },
   });
+}
+
+// "iOS Safari", "Android Chrome" and the like: the system and the browser family, nothing finer.
+export function deviceFamily(ua: string): string {
+  const os = /iPhone|iPad|iPod/.test(ua) ? "iOS"
+    : /Android/.test(ua) ? "Android"
+    : /CrOS/.test(ua) ? "ChromeOS"
+    : /Macintosh|Mac OS X/.test(ua) ? "Mac"
+    : /Windows/.test(ua) ? "Windows"
+    : /Linux/.test(ua) ? "Linux"
+    : "Other";
+  const browser = /EdgA?\/|EdgiOS\//.test(ua) ? "Edge"
+    : /SamsungBrowser\//.test(ua) ? "Samsung"
+    : /FxiOS\/|Firefox\//.test(ua) ? "Firefox"
+    : /CriOS\/|Chrome\//.test(ua) ? "Chrome"
+    : /Safari\//.test(ua) ? "Safari"
+    : "Other";
+  return `${os} ${browser}`;
 }
 
 // The tile colour: 0 means the one the site picks from the letters, 1 to 8 a chosen one.

@@ -51,7 +51,8 @@ once, a mouse gets hover states that touch never sees, and a keyboard plays the 
 
 You need a free Netlify account. Nothing else. No Stripe is needed for the demo: without a
 Stripe key the site gives free plays and says so on screen. Demo plays still move the "raised"
-counter so the site feels real; clear them before launch (`docs/admin.sql`).
+counter so the site feels real. Before launch, clear the test players, plays and payments (the "Launch day"
+step at the end of `docs/admin.sql`), or test scores will lead the boards and spot prizes.
 
 1. Go to <https://app.netlify.com>, click **Sign up**, choose **GitHub**.
 2. Click **Add new site**, then **Import an existing project**, then **GitHub**. Pick the
@@ -105,6 +106,8 @@ server can read them. The free plays switch off by themselves the moment Stripe 
 | `supabase/migrations/0018_first_curve.sql` | The first game's curve back: the cube of the closeness over the whole bar, 999 ceiling, cusp at the top |
 | `supabase/migrations/0019_any_school_email.sql` | Any local part on a school email; the general email check only asks for something@something.tld |
 | `supabase/migrations/0023_admin_console.sql` | The console: the site content document (home words, notice, About stories and photos, contact details) carried by `stats()`, payment and player search with paging, a public `site` bucket for photos |
+| `supabase/migrations/0027_badges.sql` | Badges, for the record and never a prize: Bullseye (a light of 999) and Steady hand (all three lights of a play within 40 ms), worked out from the plays (`player_badges`, `round_error_ms`) and carried by `me_player` |
+| `supabase/migrations/0026_skill_tiebreaks.sql` | Spot prizes split by skill: equal best lights by the next-best lights, equal first plays by that play's lights |
 | `supabase/migrations/0025_safeguards.sql` | Safeguards: the same three lights for everyone each day on the 1 ms grid (`day_rounds`), spending limits per player checked before every checkout (`spend_check`, settings `daily_cap_cents` 2000 and `campaign_cap_cents` 10000) with the total on the player's record, and the first-play spot prize in place of most plays |
 | `supabase/migrations/0024_tile_colours.sql` | A colour for every initials tile: `players.colour` (0 means one picked from the letters, 1 to 8 the player's choice on the You tab), `set_colour`, and `board()`, `spot_prizes()` and `me_player()` carrying it |
 | `supabase/migrations/0022_peak_curve.sql` | A steep peak at the line on a gentle ramp across the bar: ordinary plays land in the hundreds, the far end still scores, 999 needs the line itself |
@@ -268,17 +271,18 @@ The content document (`set_content`) holds: `hero.title`, `hero.subtitle`, `noti
   anywhere earns a readable number; the peak halves every 35 ms, so the high numbers are hard: on the line 999
   (which needs the line itself), 10 ms off 866, 20 ms 767, 30 ms 685, 50 ms 562, a tenth of the bar 396, a fifth 290,
   half the bar 188, seven tenths 128 and the far end about 80, never zero. An ordinary play lands in the hundreds
-  and the top of the board is earned Taps are whole milliseconds and the line is a random fraction, so a 999 needs the tap within
-  a few microseconds of the line, which keeps the top of the board to one person (equal scores: the earlier one wins).
+  and the top of the board is earned. Taps are whole milliseconds and every mark sits on the same millisecond grid,
+  so a 999 needs the exact millisecond (equal scores on a board: the earlier one wins; equal best lights are split by
+  the next-best light, then the one after).
   The play's score is the average of the three lights. The sweep is a fixed second
   per pass. The light is drawn by the first game's frame loop: each light notes the moment it starts and every frame
   places the light at the position for the time since then. A tap counts at the moment the finger touched the glass
   (the event's own timestamp, where the browser gives a sane one; on a phone the page hears about a touch 20 to 50 ms
-  after it happened), and it is matched to the frame that was on the glass then: the last frame drawn at least one
-  refresh earlier. The light is put back to that frame and scored there, so it stops where it was seen and never runs
-  on ahead of the finger. The play itself (its marks and starting points) is fetched before the tap on Play or Start,
+  after it happened), less one refresh for what was on the glass and, in a scored play, the phone's offset measured in
+  free practice (capped at 80 ms). It is not snapped to a frame, so a screen's refresh rate cannot add luck to the top
+  scores. The light stops where it was at that moment. The play itself (its marks and starting points) is fetched before the tap on Play or Start,
   so the light is already moving in the first frame of the game screen. After each light the number sits under the
-  bar with a verdict and a line of coaching (early or late) for about a second, then the next light starts. The
+  bar with how many milliseconds early or late it was, for about a second, then the next light starts. The
   server recomputes every light from the taps and stores its own number; the browser's score is only what it shows
   while the answer is on its way.
 - Everyone starts on the Everyone board. After the first play the Keep your details sheet asks for an email (so a
@@ -356,9 +360,27 @@ real money):
   score on a first play; the public boards show scores, not how many plays anyone has bought, and stop at
   the top 20 (a player further down sees their own row).
 - **Spending limits.** €20 a day and €100 in the campaign per player, checked by the server before every
-  checkout; the You tab shows what the player has donated. Change them with
+  checkout; the You tab shows what the player has donated. At a limit the message only states it ("That's the €20
+  limit for today."), with no invitation to come back and spend. Change them with
   `update public.settings set value = '3000' where key = 'daily_cap_cents';` (and `campaign_cap_cents`).
 - **Children's data.** The email is optional, used only to tell winners, seen only by the committee and
   deleted once the prizes are given; under-16s are asked for a parent's email. After the prizes:
   `update public.players set contact_email = null;`
+- **Practice and calibration.** "Practise free" on Home plays three unscored lights that show only how many
+  milliseconds early or late each tap was, and a phone's first paid play is preceded by them automatically. The
+  median error of a phone's last ten practice taps, capped at 80 ms, is taken off its scored taps and recorded with
+  each play (`client.offset`), so slower phones are not at a disadvantage and no paid play is spent learning.
+- **Skill tie-breaks.** Equal best lights are split by the second-best and third-best lights, and equal first plays
+  by that play's lights (migration 0026), so an exact-millisecond 999 is not decided by who got there first.
+- **One player per person.** Only a person's first player counts for the first-play prize and the limits are per
+  person; check each winner's code and emails when prizes are collected.
+- **Badges, not prizes.** Bullseye (a light of 999) and Steady hand (all three lights of a play within 40 ms) are
+  announced on the Prizes page, shown on the You tab and announced once with a small note when earned. They
+  reward what a play did, never how often anyone plays, and the terms say they carry no prize.
+- **Calm celebrations.** Confetti only for a play of 700 or more that is a new personal best, a first 900 or a first
+  entry into the top 10; it lasts about a second and a tap clears it. On the last light, a player with a best sees
+  the score that light needs to beat it ("Light 3 · 131 for a new best"), and only when that is within reach.
+- **Device data.** Each score keeps only the kind of device, such as "iOS Safari" (`client.device`), so a pilot can
+  check that no kind of phone dominates the winners; the full browser string is not kept. Plays saved before this
+  change still hold it and go with the test data before launch.
 - **Contrast.** Initials tiles are muted pastels with letters in a deep shade of the same hue, each pair at 4.5:1 or better.

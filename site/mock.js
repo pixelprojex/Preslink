@@ -50,11 +50,20 @@
   const playLight = (x) => (x.taps && x.rounds) ? Math.max(...x.taps.map((t, i) => roundScore(t, x.rounds[i].phase, x.rounds[i].target, x.speed_ms))) : (x.score || 0);
   const scoredPlays = (pid) => db.plays.filter((x) => x.player_id === pid && x.score != null && !x.voided);
   const bestLightOf = (pid) => scoredPlays(pid).reduce((m, x) => Math.max(m, playLight(x)), null);
+  // Badges as the database's player_badges: Bullseye = a light of 999; Steady hand = all three lights of a play within 40 ms.
+  const errMs = (t, phase, target, speedMs) => { let x = t / speedMs + phase; x -= 2 * Math.floor(x / 2); const pos = x < 1 ? x : 2 - x; return Math.round(Math.abs(pos - target) * speedMs); };
+  const badgesOf = (pid) => {
+    const ps = scoredPlays(pid).filter((x) => Array.isArray(x.taps) && x.taps.length === 3 && Array.isArray(x.rounds) && x.rounds.length === 3);
+    const out = [];
+    if (ps.some((x) => x.taps.some((t, i) => roundScore(t, x.rounds[i].phase, x.rounds[i].target, x.speed_ms) >= 999))) out.push('bullseye');
+    if (ps.some((x) => x.taps.every((t, i) => errMs(t, x.rounds[i].phase, x.rounds[i].target, x.speed_ms) <= 40))) out.push('steady');
+    return out;
+  };
   const nextSuffix = (initials, exceptId) => Object.values(db.players).filter((x) => x.initials === initials && x.id !== exceptId).reduce((m, x) => Math.max(m, x.suffix || 1), 0) + 1;
   const me = (p) => {
     const open = db.plays.find((x) => x.player_id === p.id && x.score == null && !x.voided);
     const best = scoredPlays(p.id).reduce((m, x) => Math.max(m, x.score), null);
-    return { id: p.id, tag: tag(p.id), initials: p.initials, suffix: p.suffix || 1, display: disp(p), role: p.role || 'everyone', school_email: p.school_email || null, contact_email: p.contact_email || null, claim_code: p.claim_code, credits: p.credits, banned: !!p.banned, colour: p.colour || 0, ...spendOf(p.id), best, best_this_week: best, best_light: bestLightOf(p.id), open_play: open ? { play_id: open.id, speed_ms: open.speed_ms, rounds: open.rounds } : null };
+    return { id: p.id, tag: tag(p.id), initials: p.initials, suffix: p.suffix || 1, display: disp(p), role: p.role || 'everyone', school_email: p.school_email || null, contact_email: p.contact_email || null, claim_code: p.claim_code, credits: p.credits, banned: !!p.banned, colour: p.colour || 0, ...spendOf(p.id), best, best_this_week: best, best_light: bestLightOf(p.id), badges: badgesOf(p.id), open_play: open ? { play_id: open.id, speed_ms: open.speed_ms, rounds: open.rounds } : null };
   };
   const board = (role, week, withIds) => {
     if (role === 'everyone') role = null;
@@ -72,16 +81,25 @@
       .map((p, i) => ({ rank: i + 1, tag: tag(p.player_id), initials: disp(p.player), role: p.player.role || 'everyone', colour: p.player.colour || 0, score: p.score, achieved_at: p.finished_at, plays: p.plays, best_light: bestLightOf(p.player_id),
         ...(withIds ? { play_id: p.id, player_id: p.player_id, claim_code: p.player.claim_code, banned: !!p.player.banned } : {}) }));
   };
+  // Spot prizes as the database's: best light split by the second- and third-best lights; first play
+  // split by that play's lights.
+  const lightsOf = (x) => (x.taps && x.rounds) ? x.taps.map((t, i) => roundScore(t, x.rounds[i].phase, x.rounds[i].target, x.speed_ms)) : [x.score || 0];
+  const cmp3 = (a, b) => { for (let i = 0; i < 3; i++) { const d = (b[i] ?? -1) - (a[i] ?? -1); if (d) return d; } return 0; };
   const spotPrizes = () => {
-    let light = null;
-    db.plays.filter((x) => x.score != null && !x.voided && db.players[x.player_id] && !db.players[x.player_id].banned).forEach((x) => {
-      const s = playLight(x);
-      if (!light || s > light.score || (s === light.score && x.finished_at < light.achieved_at)) light = { tag: tag(x.player_id), initials: disp(db.players[x.player_id]), role: db.players[x.player_id].role || 'everyone', colour: db.players[x.player_id].colour || 0, score: s, achieved_at: x.finished_at };
-    });
-    let first = null; // the best score on anyone's first play
-    Object.values(db.players).filter((p) => !p.banned).forEach((p) => {
-      const f = scoredPlays(p.id).slice().sort((a, b) => String(a.started_at).localeCompare(String(b.started_at)))[0];
-      if (f && (!first || f.score > first.score || (f.score === first.score && f.finished_at < first.achieved_at))) first = { tag: tag(p.id), initials: disp(p), role: p.role || 'everyone', colour: p.colour || 0, score: f.score, achieved_at: f.finished_at };
+    const ok = db.plays.filter((x) => x.score != null && !x.voided && db.players[x.player_id] && !db.players[x.player_id].banned);
+    const byPlayer = {};
+    ok.forEach((x) => { (byPlayer[x.player_id] = byPlayer[x.player_id] || []).push(x); });
+    const row = (pid, extra) => { const p = db.players[pid]; return { tag: tag(pid), initials: disp(p), role: p.role || 'everyone', colour: p.colour || 0, ...extra }; };
+    let light = null, lightKey = null;
+    let first = null, firstKey = null;
+    Object.entries(byPlayer).forEach(([pid, plays]) => {
+      const all = plays.flatMap((x) => lightsOf(x).map((l) => ({ l, at: x.finished_at }))).sort((a, b) => b.l - a.l || String(a.at).localeCompare(String(b.at)));
+      const top = all.slice(0, 3).map((z) => z.l);
+      if (!light || cmp3(top, lightKey) < 0 || (cmp3(top, lightKey) === 0 && all[0].at < light.achieved_at)) { light = row(pid, { score: top[0], achieved_at: all[0].at }); lightKey = top; }
+      const f = plays.slice().sort((a, b) => String(a.started_at).localeCompare(String(b.started_at)))[0];
+      const fk = [f.score, ...lightsOf(f).sort((a, b) => b - a)];
+      const cmpF = (a, b) => { for (let i = 0; i < 4; i++) { const d = (b[i] ?? -1) - (a[i] ?? -1); if (d) return d; } return 0; };
+      if (!first || cmpF(fk, firstKey) < 0 || (cmpF(fk, firstKey) === 0 && f.finished_at < first.achieved_at)) { first = row(pid, { score: f.score, achieved_at: f.finished_at }); firstKey = fk; }
     });
     return { best_light: light, first_play: first };
   };

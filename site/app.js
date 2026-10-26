@@ -94,6 +94,7 @@
   let openPlay = null;
   let best = null;
   let bestLight = null;
+  let badges = null; // the player's badges from the server: null until known
   let stats = null;
   let boardRole = 'everyone';
   let prevScreen = 'home';
@@ -108,8 +109,10 @@
       .catch(() => {})
       .finally(() => { prefetching = null; });
   }
-  const clearPlayer = () => { player = null; credits = 0; openPlay = null; nextPlay = null; best = null; bestLight = null; store.del(STORAGE_KEY); store.del(SCHOOL_ASKED_KEY); store.del(CODE_SHOWN_KEY); store.del(CONTACT_ASKED_KEY); store.del('preslink.prevBest'); store.del('preslink.prevRank'); };
+  const clearPlayer = () => { player = null; credits = 0; openPlay = null; nextPlay = null; best = null; bestLight = null; badges = null; store.del(STORAGE_KEY); store.del(SCHOOL_ASKED_KEY); store.del(CODE_SHOWN_KEY); store.del(CONTACT_ASKED_KEY); store.del('preslink.prevBest'); store.del('preslink.prevRank'); };
   function adoptPlayer(p) {
+    if (!player || player.id !== p.id) badges = null; // another player: their badges come with their record
+    if (Array.isArray(p.badges)) badges = p.badges.slice();
     player = { id: p.id, tag: p.tag, initials: p.initials, suffix: p.suffix || 1, display: p.display || p.initials, role: p.role || 'everyone', claim_code: p.claim_code, school_email: p.school_email || null, contact_email: p.contact_email || null, colour: Number(p.colour) || 0 };
     credits = p.credits || 0;
     openPlay = p.open_play || null;
@@ -251,6 +254,7 @@
     $$('[data-badge]').forEach((x) => { x.dataset.open = ''; });
     b.dataset.open = '1';
     const li = b.closest('li');
+    if (!li) return;
     const [title, text] = BADGE_TEXT[b.dataset.badge] || ['', ''];
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
@@ -307,11 +311,13 @@
       const cx = canvas.width / 2, cy = canvas.height * 0.38;
       for (let i = 0; i < n; i++) {
         const a = Math.random() * Math.PI * 2, s = (5 + Math.random() * 9) * d;
-        parts.push({ x: cx, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 7 * d, g: 0.38 * d, w: (6 + Math.random() * 6) * d, h: (8 + Math.random() * 9) * d, r: Math.random() * Math.PI, vr: (Math.random() - .5) * .3, c: colors[i % colors.length], life: 80 + Math.random() * 40 });
+        parts.push({ x: cx, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 7 * d, g: 0.38 * d, w: (6 + Math.random() * 6) * d, h: (8 + Math.random() * 9) * d, r: Math.random() * Math.PI, vr: (Math.random() - .5) * .3, c: colors[i % colors.length], life: 60 + Math.random() * 30 });
       }
       if (!raf) raf = requestAnimationFrame(tick);
     }
-    return { burst };
+    function stop() { parts = []; }
+    document.addEventListener('pointerdown', stop); // a tap clears it
+    return { burst, stop };
   })();
 
   // ---------------------------------------------------------------------------
@@ -326,7 +332,7 @@
   }
   function render(name) {
     if (!SCREENS.includes(name)) name = 'home';
-    if (name === 'play' && !player) { go('home'); return; }
+    if (name === 'play' && !player && !wantPractice) { go('home'); return; }
 
     if (name !== current) prevScreen = current;
     current = name;
@@ -345,8 +351,9 @@
     if (name === 'cabinet' && !cabinetBusy) { go('home'); return; }
     if (name === 'play') {
       // Only an explicit tap starts a play; arriving here by Back/Forward shows the last result or goes home.
-      if (wantGame) { wantGame = false; startGame(); }
-      else if (game.state !== 'done' || $('#result').hidden) { go('home'); return; }
+      if (wantPractice) { wantPractice = false; game.state = 'idle'; startPractice('home'); }
+      else if (wantGame) { wantGame = false; startGame(); }
+      else if (game.state !== 'done' || ($('#result').hidden && $('#practice-end').hidden)) { go('home'); return; }
     }
     if (name === 'board') loadBoard();
     if (name === 'prize') loadPrizes();
@@ -549,7 +556,7 @@
   // Paying: one tap to Stripe, and back into the cabinet
   // ---------------------------------------------------------------------------
   const limitText = (code) => code === 'DAILY_LIMIT'
-    ? `That's the €${Math.round(((spend && spend.daily) || 2000) / 100)} limit for today. Back tomorrow.`
+    ? `That's the €${Math.round(((spend && spend.daily) || 2000) / 100)} limit for today.`
     : `That's the €${Math.round(((spend && spend.campaign) || 10000) / 100)} limit for the campaign. Thank you!`;
   async function buy(bundle) {
     if (!ensurePlayer(bundle)) return;
@@ -654,19 +661,19 @@
   };
   // A light is a hit (green) from 700: within about 28 ms of the line.
   const HIT = 700;
+  // Badges are for the record, never a prize, and announced on the Prizes page.
+  const BADGE_NAMES = { bullseye: 'Bullseye', steady: 'Steady hand' };
   function titleFor(s) {
-    if (s >= 850) return 'Outstanding';
-    if (s >= 750) return 'Superb';
-    if (s >= 600) return 'Great run';
-    if (s >= 400) return 'Good effort';
-    return 'Next time';
+    if (s >= 950) return 'Near-perfect timing';
+    if (s >= 850) return 'Excellent timing';
+    if (s >= 700) return 'Sharp timing';
+    if (s >= 500) return 'Good timing';
+    return 'Keep practising';
   }
-  function verdictFor(s) {
-    if (s >= 850) return 'Perfect';
-    if (s >= HIT) return 'So close';
-    if (s >= 500) return 'Nice';
-    if (s >= 300) return 'Not bad';
-    return 'Unlucky';
+  // Each light says how far off it was, in milliseconds; "Perfect" is kept for the exact millisecond.
+  function verdictFor(s, err) {
+    if (s >= 999 || err === 0) return 'Perfect';
+    return `${Math.abs(err)} ms ${err > 0 ? 'late' : 'early'}`;
   }
   function setMarker(pos) { marker.style.transform = `translateX(${pos * game.trackW}px)`; }
   function setPin(target) {
@@ -682,7 +689,8 @@
   function renderDots() {
     $$('#rounds .dot').forEach((d, i) => {
       d.className = 'dot';
-      d.textContent = i < game.scores.length ? game.scores[i] : i + 1;
+      if (i < game.scores.length && game.practice) d.innerHTML = `<span>${Math.abs(game.errs[i])}<span class="u">\u202fms</span></span>`; // a number, safe; one grid item
+      else d.textContent = i < game.scores.length ? game.scores[i] : i + 1;
       if (i < game.scores.length) d.classList.add('done', game.scores[i] < HIT ? 'low' : 'high');
       else if (i === game.round && (game.state === 'sweeping' || game.state === 'countdown')) d.classList.add('live');
     });
@@ -703,7 +711,8 @@
     $('#result-note').hidden = true;
     pin.style.opacity = '';
     marker.classList.remove('hit', 'miss', 'hide');
-    game.round = 0; game.taps = []; game.scores = [];
+    game.round = 0; game.taps = []; game.scores = []; game.errs = [];
+    $('#practice-end').hidden = true;
     renderDots();
     measure();
     setMarker(0);
@@ -716,6 +725,9 @@
   async function startGame() {
     if (!player) { go('home'); return; }
     if (game.state === 'countdown' || game.state === 'sweeping' || game.state === 'between' || game.state === 'loading') return;
+    if (!practised()) { startPractice('play'); return; }
+    game.practice = false;
+    game.offset = deviceOffset();
     resetGameUI();
     updatePlayCredits();
     $('#tabbar').hidden = true;
@@ -756,6 +768,11 @@
     const m = $('#game-msg');
     m.classList.remove('go', 'count', 'coach');
     m.textContent = `Light ${i + 1} of 3`;
+    if (i === ROUNDS - 1 && !game.practice && best != null) {
+      // the play's score is the rounded average, so a new best needs (s1 + s2 + s3) / 3 >= best + 0.5
+      const need = Math.ceil(3 * best + 1.5 - game.scores[0] - game.scores[1]);
+      if (need > 50 && need <= 999) m.textContent = `Light 3 · ${need} for a new best`;
+    }
     setPin(r.target);
     marker.classList.remove('hit', 'miss', 'hide');
     measure();
@@ -763,7 +780,6 @@
     $('#game').classList.add('sweeping');
     renderDots();
     game.sweepStart = performance.now();
-    game.frames = [];
     setMarker(posAt(0, r.phase, game.play.speed_ms));
     game.raf = requestAnimationFrame(loop);
   }
@@ -771,8 +787,6 @@
     if (game.state !== 'sweeping') return;
     const r = game.play.rounds[game.round];
     setMarker(posAt(now - game.sweepStart, r.phase, game.play.speed_ms));
-    game.frames.push(now); // when each frame was drawn, so a tap can be matched to the frame that was on the glass
-    if (game.frames.length > 12) game.frames.shift();
     game.raf = requestAnimationFrame(loop);
   }
   function abandonGame() {
@@ -789,32 +803,34 @@
     const dir = x < 1 ? 1 : -1;
     return Math.round((pos - r.target) * dir * game.play.speed_ms);
   }
-  // One line of coaching after a light, so the next one can be better.
-  function coachFor(s, err) {
-    const a = Math.abs(err);
-    if (s >= 850 || a <= 10) return '';
-    if (a < 40) return err > 0 ? 'A touch late' : 'A touch early';
-    return err > 0 ? 'Late · tap a bit sooner' : 'Early · tap a bit later';
-  }
   // A tap counts at the moment the finger touched the glass, not when the browser got round to telling
   // the page (on a phone that is 20 to 50 ms later, during which the light has moved on). The event's own
-  // timestamp is that moment where the browser gives a sane one. The frame on the glass then was the last
-  // one drawn at least a refresh before it, so the light is put back to that frame and scored there: it
-  // stops where it was seen, never ahead of the finger.
+  // timestamp is that moment where the browser gives a sane one. What the player saw then was drawn about a
+  // refresh earlier, so the tap is timed at that moment, to the millisecond and not snapped to a frame (a
+  // frame's timing would put luck into the top scores); in a scored play this phone's offset, measured in
+  // practice, comes off too. The light stops where it was at that moment.
   const DISPLAY_LAG_MS = 16;
+  // Practice: free, unscored lights that also measure this phone's timing. The median signed error of the
+  // last ten practice taps, capped at 80 ms either way, is this device's offset, taken off every scored tap.
+  const PRACTICE_KEY = 'preslink.practice';
+  const practiceData = () => { const d = store.get(PRACTICE_KEY); return d && Array.isArray(d.errors) ? d : { errors: [], n: 0 }; };
+  const practised = () => practiceData().n >= 3;
+  function deviceOffset() {
+    const e = practiceData().errors;
+    if (e.length < 3) return 0;
+    const s = e.slice().sort((a, b) => a - b), h = s.length / 2;
+    const m = s.length % 2 ? s[Math.floor(h)] : (s[h - 1] + s[h]) / 2;
+    return Math.max(-80, Math.min(80, Math.round(m)));
+  }
+  function recordPractice(err) { const d = practiceData(); d.errors = d.errors.concat(err).slice(-10); d.n += 1; store.set(PRACTICE_KEY, d); }
   function touchTime(e) {
     const now = performance.now();
     const ts = e && Number.isFinite(e.timeStamp) ? e.timeStamp : NaN;
     return ts > 0 && ts <= now + 5 && ts > now - 400 ? ts : now;
   }
-  function frameSeenAt(t) {
-    const fs = game.frames;
-    for (let i = fs.length - 1; i >= 0; i--) if (fs[i] <= t - DISPLAY_LAG_MS) return fs[i];
-    return fs.length ? fs[0] : t;
-  }
   function onTap(e) {
     if (game.state !== 'sweeping') return;
-    const ms = Math.round(frameSeenAt(touchTime(e)) - game.sweepStart);
+    const ms = Math.round(touchTime(e) - DISPLAY_LAG_MS - (game.practice ? 0 : game.offset || 0) - game.sweepStart);
     if (ms < SWEEP_GUARD_MS) return;
     if (e.cancelable) e.preventDefault();
     cancelAnimationFrame(game.raf);
@@ -826,9 +842,11 @@
     setMarker(pos); // the light stops, this frame, where it was when the finger landed
     marker.classList.add(s >= HIT ? 'hit' : 'miss');
     sounds.tap();
+    const err = signedError(ms, r);
     game.taps.push(ms);
     game.scores.push(s);
-    requestAnimationFrame(() => afterRound(s, signedError(ms, r))); // the score and the rest follow a frame later
+    game.errs.push(err);
+    requestAnimationFrame(() => afterRound(s, err)); // the score and the rest follow a frame later
   }
   $('#game').addEventListener('pointerdown', onTap);
   document.addEventListener('keydown', (e) => {
@@ -851,18 +869,20 @@
   // After the stop: the light's number under the bar, a verdict, a line of coaching; then the next light.
   async function afterRound(s, err) {
     if (game.state !== 'between') return;
+    const practice = !!game.practice;
+    if (practice) recordPractice(err);
     if (s >= HIT) sounds.good();
     vibrate(s >= 850 ? [20, 30, 20] : 25);
     renderDots();
     const el = $('#score-value');
-    el.textContent = s;
+    el.textContent = practice ? `${Math.abs(err)} ms` : s; // practice shows only the timing, never a would-be score
     $('.score').classList.toggle('hit', s >= HIT);
     $('.score').classList.remove('pop'); void el.offsetWidth; $('.score').classList.add('pop');
     const v = $('#verdict');
-    v.textContent = verdictFor(s);
+    v.textContent = practice ? (err === 0 ? 'Perfect' : err > 0 ? 'late' : 'early') : verdictFor(s, err);
     v.classList.toggle('miss', s < HIT);
     $('#game-msg').textContent = '';
-    $('#coach').textContent = coachFor(s, err);
+    $('#coach').textContent = '';
     await wait(850);
     if (game.state !== 'between') return;
     if (game.round < ROUNDS - 1) {
@@ -874,10 +894,59 @@
       await wait(150);
       if (game.state !== 'between') return;
       beginRound(game.round + 1);
+    } else if (practice) {
+      finishPractice();
     } else {
       finishPlay();
     }
   }
+
+  // Practice: three free lights, not scored and not sent anywhere, open to anyone at any time. Before a
+  // phone's first paid play it comes first by itself, so no paid play is spent learning or calibrating.
+  let practiceThen = 'home';
+  const practiceRounds = () => [0, 1, 2].map(() => ({ phase: Math.floor(Math.random() * 1000) / 1000, target: (150 + Math.floor(Math.random() * 701)) / 1000 }));
+  async function startPractice(then) {
+    if (game.state === 'countdown' || game.state === 'sweeping' || game.state === 'between' || game.state === 'loading') return;
+    practiceThen = then;
+    game.practice = true;
+    resetGameUI();
+    $('#play-credits').textContent = 'Practice';
+    $('#tabbar').hidden = true;
+    const g = $('#game');
+    g.classList.remove('enter'); void g.offsetWidth; g.classList.add('enter');
+    game.state = 'loading';
+    $('#game-msg').textContent = 'Light 1 of 3';
+    if (!store.get(HOW_SEEN_KEY) && best == null) { await showIntro(); if (game.state !== 'loading') return; }
+    game.play = { play_id: null, speed_ms: 1000, rounds: practiceRounds() };
+    $('#tap-hint').textContent = 'Practice · not scored';
+    $('#tap-hint').classList.add('live');
+    beginRound(0);
+  }
+  function finishPractice() {
+    game.state = 'done';
+    const off = deviceOffset();
+    $('#tap-hint').textContent = '';
+    $('#tap-hint').classList.remove('live');
+    $('#score-value').textContent = '';
+    $('#verdict').textContent = '';
+    $('.score').classList.remove('pop', 'hit');
+    $('#game-msg').textContent = 'Practice done';
+    $('#practice-line').textContent = Math.abs(off) < 5 ? 'Your phone: on time' : `Your phone: ${Math.abs(off)} ms ${off > 0 ? 'late' : 'early'} · allowed for`;
+    $('#practice-go').textContent = practiceThen === 'play' ? 'Play for real' : 'Done';
+    $('#practice-end').hidden = false;
+  }
+  $('#practice-go').addEventListener('click', () => {
+    game.practice = false;
+    $('#practice-end').hidden = true;
+    if (practiceThen === 'play') { game.state = 'idle'; startGame(); } else { game.state = 'idle'; go('home'); }
+  });
+  $('#practice-again').addEventListener('click', () => { game.state = 'idle'; startPractice(practiceThen); });
+  let wantPractice = false;
+  $('#home-practice').addEventListener('click', () => {
+    sounds.prime();
+    if (location.hash === '#play') { game.state = 'idle'; startPractice('home'); return; }
+    wantPractice = true; go('play');
+  });
 
   async function finishPlay() {
     game.state = 'done';
@@ -891,10 +960,9 @@
     await countUp(el, game.scores[ROUNDS - 1], score, 900, String); // from the last light's number, never through zero
     $('.score').classList.add('pop');
     vibrate(score >= 850 ? [30, 40, 30, 40, 60] : 40);
-    if (score >= 850) confetti.burst(score >= 950 ? 180 : 110);
     await wait(900);
 
-    const payload = { player_id: player.id, play_id: game.play.play_id, score, taps: game.taps.slice() };
+    const payload = { player_id: player.id, play_id: game.play.play_id, score, taps: game.taps.slice(), offset: game.offset || 0 };
     game.pending = payload;
     store.set(PENDING_KEY, payload);
     await submitPending(score);
@@ -940,11 +1008,25 @@
     const movedUp = !!r && prevRank != null && rank != null && rank < prevRank;
     kicker.className = 'result-kicker' + (newBest ? ' best' : movedUp ? ' up' : '');
     if (newBest) sounds.best();
+    const first900 = !!r && score >= 900 && !store.get('preslink.got900');
+    if (r && score >= 900) store.set('preslink.got900', true);
+    const intoTop10 = !!r && rank != null && rank <= 10 && (prevRank == null || prevRank > 10);
+    if (score >= HIT && (newBest || first900 || intoTop10)) confetti.burst(score >= 900 ? 110 : 70); // never for a below-median play
     kicker.textContent = newBest ? 'New best' : movedUp ? `Up ${prevRank - rank} ${prevRank - rank === 1 ? 'place' : 'places'}` : titleFor(score);
     if (r) { store.set('preslink.prevBest', best); if (rank != null) store.set('preslink.prevRank', rank); }
     countUp($('#result-score'), 0, score, 900, String);
     const lights = r && Array.isArray(r.rounds) && r.rounds.length === ROUNDS ? r.rounds.map((x) => Number(x)) : game.scores;
     const bestRound = Math.max(...lights);
+    if (r && Array.isArray(badges)) {
+      const earned = [];
+      if (lights.some((s) => s >= 999)) earned.push('bullseye');
+      if (game.errs && game.errs.length === ROUNDS && game.errs.every((e) => Math.abs(e) <= 40)) earned.push('steady');
+      const fresh = earned.filter((b) => !badges.includes(b));
+      if (fresh.length) {
+        badges = badges.concat(fresh);
+        setTimeout(() => toast('New badge: ' + fresh.map((b) => BADGE_NAMES[b]).join(' and ')), 1300);
+      }
+    }
     $('#result-rounds').innerHTML = '<span class="lbl">3 lights</span>' + lights.map((s) => `<span class="chip${s === bestRound ? ' top' : ''}">${s}</span>`).join('');
     $('#result-best').textContent = r && best != null ? best : '–';
     $('#result-rank').textContent = rank ? '#' + rank : '–';
@@ -1399,13 +1481,19 @@
     b.innerHTML = isSchool() ? `${CREST_IMG}${esc(boardName(player.role))} board<span class="profile-mail">${esc(player.school_email || '')}</span>` : 'Everyone board';
     b.classList.toggle('school', isSchool());
     const eff = tileColour((player.display || player.initials).split('#')[0], player.colour);
-    $$('#you-colours .sw').forEach((x) => { const on = Number(x.dataset.colour) === eff; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
+    const letters = (player.display || player.initials).split('#')[0];
+    $$('#you-colours .sw').forEach((x) => { const on = Number(x.dataset.colour) === eff; x.textContent = letters; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
     $('#you-email-text').textContent = player.contact_email || 'Optional';
     $('#you-code').textContent = player.claim_code;
     $('#you-credits').textContent = credits;
     $('#you-best').textContent = best == null ? '–' : best;
     $('#you-light').textContent = bestLight == null ? '–' : bestLight;
     $('#you-spent').textContent = '€' + Math.round(((spend && spend.spent) || 0) / 100);
+    $$('#you-badges .bchip').forEach((c) => {
+      const on = !!badges && badges.includes(c.dataset.award);
+      c.classList.toggle('on', on);
+      c.setAttribute('aria-label', `${BADGE_NAMES[c.dataset.award]}: ${on ? 'earned' : 'not yet'}`);
+    });
   }
   // A tap on a swatch colours the tile everywhere: the boards show it on their next load.
   $('#you-colours').addEventListener('click', async (e) => {

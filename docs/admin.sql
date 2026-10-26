@@ -73,3 +73,12 @@ select p.initials, p.claim_code, p.credits, p.last_seen_at
 -- Before taking real money: remove the demo payments (free plays recorded while no Stripe key was set),
 -- so "raised so far" starts from zero. Run in the Supabase SQL editor.
 -- delete from public.payments where stripe_session_id like 'demo_%';
+
+-- Launch day, after all testing: start the campaign from a clean slate. This removes every test player with
+-- their plays (scores, taps, device details) and payments, and the sign-in lockouts, so no test score can lead
+-- a board or a spot prize; settings, blocked names and the Stripe connection stay. It cannot be undone: run it
+-- once, in the Supabase SQL editor, before the link goes out.
+-- delete from public.plays;
+-- delete from public.payments;
+-- delete from public.players;
+-- delete from public.auth_attempts;

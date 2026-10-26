@@ -26,7 +26,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=43">
+  <link rel="stylesheet" href="styles.css?v=45">
 </head>
 <body>
 <div class="splash" id="splash" aria-hidden="true">
@@ -81,6 +81,7 @@
     <div class="card home-links">
       <button class="cell" type="button" data-go="prize"><span>Prizes<small id="home-ends"></small></span> <span class="chev">›</span></button>
       <button class="cell" type="button" data-sheet="how"><span>How to play</span> <span class="chev">›</span></button>
+      <button class="cell" type="button" id="home-practice"><span>Practise free</span> <span class="chev">›</span></button>
     </div>
     <div class="card home-top" id="home-top">
       <h2 class="card-h">Leading now</h2>
@@ -127,6 +128,11 @@
         <div class="coach" id="coach"></div>
       </div>
       <p class="tap-hint" id="tap-hint">Tap when the light is on the mark</p>
+      <div class="practice-end" id="practice-end" hidden>
+        <p class="practice-line" id="practice-line"></p>
+        <button class="btn btn-primary btn-xl" type="button" id="practice-go">Done</button>
+        <button class="btn" type="button" id="practice-again">Practise again</button>
+      </div>
     </div>
 
     <div class="result" id="result" hidden>
@@ -198,6 +204,11 @@
         <div class="prize-main"><div class="prize-photo"><img alt="" hidden><svg aria-hidden="true"><use href="#i-photo"/></svg></div><div class="prize-body"><p class="prize-what tba" id="prize-first-play">To be announced</p><p class="prize-how">Best score on a first play</p></div><div class="prize-lead" id="lead-first"></div></div>
       </article>
     </div>
+    <h2 class="sec-h">Badges</h2>
+    <div class="card badge-list">
+      <div class="cell"><span>Bullseye<small>A light on the exact millisecond</small></span></div>
+      <div class="cell"><span>Steady hand<small>All three lights of a play within 40 ms</small></span></div>
+    </div>
   </section>
 
   <!-- ================= ABOUT ================= -->
@@ -258,6 +269,7 @@
         <div class="cell"><span>Your best</span><strong id="you-best">–</strong></div>
         <div class="cell"><span>Best light</span><strong id="you-light">–</strong></div>
         <div class="cell"><span>Donated</span><strong id="you-spent">€0</strong></div>
+        <button class="cell" type="button" id="you-badges" data-go="prize"><span>Badges</span> <span class="bchips"><span class="bchip" data-award="bullseye">Bullseye</span><span class="bchip" data-award="steady">Steady hand</span></span></button>
       </div>
       <form id="edit-form" class="card pad stack" autocomplete="off" novalidate hidden>
         <h2 class="card-h">Your initials</h2>
@@ -390,9 +402,9 @@
     <h3>4. Your initials, code and boards</h3>
     <p>You play under two or three initials of your choice. If someone already has them you are shown with a number, for example JAK#2. Offensive names are blocked or removed. Your four-digit code proves a score is yours and signs you in on another device. Keep it private. Everyone is on the Everyone board. Students and teachers of Presentation Brothers College may also join the Students or Teachers board by giving their school email address, which the Committee may check.</p>
     <h3>5. Prizes</h3>
-    <p>Prizes are awarded once, at the end of the campaign, for the highest score on the Everyone, Students and Teachers boards, and spot prizes for the best single light and the best score on a first play. No prize depends on how much anyone spends. Equal scores: the earlier one wins. Winners are announced by the Committee at the end of the campaign and collect by showing their initials and code. Prizes are set by the Committee and have no cash alternative.</p>
+    <p>Prizes are awarded once, at the end of the campaign, for the highest score on the Everyone, Students and Teachers boards, and spot prizes for the best single light and the best score on a first play. No prize counts spending; more plays give more chances at a best score, which is why spending is capped. Equal scores on a board: the earlier one wins. Equal best lights are split by each player's next-best light, then the one after; equal first plays by that play's best light, then the next. One player per person: only your first player counts for the First play prize, the spending limits are per person, and winners' codes and emails are checked when prizes are collected. Winners are announced by the Committee at the end of the campaign and collect by showing their initials and code. Prizes are set by the Committee and have no cash alternative. Badges are for fun and carry no prize.</p>
     <h3>6. Fair play</h3>
-    <p>A play is three lights; the score is the average of the three. Each light scores up to 999 by how close to the mark you stop it, timed to the millisecond; everyone plays the same three lights on a given day, and nothing in the score is random. Phones differ very slightly in how fast they register a tap. Scores are checked by our server. Plays may be voided and players removed for cheating or tampering. The Committee's decision is final.</p>
+    <p>A play is three lights; the score is the average of the three. Each light scores up to 999 by how close to the mark you stop it, timed to the millisecond from the moment your finger touches the screen; everyone plays the same three lights on a given day, and nothing in the score is random. Phones differ by up to about a tenth of a second in how fast they show the light and register a tap, so free practice measures yours and scored plays allow for it, by up to 80 ms. Scores are checked by our server. Plays may be voided and players removed for cheating or tampering. The Committee's decision is final.</p>
     <h3>7. Payments and refunds</h3>
     <p>Payments are processed by Stripe; we never see your card number. Each player can spend at most €20 a day and €100 in the campaign, and the You tab shows what you have donated. Plays are not refundable except where the law requires it or a fault on our side meant a paid play could not be used. Contact the Committee and we will put it right.</p>
     <h3>8. Your data</h3>
@@ -410,7 +422,7 @@
 <div class="overlay" id="overlay" hidden><div class="overlay-card"><div class="spinner" aria-hidden="true"></div><p id="overlay-text">One moment</p></div></div>
 
 <script src="config.js"></script>
-<script src="mock.js?v=36"></script>
-<script src="app.js?v=37"></script>
+<script src="mock.js?v=38"></script>
+<script src="app.js?v=39"></script>
 </body>
 </html>
