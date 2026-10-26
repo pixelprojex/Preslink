@@ -33,7 +33,8 @@
   --r: 14px;
   --r-lg: 20px;
   --tab-h: 56px;
-  --tab-gap: 12px;
+  --tab-gap: 0px;
+  --tb-x: max(8px, calc((100vw - 520px) / 2)); /* the bar spans the screen; its four buttons keep to a 520px column */
   --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
@@ -43,7 +44,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f
 [hidden] { display: none !important; }
 button { font: inherit; color: inherit; }
 img { max-width: 100%; display: block; }
-.shell { max-width: 520px; margin: 0 auto; padding: 0 16px calc(var(--tab-h) + var(--tab-gap) + 28px + env(safe-area-inset-bottom)); }
+.shell { max-width: 520px; margin: 0 auto; padding: 0 16px calc(var(--tab-h) + 24px + env(safe-area-inset-bottom)); }
 .screen { animation: fade .2s ease-out; }
 .screen > * { animation: rise .3s cubic-bezier(.2, .8, .2, 1) both; }
 .screen > :nth-child(2) { animation-delay: .03s; } .screen > :nth-child(3) { animation-delay: .06s; } .screen > :nth-child(4) { animation-delay: .09s; } .screen > :nth-child(5) { animation-delay: .11s; } .screen > :nth-child(n+6) { animation-delay: .13s; }
@@ -244,9 +245,12 @@ a.cell { text-decoration: none; }
 
 /* Tab bar */
 /* Navigation: a floating bar on phones with a pill that slides under the active tab; a sidebar on wide screens (below). */
-.tabbar { position: fixed; left: 16px; right: 16px; bottom: calc(var(--tab-gap) + env(safe-area-inset-bottom)); z-index: 5; display: grid; grid-template-columns: repeat(4, 1fr); max-width: 488px; margin: 0 auto; height: var(--tab-h); padding: 5px; border-radius: 20px; background: rgba(255, 255, 255, .94); -webkit-backdrop-filter: saturate(180%) blur(18px); backdrop-filter: saturate(180%) blur(18px); box-shadow: 0 8px 24px rgba(28, 28, 30, .08), 0 1px 2px rgba(28, 28, 30, .05); }
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; display: grid; grid-template-columns: repeat(4, 1fr); margin: 0; height: calc(var(--tab-h) + env(safe-area-inset-bottom)); padding: 4px var(--tb-x) env(safe-area-inset-bottom); background: var(--surface); border-top: 1px solid var(--sep); }
 .tabbar .side-brand { display: none; }
-.tab-ind { position: absolute; top: 5px; left: 5px; width: calc((100% - 10px) / 4); height: calc(100% - 10px); border-radius: 15px; background: #e9f5fc; transform: translateX(calc(var(--i, 0) * 100%)); transition: transform .36s cubic-bezier(.2, .8, .2, 1); pointer-events: none; }
+/* White below the bar too: the newest iPhone Safari draws the page under its floating address bar, so the strip
+   under the menu would otherwise show the page scrolling past. Off-screen everywhere else. */
+.tabbar::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 240px; background: var(--surface); pointer-events: none; }
+.tab-ind { position: absolute; top: 4px; left: var(--tb-x); width: calc((100vw - 2 * var(--tb-x)) / 4); height: calc(var(--tab-h) - 8px); border-radius: 14px; background: #e9f5fc; transform: translateX(calc(var(--i, 0) * 100%)); transition: transform .36s cubic-bezier(.2, .8, .2, 1); pointer-events: none; }
 .tabbar button { position: relative; z-index: 1; background: none; border: 0; color: var(--muted); display: grid; justify-items: center; align-content: center; gap: 3px; font-size: 10px; font-weight: 700; cursor: pointer; border-radius: 16px; letter-spacing: .01em; transition: color .25s ease; -webkit-tap-highlight-color: transparent; }
 .tabbar button:active { transform: scale(.94); }
 .tabbar svg { width: 22px; height: 22px; transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
@@ -626,7 +630,7 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
   .prize-body { padding: 14px 16px 8px; }
   .prize-lead { margin: 0 16px 12px; }
   .appbar { margin: 0 -24px; padding-left: 24px; padding-right: 24px; height: 64px; }
-  .tabbar, .sheet { max-width: 640px; }
+  .sheet { max-width: 640px; }
   .title h1 { font-size: 36px; }
   .subtitle { font-size: 17px; }
   .btn-xl { min-height: 54px; font-size: 17px; }
@@ -642,9 +646,6 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
   .ring { width: 34px; height: 34px; }
   .game { min-height: 560px; }
 }
-@media (min-width: 700px) and (max-width: 899px) {
-  .tabbar { max-width: 560px; }
-}
 @media (min-width: 900px) {
   /* the bar becomes a sidebar; the content column sits beside it */
   :root { --side-w: 236px; }
@@ -654,7 +655,8 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
   .appbar .brand { visibility: hidden; }
   .raised-n { font-size: 22px; }
   .ring { width: 40px; height: 40px; }
-  .tabbar, .tabbar[hidden] { display: flex !important; flex-direction: column; gap: 4px; position: fixed; left: 0; top: 0; bottom: 0; right: auto; width: var(--side-w); max-width: none; height: auto; margin: 0; padding: 96px 14px 24px; border-radius: 0; background: var(--surface); box-shadow: none; border-right: 1px solid var(--sep); }
+  .tabbar, .tabbar[hidden] { display: flex !important; flex-direction: column; gap: 4px; position: fixed; left: 0; top: 0; bottom: 0; right: auto; width: var(--side-w); max-width: none; height: auto; margin: 0; padding: 96px 14px 24px; border-radius: 0; background: var(--surface); box-shadow: none; border-top: 0; border-right: 1px solid var(--sep); }
+  .tabbar::after { display: none; }
   .tabbar .side-brand { display: flex; align-items: center; gap: 10px; position: absolute; top: 26px; left: 22px; color: var(--ink); text-decoration: none; font-weight: 800; font-size: 19px; letter-spacing: -.02em; }
   .tabbar .side-brand img { width: 34px; height: 34px; }
   .tabbar .side-brand b { color: var(--green); font-weight: 800; }
