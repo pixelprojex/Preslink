@@ -781,6 +781,22 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
 .step-code strong { font-size: 28px; font-weight: 800; letter-spacing: .14em; font-variant-numeric: tabular-nums; color: var(--ink); }
 .step-code span { color: var(--muted); font-size: 13px; font-weight: 500; text-align: right; }
 .step .pad-x .btn { width: 100%; }
+/* Keep your details: the title and the close button stay in view while the sheet scrolls; the fields are
+   white boxes on the grey step cards; the error sits above the button, in red, with room around it. */
+.sheet-head { position: sticky; top: -8px; z-index: 2; background: var(--surface); margin: -8px -18px 10px; padding: 12px 18px 8px; }
+.sheet-tall .sheet-body .sheet-note { text-align: left; margin: -6px 2px 14px; font-size: 14px; }
+.step .step-h { padding: 14px 16px 6px; }
+.step .step-h h3 { font-size: 16px; }
+.step .field { padding: 6px 14px; }
+.step .field input { min-height: 46px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); font-size: 16px; }
+.step .field input:focus { border-color: var(--green); box-shadow: 0 0 0 3px var(--green-l); }
+.step .field + .cell::before, .step .field + .field::before { display: none; }
+.step .cell.switch { min-height: 46px; padding: 8px 16px; font-size: 15px; }
+.step .pad-x { padding: 6px 14px 14px; }
+.step .field-error { margin: 0 2px 10px; font-size: 14px; color: var(--red); }
+.step-code { padding: 2px 16px 8px; }
+.step-code strong { font-size: 26px; }
+.sheet-tall .sheet-body > .btn-xl { min-height: 48px; font-size: 16px; }
 .step .field + .cell::before { display: none; }
 .cell.switch { cursor: pointer; }
 .switch input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
