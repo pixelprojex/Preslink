@@ -90,6 +90,7 @@
 
   let player = store.get(STORAGE_KEY);
   let credits = 0;
+  let spend = null; // { spent, today, daily, campaign } in cent, from the server
   let openPlay = null;
   let best = null;
   let bestLight = null;
@@ -114,6 +115,7 @@
     openPlay = p.open_play || null;
     best = p.best != null ? p.best : (p.best_this_week == null ? null : p.best_this_week);
     bestLight = p.best_light == null ? null : p.best_light;
+    if (p.spent_cents != null) spend = { spent: Number(p.spent_cents) || 0, today: Number(p.spent_today_cents) || 0, daily: Number(p.daily_cap_cents) || 2000, campaign: Number(p.campaign_cap_cents) || 10000 };
     savePlayer();
     renderHome();
   }
@@ -238,7 +240,7 @@
     best: () => [660, 880, 1100, 1320].forEach((f, i) => beep(f, 180, 0.05, 'sine', i * 0.1)),
   };
   // Badge bubbles: tap a prize symbol to see what it means.
-  const BADGE_TEXT = { light: ['Best light', 'Closest to 1,000 with a single light. A spot prize at the end.'], plays: ['Most plays', 'The most plays in the campaign. A spot prize at the end.'] };
+  const BADGE_TEXT = { light: ['Best light', 'Closest to 1,000 with a single light. A spot prize at the end.'], first: ['First play', 'The best score on a first play. A spot prize at the end.'] };
   function closeBubbles() { $$('.bubble').forEach((b) => b.remove()); $$('.board li.bubbling').forEach((l) => l.classList.remove('bubbling')); }
   document.addEventListener('click', (e) => {
     const b = e.target.closest('[data-badge]');
@@ -388,7 +390,7 @@
       rpc('board', { p_role: null }).then((r) => { if (seq !== homeTopSeq || boardCache.everyone) return; boardCache.everyone = r; renderHomeTop(); }).catch(() => {});
       return;
     }
-    $('#home-top-list').innerHTML = rows.slice(0, 3).map((r) => `<li class="${player && r.tag === player.tag ? 'me ' : ''}r${r.rank}"><span class="rank r${r.rank}">${r.rank}</span>${avatarHtml(r.initials, false, r.colour)}<span class="name"><span class="meta">${r.plays} ${Number(r.plays) === 1 ? 'play' : 'plays'}</span></span><span class="pts">${r.score}</span></li>`).join('');
+    $('#home-top-list').innerHTML = rows.slice(0, 3).map((r) => `<li class="${player && r.tag === player.tag ? 'me ' : ''}r${r.rank}"><span class="rank r${r.rank}">${r.rank}</span>${avatarHtml(r.initials, false, r.colour)}<span class="name"></span><span class="pts">${r.score}</span></li>`).join('');
     $('#home-top-empty').hidden = rows.length > 0;
   }
   $('#home-play').addEventListener('click', playOrBuy);
@@ -529,7 +531,7 @@
     put('#prize-students', pz.students);
     put('#prize-teachers', pz.teachers);
     put('#prize-best-light', pz.best_light);
-    put('#prize-most-plays', pz.most_plays);
+    put('#prize-first-play', pz.first_play);
   }
 
   async function refreshMe() {
@@ -546,15 +548,21 @@
   // ---------------------------------------------------------------------------
   // Paying: one tap to Stripe, and back into the cabinet
   // ---------------------------------------------------------------------------
+  const limitText = (code) => code === 'DAILY_LIMIT'
+    ? `That's the €${Math.round(((spend && spend.daily) || 2000) / 100)} limit for today. Back tomorrow.`
+    : `That's the €${Math.round(((spend && spend.campaign) || 10000) / 100)} limit for the campaign. Thank you!`;
   async function buy(bundle) {
     if (!ensurePlayer(bundle)) return;
+    const amount = (BUNDLES[bundle] || BUNDLES.single).amount * 100;
+    if (spend && spend.today + amount > spend.daily) { toast(limitText('DAILY_LIMIT'), true, 5000); return; }
+    if (spend && spend.spent + amount > spend.campaign) { toast(limitText('SPEND_LIMIT'), true, 5000); return; }
     overlay('Opening secure checkout');
     try {
       const r = await api('checkout', { player_id: player.id, bundle });
       location.assign(r.url);
     } catch (ex) {
       overlay(null);
-      toast(msg(ex), true);
+      toast(ex.code === 'DAILY_LIMIT' || ex.code === 'SPEND_LIMIT' ? limitText(ex.code) : msg(ex), true, 5000);
     }
   }
 
@@ -968,7 +976,7 @@
     if (firstAsk) openContact(true);
   }
   // The reminder row on the result screen shows only while no email is on file.
-  function renderResultEmail() { $('#result-email').hidden = !player || !!player.contact_email; }
+  function renderResultEmail() { $('#result-email').hidden = !player || !!player.contact_email || !!store.get(CONTACT_ASKED_KEY); }
 
   // How far to the next place: the nudge that makes "one more go" worth it.
   async function showGap(rank) {
@@ -1128,8 +1136,6 @@
     $('#contact-close').hidden = !!first;
     $('#contact-code').textContent = player.claim_code;
     renderContactSaved();
-    const closes = closesText();
-    $('#contact-note').textContent = closes ? `Winners are emailed when the arcade closes on ${closes}.` : 'Winners are emailed when the arcade closes.';
     openSheet('contact');
     if (!first) setTimeout(() => $('#contact-email').focus(), 60);
   }
@@ -1221,11 +1227,11 @@
   if (wideBoards.addEventListener) wideBoards.addEventListener('change', onWideChange); else wideBoards.addListener(onWideChange);
   async function loadSpot() {
     try { spot = await rpc('spot_prizes'); } catch (_) { spot = null; }
-    const l = spot && spot.best_light, p = spot && spot.most_plays;
+    const l = spot && spot.best_light, f = spot && spot.first_play;
     if ($('#spot-light')) $('#spot-light').innerHTML = l ? `${nameHtml(l.initials)} · ${l.score}` : '–';
     if ($('#spot-plays')) $('#spot-plays').innerHTML = p ? `${nameHtml(p.initials)} · ${p.plays}` : '–';
     $('#lead-light').innerHTML = l ? leadHtml(l.initials, l.score, l.colour) : '';
-    $('#lead-plays').innerHTML = p ? leadHtml(p.initials, `${p.plays} ${Number(p.plays) === 1 ? 'play' : 'plays'}`, p.colour) : '';
+    $('#lead-first').innerHTML = f ? leadHtml(f.initials, f.score, f.colour) : '';
   }
   async function loadBoard() {
     if (!boardTouched) boardRole = isSchool() ? player.role : 'everyone';
@@ -1255,15 +1261,20 @@
     list.innerHTML = '';
     empty.hidden = rows.length > 0;
     const lightTag = spot && spot.best_light ? spot.best_light.tag : null;
-    const playsTag = spot && spot.most_plays ? spot.most_plays.tag : null;
-    rows.slice(0, 50).forEach((r) => {
+    const firstTag = spot && spot.first_play ? spot.first_play.tag : null;
+    const TOP = 20;
+    const shown = rows.slice(0, TOP);
+    const mine = player ? rows.findIndex((r) => r.tag === player.tag) : -1;
+    if (mine >= TOP) shown.push(null, rows[mine]);
+    shown.forEach((r) => {
       const li = document.createElement('li');
+      if (!r) { li.className = 'gap'; li.setAttribute('aria-hidden', 'true'); li.textContent = '···'; list.appendChild(li); return; }
       const me = player && r.tag === player.tag;
       li.className = (me ? 'me ' : '') + (r.rank <= 3 ? 'r' + r.rank : '');
-      const badges = [r.tag === lightTag ? ['i-flash', 'Best light', 'light'] : null, r.tag === playsTag ? ['i-repeat', 'Most plays', 'plays'] : null].filter(Boolean)
+      const badges = [r.tag === lightTag ? ['i-flash', 'Best light', 'light'] : null, r.tag === firstTag ? ['i-one', 'First play', 'first'] : null].filter(Boolean)
         .map(([i, t, k]) => `<button class="badge ${k}" type="button" data-badge="${k}" title="${t}" aria-label="${t}"><svg><use href="#${i}"/></svg></button>`).join('');
       li.innerHTML = `<span class="rank${r.rank <= 3 ? ' r' + r.rank : ''}">${r.rank}</span>${avatarHtml(r.initials, false, r.colour)}
-        <span class="name"><span class="badges">${badges}${me ? '<span class="youtag">You</span>' : ''}</span><span class="meta">${r.plays} ${Number(r.plays) === 1 ? 'play' : 'plays'}</span></span>
+        <span class="name"><span class="badges">${badges}${me ? '<span class="youtag">You</span>' : ''}</span></span>
         <span class="pts">${r.score}</span>`;
       list.appendChild(li);
     });
@@ -1389,11 +1400,12 @@
     b.classList.toggle('school', isSchool());
     const eff = tileColour((player.display || player.initials).split('#')[0], player.colour);
     $$('#you-colours .sw').forEach((x) => { const on = Number(x.dataset.colour) === eff; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
-    $('#you-email-text').textContent = player.contact_email || 'Add your email · so we can tell you if you win';
+    $('#you-email-text').textContent = player.contact_email || 'Optional';
     $('#you-code').textContent = player.claim_code;
     $('#you-credits').textContent = credits;
     $('#you-best').textContent = best == null ? '–' : best;
     $('#you-light').textContent = bestLight == null ? '–' : bestLight;
+    $('#you-spent').textContent = '€' + Math.round(((spend && spend.spent) || 0) / 100);
   }
   // A tap on a swatch colours the tile everywhere: the boards show it on their next load.
   $('#you-colours').addEventListener('click', async (e) => {

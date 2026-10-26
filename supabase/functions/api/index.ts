@@ -207,6 +207,8 @@ async function checkout(req: Request, body: Body) {
 
   const player = await rpc<{ initials: string }>("me_player", { p_id: playerId });
   const origin = siteOrigin(req);
+  // The spending limits (a day's and the campaign's): DAILY_LIMIT or SPEND_LIMIT before any checkout opens.
+  await rpc("spend_check", { p_player_id: playerId, p_amount_cents: b.amount });
 
   // Demo mode: with no Stripe key configured, plays are free and clearly labelled as such.
   if (!(await stripeKey())) {
@@ -337,7 +339,7 @@ async function stripeStatus() {
   return { connected: true, mode: key.startsWith("sk_live_") ? "live" : "test", account, webhook, from_env: fromEnv };
 }
 const SECRET_KEYS = ["stripe_secret_key", "stripe_webhook_secret", "stripe_webhook_id", "stripe_account"];
-const PRIZE_KEYS = new Set(["students", "teachers", "everyone", "best_light", "most_plays"]);
+const PRIZE_KEYS = new Set(["students", "teachers", "everyone", "best_light", "first_play"]);
 
 // body.prizes: null (leave alone) or an object whose keys are the five prize slots; each value is
 // stored as settings.prize_<key>, cut to 200 characters.

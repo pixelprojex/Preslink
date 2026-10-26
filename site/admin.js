@@ -179,7 +179,7 @@
     const sp = d.spot || {};
     const rowFor = (initials) => board.find((x) => x.initials === initials);
     lead('Best light', sp.best_light ? rowFor(sp.best_light.initials) || { initials: sp.best_light.initials, claim_code: '', player_id: '' } : null, sp.best_light ? sp.best_light.score : '');
-    lead('Most plays', sp.most_plays ? rowFor(sp.most_plays.initials) || { initials: sp.most_plays.initials, claim_code: '', player_id: '' } : null, sp.most_plays ? `${sp.most_plays.plays} plays` : '');
+    lead('First play', sp.first_play ? rowFor(sp.first_play.initials) || { initials: sp.first_play.initials, claim_code: '', player_id: '' } : null, sp.first_play ? sp.first_play.score : '');
     const dd = $('#ov-days tbody'); dd.innerHTML = '';
     (d.by_day || []).forEach((x) => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${esc(when(x.day + 'T12:00:00', false))}</td><td class="num">${x.payments}</td><td class="num">${euro(x.amount_cents)}</td>`; dd.appendChild(tr); });
     if (!dd.children.length) dd.innerHTML = '<tr><td colspan="3" class="muted">No payments yet.</td></tr>';

@@ -26,7 +26,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=39">
+  <link rel="stylesheet" href="styles.css?v=41">
 </head>
 <body>
 <div class="splash" id="splash" aria-hidden="true">
@@ -54,6 +54,7 @@
     <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#1cb0f6"/><circle cx="12" cy="9.2" r="3.6" fill="#fff"/><path d="M5.2 19a7 7 0 0 1 13.6 0 10 10 0 0 1-13.6 0z" fill="#fff"/></symbol>
     <symbol id="i-photo" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="4" fill="currentColor"/><circle cx="8.2" cy="9.3" r="1.9" fill="#fff"/><path d="M5 17.2l4.3-5.2 3 3.5 2.7-3.2 4.2 4.9z" fill="#fff"/></symbol>
     <symbol id="i-flash" viewBox="0 0 24 24"><path d="M13.2 2L4.5 13.5h6.1L9.8 22l8.7-11.5h-6.1z" fill="currentColor"/></symbol>
+    <symbol id="i-one" viewBox="0 0 24 24"><path d="M13.6 4.5h-2.4L7.9 7.2v2.9l3-2.3V19.5h2.7z" fill="currentColor"/></symbol>
     <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z" fill="currentColor"/></symbol>
   </defs>
 </svg>
@@ -192,9 +193,9 @@
         <div class="prize-band">Best light</div>
         <div class="prize-main"><div class="prize-photo"><img alt="" hidden><svg aria-hidden="true"><use href="#i-photo"/></svg></div><div class="prize-body"><p class="prize-what tba" id="prize-best-light">To be announced</p><p class="prize-how">One light closest to 1,000</p></div><div class="prize-lead" id="lead-light"></div></div>
       </article>
-      <article class="card prize" data-prize="most_plays">
-        <div class="prize-band">Most plays</div>
-        <div class="prize-main"><div class="prize-photo"><img alt="" hidden><svg aria-hidden="true"><use href="#i-photo"/></svg></div><div class="prize-body"><p class="prize-what tba" id="prize-most-plays">To be announced</p><p class="prize-how">The most plays</p></div><div class="prize-lead" id="lead-plays"></div></div>
+      <article class="card prize" data-prize="first_play">
+        <div class="prize-band">First play</div>
+        <div class="prize-main"><div class="prize-photo"><img alt="" hidden><svg aria-hidden="true"><use href="#i-photo"/></svg></div><div class="prize-body"><p class="prize-what tba" id="prize-first-play">To be announced</p><p class="prize-how">Best score on a first play</p></div><div class="prize-lead" id="lead-first"></div></div>
       </article>
     </div>
   </section>
@@ -256,6 +257,7 @@
         <div class="cell"><span>Plays left</span><strong id="you-credits">0</strong></div>
         <div class="cell"><span>Your best</span><strong id="you-best">–</strong></div>
         <div class="cell"><span>Best light</span><strong id="you-light">–</strong></div>
+        <div class="cell"><span>Spent</span><strong id="you-spent">€0</strong></div>
       </div>
       <form id="edit-form" class="card pad stack" autocomplete="off" novalidate hidden>
         <h2 class="card-h">Your initials</h2>
@@ -351,7 +353,7 @@
 <div class="sheet sheet-tall" id="sheet-contact" role="dialog" aria-modal="true" aria-labelledby="contact-title" hidden>
   <div class="sheet-head"><h2 id="contact-title">Keep your details</h2><button class="close" type="button" id="contact-close" aria-label="Close">×</button></div>
   <div class="sheet-body">
-    <p class="sheet-note" id="contact-note">Winners are emailed when the arcade closes.</p>
+    <p class="sheet-note" id="contact-note">Only to tell winners, then deleted. Under 16? Use a parent's email.</p>
     <form class="card step" id="contact-form" autocomplete="on" novalidate>
       <div class="step-h"><span class="step-n">1</span><h3>Your email</h3></div>
       <label class="field"><input id="contact-email" aria-label="Email" type="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="name@example.com" autocomplete="email"></label>
@@ -388,13 +390,13 @@
     <h3>4. Your initials, code and boards</h3>
     <p>You play under two or three initials of your choice. If someone already has them you are shown with a number, for example JAK#2. Offensive names are blocked or removed. Your four-digit code proves a score is yours and signs you in on another device. Keep it private. Everyone is on the Everyone board. Students and teachers of Presentation Brothers College may also join the Students or Teachers board by giving their school email address, which the Committee may check.</p>
     <h3>5. Prizes</h3>
-    <p>Prizes are awarded once, at the end of the campaign, for the highest score on the Everyone, Students and Teachers boards, and spot prizes for the best single light and the most plays. Equal scores: the earlier one wins. Winners are announced by the Committee at the end of the campaign and collect by showing their initials and code. Prizes are set by the Committee and have no cash alternative.</p>
+    <p>Prizes are awarded once, at the end of the campaign, for the highest score on the Everyone, Students and Teachers boards, and spot prizes for the best single light and the best score on a first play. No prize depends on how much anyone spends. Equal scores: the earlier one wins. Winners are announced by the Committee at the end of the campaign and collect by showing their initials and code. Prizes are set by the Committee and have no cash alternative.</p>
     <h3>6. Fair play</h3>
-    <p>A play is three lights; the score is the average of the three. Scores are checked by our server. Plays may be voided and players removed for cheating or tampering. The Committee's decision is final.</p>
+    <p>A play is three lights; the score is the average of the three. Each light scores up to 999 by how close to the mark you stop it, timed to the millisecond; everyone plays the same three lights on a given day, and nothing in the score is random. Phones differ very slightly in how fast they register a tap. Scores are checked by our server. Plays may be voided and players removed for cheating or tampering. The Committee's decision is final.</p>
     <h3>7. Payments and refunds</h3>
-    <p>Payments are processed by Stripe; we never see your card number. Plays are not refundable except where the law requires it or a fault on our side meant a paid play could not be used. Contact the Committee and we will put it right.</p>
+    <p>Payments are processed by Stripe; we never see your card number. Each player can spend at most €20 a day and €100 in the campaign, and the You tab shows what you have spent. Plays are not refundable except where the law requires it or a fault on our side meant a paid play could not be used. Contact the Committee and we will put it right.</p>
     <h3>8. Your data</h3>
-    <p>We store your initials, your board, your school email if you give one, your scores and play times, and a record of each payment (amount, time, Stripe reference and the email you give Stripe for your receipt). Data is held by Supabase (UK/EU) and Stripe and is deleted when the campaign ends. To have it removed sooner, contact the Committee with your initials and code.</p>
+    <p>We store your initials, your board, your school email if you give one, your scores and play times, and a record of each payment (amount, time, Stripe reference and the email you give Stripe for your receipt). Data is held by Supabase (UK/EU) and Stripe and is deleted when the campaign ends. An email you give us is used only to tell you if you win, is seen only by the Committee, and is deleted once the prizes are given; if you are under 16, give a parent's or guardian's email instead. To have your data removed sooner, contact the Committee with your initials and code.</p>
     <h3>9. Availability</h3>
     <p>The game may be unavailable at times. We are not responsible for plays lost because of your device, network or browser, though we will try to help.</p>
     <h3>10. About the facts</h3>
@@ -408,7 +410,7 @@
 <div class="overlay" id="overlay" hidden><div class="overlay-card"><div class="spinner" aria-hidden="true"></div><p id="overlay-text">One moment</p></div></div>
 
 <script src="config.js"></script>
-<script src="mock.js?v=35"></script>
-<script src="app.js?v=35"></script>
+<script src="mock.js?v=36"></script>
+<script src="app.js?v=36"></script>
 </body>
 </html>

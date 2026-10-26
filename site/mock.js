@@ -31,7 +31,11 @@
     const d = Math.abs(pos - target);
     return Math.min(999, Math.max(50, Math.round(50 + 300 * (1 - d) + 649 * Math.exp(-d / 0.05) - 12 * Math.sqrt(Math.min(d * speedMs, 3) / 3))));
   }
-  const newRounds = () => Array.from({ length: 3 }, () => ({ phase: Math.random(), target: 0.15 + Math.random() * 0.7 }));
+  // The day's three lights, the same for everyone, on the 1 ms grid (as the database's day_rounds).
+  const hashInt = (s) => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h; };
+  const newRounds = () => { const day = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Dublin' }); return [1, 2, 3].map((i) => ({ phase: (hashInt(`phase-${day}-${i}`) % 1000) / 1000, target: (150 + (hashInt(`mark-${day}-${i}`) % 701)) / 1000 })); };
+  const CAPS = { daily: 2000, campaign: 10000 };
+  const spendOf = (pid) => { const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Dublin' }); const mine = db.payments.filter((x) => x.player_id === pid); return { spent_cents: mine.reduce((s, x) => s + x.amount_cents, 0), spent_today_cents: mine.filter((x) => new Date(x.created_at || 0).toLocaleDateString('en-CA', { timeZone: 'Europe/Dublin' }) === today).reduce((s, x) => s + x.amount_cents, 0), daily_cap_cents: CAPS.daily, campaign_cap_cents: CAPS.campaign }; };
 
   function seed() {
     return { players: {}, plays: [], payments: [], sessions: {}, settings: { goal_cents: 200000, ends_on: '', prizes: {} }, blocked: [], fails: {} };
@@ -50,7 +54,7 @@
   const me = (p) => {
     const open = db.plays.find((x) => x.player_id === p.id && x.score == null && !x.voided);
     const best = scoredPlays(p.id).reduce((m, x) => Math.max(m, x.score), null);
-    return { id: p.id, tag: tag(p.id), initials: p.initials, suffix: p.suffix || 1, display: disp(p), role: p.role || 'everyone', school_email: p.school_email || null, contact_email: p.contact_email || null, claim_code: p.claim_code, credits: p.credits, banned: !!p.banned, colour: p.colour || 0, best, best_this_week: best, best_light: bestLightOf(p.id), open_play: open ? { play_id: open.id, speed_ms: open.speed_ms, rounds: open.rounds } : null };
+    return { id: p.id, tag: tag(p.id), initials: p.initials, suffix: p.suffix || 1, display: disp(p), role: p.role || 'everyone', school_email: p.school_email || null, contact_email: p.contact_email || null, claim_code: p.claim_code, credits: p.credits, banned: !!p.banned, colour: p.colour || 0, ...spendOf(p.id), best, best_this_week: best, best_light: bestLightOf(p.id), open_play: open ? { play_id: open.id, speed_ms: open.speed_ms, rounds: open.rounds } : null };
   };
   const board = (role, week, withIds) => {
     if (role === 'everyone') role = null;
@@ -74,12 +78,12 @@
       const s = playLight(x);
       if (!light || s > light.score || (s === light.score && x.finished_at < light.achieved_at)) light = { tag: tag(x.player_id), initials: disp(db.players[x.player_id]), role: db.players[x.player_id].role || 'everyone', colour: db.players[x.player_id].colour || 0, score: s, achieved_at: x.finished_at };
     });
-    let most = null;
+    let first = null; // the best score on anyone's first play
     Object.values(db.players).filter((p) => !p.banned).forEach((p) => {
-      const n = scoredPlays(p.id).length;
-      if (n && (!most || n > most.plays)) most = { tag: tag(p.id), initials: disp(p), role: p.role || 'everyone', colour: p.colour || 0, plays: n };
+      const f = scoredPlays(p.id).slice().sort((a, b) => String(a.started_at).localeCompare(String(b.started_at)))[0];
+      if (f && (!first || f.score > first.score || (f.score === first.score && f.finished_at < first.achieved_at))) first = { tag: tag(p.id), initials: disp(p), role: p.role || 'everyone', colour: p.colour || 0, score: f.score, achieved_at: f.finished_at };
     });
-    return { best_light: light, most_plays: most };
+    return { best_light: light, first_play: first };
   };
   const stats = () => ({
     total_raised_cents: db.payments.reduce((s, p) => s + p.amount_cents, 0), goal_cents: db.settings.goal_cents, prize_text: '', ends_on: db.settings.ends_on || '', prizes: db.settings.prizes || {},
@@ -162,6 +166,9 @@
       case 'checkout': {
         if (!player) fail('PLAYER_NOT_FOUND');
         const bu = BUNDLES[b.bundle]; if (!bu) fail('BAD_BUNDLE');
+        const sp = spendOf(player.id);
+        if (sp.spent_today_cents + bu.amount > sp.daily_cap_cents) fail('DAILY_LIMIT');
+        if (sp.spent_cents + bu.amount > sp.campaign_cap_cents) fail('SPEND_LIMIT');
         const sid = 'cs_test_mock' + uuid().replace(/-/g, '');
         db.sessions[sid] = { id: sid, player_id: player.id, bundle: b.bundle, paid: true };
         save(db);
@@ -281,7 +288,7 @@
           case 'settings': {
             if (b.goal_cents != null) db.settings.goal_cents = b.goal_cents;
             if (b.ends_on != null) { if (b.ends_on !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(b.ends_on)) fail('BAD_DATE'); db.settings.ends_on = b.ends_on; }
-            if (b.prizes && typeof b.prizes === 'object') { ['students', 'teachers', 'everyone', 'best_light', 'most_plays'].forEach((k) => { if (b.prizes[k] != null) db.settings.prizes[k] = String(b.prizes[k]).slice(0, 200); }); }
+            if (b.prizes && typeof b.prizes === 'object') { ['students', 'teachers', 'everyone', 'best_light', 'first_play'].forEach((k) => { if (b.prizes[k] != null) db.settings.prizes[k] = String(b.prizes[k]).slice(0, 200); }); }
             save(db); return { ok: true };
           }
           default: fail('BAD_ADMIN_OP');

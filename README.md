@@ -105,6 +105,7 @@ server can read them. The free plays switch off by themselves the moment Stripe 
 | `supabase/migrations/0018_first_curve.sql` | The first game's curve back: the cube of the closeness over the whole bar, 999 ceiling, cusp at the top |
 | `supabase/migrations/0019_any_school_email.sql` | Any local part on a school email; the general email check only asks for something@something.tld |
 | `supabase/migrations/0023_admin_console.sql` | The console: the site content document (home words, notice, About stories and photos, contact details) carried by `stats()`, payment and player search with paging, a public `site` bucket for photos |
+| `supabase/migrations/0025_safeguards.sql` | Safeguards: the same three lights for everyone each day on the 1 ms grid (`day_rounds`), spending limits per player checked before every checkout (`spend_check`, settings `daily_cap_cents` 2000 and `campaign_cap_cents` 10000) with the total on the player's record, and the first-play spot prize in place of most plays |
 | `supabase/migrations/0024_tile_colours.sql` | A colour for every initials tile: `players.colour` (0 means one picked from the letters, 1 to 8 the player's choice on the You tab), `set_colour`, and `board()`, `spot_prizes()` and `me_player()` carrying it |
 | `supabase/migrations/0022_peak_curve.sql` | A steep peak at the line on a gentle ramp across the bar: ordinary plays land in the hundreds, the far end still scores, 999 needs the line itself |
 | `supabase/migrations/0021_even_curve.sql` | Scores spread evenly over the whole bar: 999 on the line down to about 60 at the far end, by the square of the distance |
@@ -196,7 +197,7 @@ the request came from.
 ### 6. Prizes at the end
 
 1. The owner sets the closing date and the five prize texts (Everyone, Students, Teachers, Best light,
-   Most plays), each with a photo if there is one, through the API with the owner code (below). They
+   First play), each with a photo if there is one, through the API with the owner code (below). They
    appear on the Prizes page as typed, one boxed card per prize; an empty line shows "To be announced".
 2. At the end, **Overview** shows the leader of each board and the two spot-prize holders, with their codes
    and emails; **Players** has everyone with a CSV download for the emails.
@@ -239,7 +240,7 @@ The content document (`set_content`) holds: `hero.title`, `hero.subtitle`, `noti
 `phone`, `instagram`, `website`) and `prize_photos` (`everyone`, `students`, `teachers`, `best_light`,
 `most_plays`); `upload_image` takes `type` and base64 `data` and returns a public `url` to put in it.
 
-- **Prizes** (owner): five plain text fields and a photo each, shown on the Prizes page as typed (the photos are
+- **Prizes** (owner): five plain text fields (Everyone, Students, Teachers, Best light, First play) and a photo each, shown on the Prizes page as typed (the photos are
   kept in the site content document as `prize_photos`).
 - **Site content** (owner): the home title and the line under it, a notice shown on Home while set, the About page's
   committee card photo, heading and text, the About stories (a photo, a heading and a line each, added, reordered
@@ -342,3 +343,22 @@ This is a paid game of skill with prizes awarded once at the end of the campaign
 school should confirm it is comfortable with that under the Gambling Regulation Act 2024 and Stripe's terms
 for contests, and decide the parental-consent wording in the terms. The terms are drafted; they are not legal
 advice.
+
+## Safeguards
+
+The arcade is open to under-18s and takes money, so it keeps to a few rules (none of this is legal advice;
+get a written view from a solicitor, or from the GRAI or the local Garda licensing office, before taking
+real money):
+
+- **No chance in who wins.** Everyone plays the same three lights on a given day, and every mark sits on the
+  same 1 ms grid as taps, so a perfect tap is possible on every light. Nothing in a score is random.
+- **No prize, badge or figure tied to spending.** The spot prizes are the best single light and the best
+  score on a first play; the public boards show scores, not how many plays anyone has bought, and stop at
+  the top 20 (a player further down sees their own row).
+- **Spending limits.** €20 a day and €100 in the campaign per player, checked by the server before every
+  checkout; the You tab shows what the player has spent. Change them with
+  `update public.settings set value = '3000' where key = 'daily_cap_cents';` (and `campaign_cap_cents`).
+- **Children's data.** The email is optional, used only to tell winners, seen only by the committee and
+  deleted once the prizes are given; under-16s are asked for a parent's email. After the prizes:
+  `update public.players set contact_email = null;`
+- **Contrast.** Initials tiles pass 4.5:1 with their white letters.
