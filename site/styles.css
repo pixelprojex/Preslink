@@ -681,6 +681,14 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
   .tabbar .side-foot img { width: 18px; height: 22px; flex: none; }
   [data-screen="signin"] { max-width: 560px; }
 }
+/* iPad portrait keeps the floating bar; the docked full-width bar is for phones only. */
+@media (min-width: 700px) and (max-width: 899px) {
+  :root { --tab-gap: 12px; }
+  .shell { padding-bottom: calc(var(--tab-h) + var(--tab-gap) + 28px + env(safe-area-inset-bottom)); }
+  .tabbar { left: 16px; right: 16px; bottom: calc(var(--tab-gap) + env(safe-area-inset-bottom)); max-width: 560px; margin: 0 auto; height: var(--tab-h); padding: 5px; border-radius: 20px; border-top: 0; background: rgba(255, 255, 255, .94); -webkit-backdrop-filter: saturate(180%) blur(18px); backdrop-filter: saturate(180%) blur(18px); box-shadow: 0 8px 24px rgba(28, 28, 30, .08), 0 1px 2px rgba(28, 28, 30, .05); }
+  .tabbar::after { display: none; }
+  .tab-ind { top: 5px; left: 5px; width: calc((100% - 10px) / 4); height: calc(100% - 10px); border-radius: 15px; }
+}
 @keyframes modalin { from { opacity: 0; transform: translateY(-50%) scale(.96); } to { opacity: 1; transform: translateY(-50%) scale(1); } }
 @media (min-width: 1100px) {
   .appbar, .screen, .splash-credit { max-width: 900px; }
