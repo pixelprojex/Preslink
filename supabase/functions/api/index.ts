@@ -2,7 +2,7 @@
 //
 // Dependency-free on purpose: Postgres is reached through PostgREST RPC with the
 // service-role key, Stripe through its REST API. Every action is a POST with a
-// JSON body: { action: "register" | "update" | "school" | "contact" | "signin" | "me" | "checkout" | "confirm" | "start" | "submit" | "admin", ... }.
+// JSON body: { action: "register" | "update" | "school" | "contact" | "signin" | "colour" | "me" | "checkout" | "confirm" | "start" | "submit" | "admin", ... }.
 // "register" needs no name: the database assigns a random three-letter one. New players start on the
 // Everyone board (role "everyone"); "school" moves a player onto the Students or Teachers board by
 // checking the shape of a school email address (students @pbccork.ie, teachers @pbc-cork.ie; nothing is sent).
@@ -296,6 +296,14 @@ async function submit(req: Request, body: Body) {
   });
 }
 
+// The tile colour: 0 means the one the site picks from the letters, 1 to 8 a chosen one.
+async function colour(body: Body) {
+  const playerId = requireUuid(body.player_id, "BAD_PLAYER");
+  const c = Number(body.colour);
+  if (!Number.isInteger(c) || c < 0 || c > 8) throw new HttpError(400, "BAD_COLOUR");
+  return await rpc("set_colour", { p_id: playerId, p_colour: c });
+}
+
 async function signin(body: Body) {
   const initials = String(body.initials ?? "").toUpperCase().trim();
   const code = String(body.code ?? "").replace(/\D/g, "");
@@ -506,6 +514,7 @@ export async function handler(req: Request): Promise<Response> {
       case "school": return json(await school(body));
       case "contact": return json(await contact(body));
       case "signin": return json(await signin(body));
+      case "colour": return json(await colour(body));
       case "admin": return json(await admin(body));
       case "me": return json(await me(body));
       case "checkout": return json(await checkout(req, body));

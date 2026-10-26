@@ -21,7 +21,7 @@ already has the same letters you still get them, shown with a small blue numbere
 carries a 2), so nobody is ever refused.
 
 The look follows the conventions of native apps (grouped white cards on a soft grey canvas, large titles,
-segmented controls, avatars, a progress ring) in PresLink's colours: green for actions, orange for the
+segmented controls, initials tiles in one of eight flat colours that the player can change on the You tab, a progress ring) in PresLink's colours: green for actions, orange for the
 light and the ring, the yellow of the Presentation Brothers cross for the logo. The logo and the running
 total raised sit at the top of every screen; there is a tab bar (Play, Board, About, You), a Prizes page
 of boxed colour cards with a photo slot each, and very little text. The same pages lay themselves out for
@@ -64,7 +64,7 @@ counter so the site feels real; clear them before launch (`docs/admin.sql`).
 Optional: in Netlify, **Site configuration → Site details → Change site name** lets you pick a
 nicer address, for example `preslink-arcade`.
 
-The committee console is at your link with `/admin.html` on the end (also the Committee row on the You tab). Use the committee code you were given; the eye on the field shows what you typed. The console is read-only: it shows the money, the payments, the players and the leaders, and it cannot change the site. Prizes, the words and photos, the closing date and goal, Stripe, bans and the committee code are the owner's to change, through the API with the owner code (see "What the owner changes" below).
+The committee console is at your link with `/admin.html` on the end; the arcade itself has no link to it, so send the committee that address. Use the committee code you were given; the eye on the field shows what you typed. The console is read-only: it shows the money, the payments, the players and the leaders, and it cannot change the site. Prizes, the words and photos, the closing date and goal, Stripe, bans and the committee code are the owner's to change, through the API with the owner code (see "What the owner changes" below).
 
 To take real money later: an adult opens a Stripe account for the charity, then in the console
 under **Stripe** pastes the Stripe secret key and taps **Connect**. The site checks the key
@@ -105,6 +105,7 @@ server can read them. The free plays switch off by themselves the moment Stripe 
 | `supabase/migrations/0018_first_curve.sql` | The first game's curve back: the cube of the closeness over the whole bar, 999 ceiling, cusp at the top |
 | `supabase/migrations/0019_any_school_email.sql` | Any local part on a school email; the general email check only asks for something@something.tld |
 | `supabase/migrations/0023_admin_console.sql` | The console: the site content document (home words, notice, About stories and photos, contact details) carried by `stats()`, payment and player search with paging, a public `site` bucket for photos |
+| `supabase/migrations/0024_tile_colours.sql` | A colour for every initials tile: `players.colour` (0 means one picked from the letters, 1 to 8 the player's choice on the You tab), `set_colour`, and `board()`, `spot_prizes()` and `me_player()` carrying it |
 | `supabase/migrations/0022_peak_curve.sql` | A steep peak at the line on a gentle ramp across the bar: ordinary plays land in the hundreds, the far end still scores, 999 needs the line itself |
 | `supabase/migrations/0021_even_curve.sql` | Scores spread evenly over the whole bar: 999 on the line down to about 60 at the far end, by the square of the distance |
 | `supabase/migrations/0020_email_spaces_case.sql` | Emails are lower-cased and stripped of every space before the check, so capitals and stray spaces never turn an address away |
@@ -203,7 +204,7 @@ the request came from.
 
 ## The committee console
 
-A separate, plain page at `/admin.html` (also the Committee row on the You tab): white, system type, a menu
+A separate, plain page at `/admin.html`, reached only by its address (the arcade has no link to it): white, system type, a menu
 on the left (a strip across the top on a phone), nothing of the arcade's look. It needs the committee
 code, which is stored only as a hash in the database and locks for 15 minutes after 8 wrong tries; every
 secret field has an eye to show what was typed. The pages:

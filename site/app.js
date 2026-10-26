@@ -30,8 +30,11 @@
   const nameHtml = (display) => { const [l, n] = String(display || '').split('#'); return esc(l) + (n ? `<span class="dup inline">${esc(n)}</span>` : ''); };
   // A coloured circle with the letters; the tint comes from the letters so it is stable. The bubble sits on the rim.
   // The leader line on a prize card: the word, the bubble, the name, the score on the right.
-  const leadHtml = (initials, score) => `<span class="lead-k">Leading</span>${avatarHtml(initials)}<strong>${esc(String(score))}</strong>`;
-  const avatarHtml = (display, big) => { const [l, n] = String(display || '').split('#'); let h = 0; for (const c of l) h = (h * 31 + c.charCodeAt(0)) % 5; return `<span class="avatar c${h + 1}${big ? ' big' : ''}">${esc(l)}${n ? `<span class="dup">${esc(n)}</span>` : ''}</span>`; };
+  const leadHtml = (initials, score, colour) => `<span class="lead-k">Leading</span>${avatarHtml(initials, false, colour)}<strong>${esc(String(score))}</strong>`;
+  // Every tile has one of eight colours: the player's choice (1 to 8), or one picked from the letters.
+  const TILE_COLOURS = 8;
+  const tileColour = (letters, colour) => { const c = Number(colour) || 0; if (c >= 1 && c <= TILE_COLOURS) return c; let h = 0; for (const ch of String(letters)) h = (h * 31 + ch.charCodeAt(0)) % TILE_COLOURS; return h + 1; };
+  const avatarHtml = (display, big, colour) => { const [l, n] = String(display || '').split('#'); return `<span class="avatar k${tileColour(l, colour)}${big ? ' big' : ''}">${esc(l)}${n ? `<span class="dup">${esc(n)}</span>` : ''}</span>`; };
   const boardName = (role) => BOARD_NAMES[role] || 'Everyone';
   const CREST_IMG = '<img class="crest-ic" src="assets/crest.svg?v=10" alt="">';
 
@@ -106,7 +109,7 @@
   }
   const clearPlayer = () => { player = null; credits = 0; openPlay = null; nextPlay = null; best = null; bestLight = null; store.del(STORAGE_KEY); store.del(SCHOOL_ASKED_KEY); store.del(CODE_SHOWN_KEY); store.del(CONTACT_ASKED_KEY); store.del('preslink.prevBest'); store.del('preslink.prevRank'); };
   function adoptPlayer(p) {
-    player = { id: p.id, tag: p.tag, initials: p.initials, suffix: p.suffix || 1, display: p.display || p.initials, role: p.role || 'everyone', claim_code: p.claim_code, school_email: p.school_email || null, contact_email: p.contact_email || null };
+    player = { id: p.id, tag: p.tag, initials: p.initials, suffix: p.suffix || 1, display: p.display || p.initials, role: p.role || 'everyone', claim_code: p.claim_code, school_email: p.school_email || null, contact_email: p.contact_email || null, colour: Number(p.colour) || 0 };
     credits = p.credits || 0;
     openPlay = p.open_play || null;
     best = p.best != null ? p.best : (p.best_this_week == null ? null : p.best_this_week);
@@ -320,7 +323,6 @@
     else location.hash = name;
   }
   function render(name) {
-    if (name === 'admin') { location.href = 'admin.html'; return; } // the committee console is its own page
     if (!SCREENS.includes(name)) name = 'home';
     if (name === 'play' && !player) { go('home'); return; }
 
@@ -383,10 +385,10 @@
     const rows = boardCache.everyone;
     if (!rows) {
       const seq = ++homeTopSeq;
-      rpc('leaderboard', { p_role: null }).then((r) => { if (seq !== homeTopSeq || boardCache.everyone) return; boardCache.everyone = r; renderHomeTop(); }).catch(() => {});
+      rpc('board', { p_role: null }).then((r) => { if (seq !== homeTopSeq || boardCache.everyone) return; boardCache.everyone = r; renderHomeTop(); }).catch(() => {});
       return;
     }
-    $('#home-top-list').innerHTML = rows.slice(0, 3).map((r) => `<li class="${player && r.tag === player.tag ? 'me ' : ''}r${r.rank}"><span class="rank r${r.rank}">${r.rank}</span>${avatarHtml(r.initials)}<span class="name"><span class="meta">${r.plays} ${Number(r.plays) === 1 ? 'play' : 'plays'}</span></span><span class="pts">${r.score}</span></li>`).join('');
+    $('#home-top-list').innerHTML = rows.slice(0, 3).map((r) => `<li class="${player && r.tag === player.tag ? 'me ' : ''}r${r.rank}"><span class="rank r${r.rank}">${r.rank}</span>${avatarHtml(r.initials, false, r.colour)}<span class="name"><span class="meta">${r.plays} ${Number(r.plays) === 1 ? 'play' : 'plays'}</span></span><span class="pts">${r.score}</span></li>`).join('');
     $('#home-top-empty').hidden = rows.length > 0;
   }
   $('#home-play').addEventListener('click', playOrBuy);
@@ -933,8 +935,9 @@
     kicker.textContent = newBest ? 'New best' : movedUp ? `Up ${prevRank - rank} ${prevRank - rank === 1 ? 'place' : 'places'}` : titleFor(score);
     if (r) { store.set('preslink.prevBest', best); if (rank != null) store.set('preslink.prevRank', rank); }
     countUp($('#result-score'), 0, score, 900, String);
-    const bestRound = Math.max(...game.scores);
-    $('#result-rounds').innerHTML = '<span class="lbl">3 lights</span>' + game.scores.map((s) => `<span class="chip${s === bestRound ? ' top' : ''}">${s}</span>`).join('');
+    const lights = r && Array.isArray(r.rounds) && r.rounds.length === ROUNDS ? r.rounds.map((x) => Number(x)) : game.scores;
+    const bestRound = Math.max(...lights);
+    $('#result-rounds').innerHTML = '<span class="lbl">3 lights</span>' + lights.map((s) => `<span class="chip${s === bestRound ? ' top' : ''}">${s}</span>`).join('');
     $('#result-best').textContent = r && best != null ? best : '–';
     $('#result-rank').textContent = rank ? '#' + rank : '–';
     $('#result-rank-sub').textContent = '';
@@ -971,7 +974,7 @@
   async function showGap(rank) {
     const el = $('#result-rank-sub');
     try {
-      const rows = await rpc('leaderboard', { p_role: null });
+      const rows = await rpc('board', { p_role: null });
       if (rank === 1) { el.textContent = 'Top of the board'; el.className = 'good'; return; }
       const above = rows.find((x) => x.rank === rank - 1);
       if (above) { el.textContent = `${above.score - best + 1} to #${rank - 1}`; el.className = ''; }
@@ -1136,11 +1139,12 @@
   $('#contact-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!player) return;
-    const email = cleanEmail($('#contact-email').value);
-    if (!ANY_EMAIL.test(email)) { showError('contact-error', MESSAGES.BAD_EMAIL); return; }
+    let email = cleanEmail($('#contact-email').value);
     const school = $('#contact-pbc').checked ? cleanEmail($('#contact-school').value) : '';
     if ($('#contact-pbc').checked && !school) { showError('contact-error', 'Add your school email, or switch that off.'); return; }
     if (school && !isSchoolEmail(school)) { showError('contact-error', 'That is not a school email.'); return; }
+    if (!email && school) email = school; // the school address on its own is enough: it is where the news goes too
+    if (!ANY_EMAIL.test(email)) { showError('contact-error', email ? MESSAGES.BAD_EMAIL : 'Add an email address.'); return; }
     const btn = $('#contact-submit');
     btn.disabled = true;
     try {
@@ -1202,7 +1206,7 @@
     const seq = ++boardSeq;
     let lists;
     try {
-      lists = await Promise.all([...ROLES.map((role) => rpc('leaderboard', { p_role: role === 'everyone' ? null : role })), loadSpot(), refreshStats()]);
+      lists = await Promise.all([...ROLES.map((role) => rpc('board', { p_role: role === 'everyone' ? null : role })), loadSpot(), refreshStats()]);
     } catch (ex) { toast(msg(ex), true); return; }
     if (seq !== boardSeq) return;
     ROLES.forEach((role, i) => {
@@ -1220,8 +1224,8 @@
     const l = spot && spot.best_light, p = spot && spot.most_plays;
     if ($('#spot-light')) $('#spot-light').innerHTML = l ? `${nameHtml(l.initials)} · ${l.score}` : '–';
     if ($('#spot-plays')) $('#spot-plays').innerHTML = p ? `${nameHtml(p.initials)} · ${p.plays}` : '–';
-    $('#lead-light').innerHTML = l ? leadHtml(l.initials, l.score) : '';
-    $('#lead-plays').innerHTML = p ? leadHtml(p.initials, `${p.plays} ${Number(p.plays) === 1 ? 'play' : 'plays'}`) : '';
+    $('#lead-light').innerHTML = l ? leadHtml(l.initials, l.score, l.colour) : '';
+    $('#lead-plays').innerHTML = p ? leadHtml(p.initials, `${p.plays} ${Number(p.plays) === 1 ? 'play' : 'plays'}`, p.colour) : '';
   }
   async function loadBoard() {
     if (!boardTouched) boardRole = isSchool() ? player.role : 'everyone';
@@ -1231,7 +1235,7 @@
     const seq = ++boardSeq;
     let rows = [];
     try {
-      [rows] = await Promise.all([rpc('leaderboard', { p_role: boardRole === 'everyone' ? null : boardRole }), loadSpot(), refreshStats()]);
+      [rows] = await Promise.all([rpc('board', { p_role: boardRole === 'everyone' ? null : boardRole }), loadSpot(), refreshStats()]);
     } catch (ex) { toast(msg(ex), true); return; }
     if (seq !== boardSeq) return; // a newer tab tap is in flight
     const same = boardCache[boardRole] && JSON.stringify(boardCache[boardRole]) === JSON.stringify(rows);
@@ -1242,7 +1246,7 @@
   const boardCache = {};
   function prefetchBoards() {
     for (const role of ['everyone', isSchool() ? player.role : null]) {
-      if (role) rpc('leaderboard', { p_role: role === 'everyone' ? null : role }).then((rows) => { boardCache[role] = rows; }).catch(() => {});
+      if (role) rpc('board', { p_role: role === 'everyone' ? null : role }).then((rows) => { boardCache[role] = rows; }).catch(() => {});
     }
   }
   function renderBoard(rows, role) {
@@ -1258,7 +1262,7 @@
       li.className = (me ? 'me ' : '') + (r.rank <= 3 ? 'r' + r.rank : '');
       const badges = [r.tag === lightTag ? ['i-flash', 'Best light', 'light'] : null, r.tag === playsTag ? ['i-repeat', 'Most plays', 'plays'] : null].filter(Boolean)
         .map(([i, t, k]) => `<button class="badge ${k}" type="button" data-badge="${k}" title="${t}" aria-label="${t}"><svg><use href="#${i}"/></svg></button>`).join('');
-      li.innerHTML = `<span class="rank${r.rank <= 3 ? ' r' + r.rank : ''}">${r.rank}</span>${avatarHtml(r.initials)}
+      li.innerHTML = `<span class="rank${r.rank <= 3 ? ' r' + r.rank : ''}">${r.rank}</span>${avatarHtml(r.initials, false, r.colour)}
         <span class="name"><span class="badges">${badges}${me ? '<span class="youtag">You</span>' : ''}</span><span class="meta">${r.plays} ${Number(r.plays) === 1 ? 'play' : 'plays'}</span></span>
         <span class="pts">${r.score}</span>`;
       list.appendChild(li);
@@ -1278,10 +1282,10 @@
     loadSpot();
     await Promise.all(['everyone', 'student', 'teacher'].map(async (role) => {
       try {
-        const rows = await rpc('leaderboard', { p_role: role === 'everyone' ? null : role });
+        const rows = await rpc('board', { p_role: role === 'everyone' ? null : role });
         boardCache[role] = rows;
         const top = rows[0];
-        $('#lead-' + role).innerHTML = top ? leadHtml(top.initials, top.score) : '';
+        $('#lead-' + role).innerHTML = top ? leadHtml(top.initials, top.score, top.colour) : '';
       } catch (_) { /* leave blank */ }
     }));
   }
@@ -1379,16 +1383,28 @@
   function renderYou() {
     if (!player) return;
     $('#you-name').innerHTML = nameHtml(player.display || player.initials);
-    $('#you-avatar').outerHTML = avatarHtml(player.display || player.initials, true).replace('<span ', '<span id="you-avatar" ');
+    $('#you-avatar').outerHTML = avatarHtml(player.display || player.initials, true, player.colour).replace('<span ', '<span id="you-avatar" ');
     const b = $('#you-board');
-    b.innerHTML = isSchool() ? `${CREST_IMG}${esc(boardName(player.role))} board · ${esc(player.school_email || 'school')}` : 'Everyone board';
+    b.innerHTML = isSchool() ? `${CREST_IMG}${esc(boardName(player.role))} board<span class="profile-mail">${esc(player.school_email || '')}</span>` : 'Everyone board';
     b.classList.toggle('school', isSchool());
+    const eff = tileColour((player.display || player.initials).split('#')[0], player.colour);
+    $$('#you-colours .sw').forEach((x) => { const on = Number(x.dataset.colour) === eff; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
     $('#you-email-text').textContent = player.contact_email || 'Add your email · so we can tell you if you win';
     $('#you-code').textContent = player.claim_code;
     $('#you-credits').textContent = credits;
     $('#you-best').textContent = best == null ? '–' : best;
     $('#you-light').textContent = bestLight == null ? '–' : bestLight;
   }
+  // A tap on a swatch colours the tile everywhere: the boards show it on their next load.
+  $('#you-colours').addEventListener('click', async (e) => {
+    const sw = e.target.closest('.sw');
+    if (!sw || !player) return;
+    try {
+      adoptPlayer(await api('colour', { player_id: player.id, colour: Number(sw.dataset.colour) }));
+      Object.keys(boardCache).forEach((k) => { delete boardCache[k]; });
+      renderYou();
+    } catch (ex) { toast(msg(ex), true); }
+  });
   $('#you-edit').addEventListener('click', () => {
     const f = $('#edit-form');
     f.hidden = !f.hidden;

@@ -50,7 +50,7 @@
   const me = (p) => {
     const open = db.plays.find((x) => x.player_id === p.id && x.score == null && !x.voided);
     const best = scoredPlays(p.id).reduce((m, x) => Math.max(m, x.score), null);
-    return { id: p.id, tag: tag(p.id), initials: p.initials, suffix: p.suffix || 1, display: disp(p), role: p.role || 'everyone', school_email: p.school_email || null, contact_email: p.contact_email || null, claim_code: p.claim_code, credits: p.credits, banned: !!p.banned, best, best_this_week: best, best_light: bestLightOf(p.id), open_play: open ? { play_id: open.id, speed_ms: open.speed_ms, rounds: open.rounds } : null };
+    return { id: p.id, tag: tag(p.id), initials: p.initials, suffix: p.suffix || 1, display: disp(p), role: p.role || 'everyone', school_email: p.school_email || null, contact_email: p.contact_email || null, claim_code: p.claim_code, credits: p.credits, banned: !!p.banned, colour: p.colour || 0, best, best_this_week: best, best_light: bestLightOf(p.id), open_play: open ? { play_id: open.id, speed_ms: open.speed_ms, rounds: open.rounds } : null };
   };
   const board = (role, week, withIds) => {
     if (role === 'everyone') role = null;
@@ -65,19 +65,19 @@
     return Object.values(best).map((p) => ({ ...p, player: db.players[p.player_id] }))
       .filter((p) => !role || p.player.role === role)
       .sort((a, b) => b.score - a.score || a.finished_at.localeCompare(b.finished_at))
-      .map((p, i) => ({ rank: i + 1, tag: tag(p.player_id), initials: disp(p.player), role: p.player.role || 'everyone', score: p.score, achieved_at: p.finished_at, plays: p.plays, best_light: bestLightOf(p.player_id),
+      .map((p, i) => ({ rank: i + 1, tag: tag(p.player_id), initials: disp(p.player), role: p.player.role || 'everyone', colour: p.player.colour || 0, score: p.score, achieved_at: p.finished_at, plays: p.plays, best_light: bestLightOf(p.player_id),
         ...(withIds ? { play_id: p.id, player_id: p.player_id, claim_code: p.player.claim_code, banned: !!p.player.banned } : {}) }));
   };
   const spotPrizes = () => {
     let light = null;
     db.plays.filter((x) => x.score != null && !x.voided && db.players[x.player_id] && !db.players[x.player_id].banned).forEach((x) => {
       const s = playLight(x);
-      if (!light || s > light.score || (s === light.score && x.finished_at < light.achieved_at)) light = { tag: tag(x.player_id), initials: disp(db.players[x.player_id]), role: db.players[x.player_id].role || 'everyone', score: s, achieved_at: x.finished_at };
+      if (!light || s > light.score || (s === light.score && x.finished_at < light.achieved_at)) light = { tag: tag(x.player_id), initials: disp(db.players[x.player_id]), role: db.players[x.player_id].role || 'everyone', colour: db.players[x.player_id].colour || 0, score: s, achieved_at: x.finished_at };
     });
     let most = null;
     Object.values(db.players).filter((p) => !p.banned).forEach((p) => {
       const n = scoredPlays(p.id).length;
-      if (n && (!most || n > most.plays)) most = { tag: tag(p.id), initials: disp(p), role: p.role || 'everyone', plays: n };
+      if (n && (!most || n > most.plays)) most = { tag: tag(p.id), initials: disp(p), role: p.role || 'everyone', colour: p.colour || 0, plays: n };
     });
     return { best_light: light, most_plays: most };
   };
@@ -117,6 +117,11 @@
         player.contact_email = email; save(db);
         return me(player);
       }
+      case 'colour': {
+        const p = db.players[b.player_id]; if (!p) fail('PLAYER_NOT_FOUND');
+        const c = Number(b.colour); if (!Number.isInteger(c) || c < 0 || c > 8) fail('BAD_COLOUR');
+        p.colour = c; save(db); return me(p);
+      }
       case 'register': {
         b.role = b.role || 'everyone';
         if (!['student', 'teacher', 'everyone'].includes(b.role)) fail('BAD_ROLE');
@@ -126,7 +131,7 @@
           if (BLOCKED.includes(initials) || db.blocked.includes(initials)) fail('BLOCKED_INITIALS');
         } else initials = randomInitials();
         const id = uuid();
-        db.players[id] = { id, initials, suffix: nextSuffix(initials), role: b.role, claim_code: String(Math.floor(Math.random() * 10000)).padStart(4, '0'), credits: 0, banned: false };
+        db.players[id] = { id, initials, suffix: nextSuffix(initials), role: b.role, claim_code: String(Math.floor(Math.random() * 10000)).padStart(4, '0'), credits: 0, banned: false, colour: 0 };
         save(db);
         return me(db.players[id]);
       }
@@ -292,6 +297,7 @@
     if (name === 'stats') return stats();
     if (name === 'site_content') return db.settings.content || {};
     if (name === 'leaderboard') return board(args.p_role, args.p_week);
+    if (name === 'board') return board(args.p_role, null);
     if (name === 'spot_prizes') return spotPrizes();
     if (name === 'past_winners') return [];
     fail('UNKNOWN_RPC');
