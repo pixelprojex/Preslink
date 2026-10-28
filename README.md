@@ -59,8 +59,8 @@ step at the end of `docs/admin.sql`), or test scores will lead the boards and sp
    **Preslink** repository. Choose the branch **claude/trusting-goodall-qzegrn**. In
    **Publish directory** type `site`. Leave **Build command** empty. Click **Deploy**.
 3. Wait about a minute. Netlify shows a link like `https://something.netlify.app`. Open it on
-   your device. That is the site. The A3 poster is at `/poster.html`: its Save as PDF button downloads
-   `/poster.pdf`, the print file (A3, QR pointing at preslink.netlify.app).
+   your device. That is the site. The posters and share pictures are at `/share` (see **Posters and
+   sharing** below).
 
 Optional: in Netlify, **Site configuration → Site details → Change site name** lets you pick a
 nicer address, for example `preslink-arcade`.
@@ -85,7 +85,7 @@ server can read them. The free plays switch off by themselves the moment Stripe 
 | `site/admin.html`, `site/admin.css`, `site/admin.js` | The committee console: its own plain page with a menu (overview, payments, players, prizes, site content, campaign, Stripe, names, committee code) |
 | `site/config.js` | **The only file you must edit**: Supabase URL and publishable key |
 | `site/mock.js` | Demo backend. Active only while `config.js` is empty, so the site works before Supabase is wired |
-| `site/qr.html` | Printable QR poster that always encodes the live address |
+| `site/qr.html` | Old poster address; forwards to `poster.html` |
 | `supabase/migrations/0001_init.sql` | Database tables and functions |
 | `supabase/migrations/0002_names_signin_admin.sql` | Unique names, name blocklist, sign back in, bans, goal and prize settings, committee functions |
 | `supabase/migrations/0003_auto_names_admin_v2.sql` | Random names on first tap, name and board changes, richer committee overview, player lookup, name reset |
@@ -113,8 +113,11 @@ server can read them. The free plays switch off by themselves the moment Stripe 
 | `supabase/migrations/0022_peak_curve.sql` | A steep peak at the line on a gentle ramp across the bar: ordinary plays land in the hundreds, the far end still scores, 999 needs the line itself |
 | `supabase/migrations/0021_even_curve.sql` | Scores spread evenly over the whole bar: 999 on the line down to about 60 at the far end, by the square of the distance |
 | `supabase/migrations/0020_email_spaces_case.sql` | Emails are lower-cased and stripped of every space before the check, so capitals and stray spaces never turn an address away |
-| `site/poster.html` | A3 poster preview with a large QR code (vendored encoder in `site/vendor/`); its Save as PDF button downloads the file below |
-| `site/poster.pdf` | The poster rendered to A3 PDF for the printer, QR pointing at preslink.netlify.app (re-render it if the address changes) |
+| `supabase/migrations/0028_prize_mode.sql` | The prize switch: setting `prize_mode` ('prizes' or 'honours'), carried by `stats()`; in 'honours' the site talks of honours instead of prizes |
+| `site/poster.html` | The poster in five formats: `?f=a3` and `?f=a4` to print (QR from the vendored encoder in `site/vendor/`), `?f=og`, `?f=post` and `?f=story` for the share pictures |
+| `site/posters/` | The print files: `preslink-arcade-a3.pdf` and `preslink-arcade-a4.pdf` |
+| `site/share.html`, `site/share/` | The share kit at `/share`: the link, the share pictures with one-tap sharing, ready-made words and the posters |
+| `site/fonts/` | Inter (OFL): the app's variable font, and static weights in `fonts/static/` that the posters use so PDFs embed ordinary TrueType |
 | `site/assets/` | Logo (`logo.svg`, `cross.svg`), icons, and the photo slots `photo-*.svg` to replace with real photos |
 | `supabase/functions/api/index.ts` | Register, checkout, confirm payment, start play, submit score, committee actions (including Stripe connect) |
 | `supabase/functions/stripe-webhook/index.ts` | Receives Stripe's payment confirmation |
@@ -192,9 +195,9 @@ the request came from.
 2. Switch the Stripe dashboard to **Live mode**, copy the **live** secret key (`sk_live_...`) and on
    the Committee screen under **Payments** tap **Connect** with it. The site swaps the webhook and the
    secrets for you; the card should now say Live.
-3. Fill the yellow placeholders in the terms in `site/index.html` (committee contact, where winners are
-   announced). Have the school check the terms and the legal position of a paid game with a prize.
-4. Open `/poster.html`, tap Save as PDF, and print the PDF at A3.
+3. Work through **Before taking real money** below (the organiser's details, the prize decision, Stripe's
+   terms link).
+4. Print the posters from `/share` and send the link round (see **Posters and sharing**).
 5. Make one real €2 payment yourself to be sure, then announce it.
 
 ### 6. Prizes at the end
@@ -341,12 +344,67 @@ With `config.js` empty the site runs in demo mode: payments and scores are simul
 few example players are on the leaderboard. The demo committee code is `PRESLINK`. Fill in `config.js` to
 talk to the real backend.
 
-## Legal note
+## Posters and sharing
 
-This is a paid game of skill with prizes awarded once at the end of the campaign (three boards plus two spot prizes), open to people who are mostly under 18. Before launch the
-school should confirm it is comfortable with that under the Gambling Regulation Act 2024 and Stripe's terms
-for contests, and decide the parental-consent wording in the terms. The terms are drafted; they are not legal
-advice.
+Everything is on one page, `/share` (for the committee, and for anyone helping spread the word).
+
+- **Print:** `posters/preslink-arcade-a3.pdf` (corridors, the canteen, shop windows) and
+  `posters/preslink-arcade-a4.pdf` (noticeboards, doors, handouts). Print at actual size. The QR codes open
+  the site with a tag (`?r=a3`, `?r=a4`), and the tag goes with any payment that follows, so Stripe's payment
+  details (metadata, `source`) show which posters bring plays. Nothing about the person is recorded.
+- **Online, send the link, not a picture.** `preslink.netlify.app` carries link-preview tags, so in WhatsApp,
+  Messages, Instagram, Snapchat, Facebook and most email the link shows up as the poster, and one tap opens the
+  game. A picture sent on its own can't be tapped.
+- **Short links per channel:** `/ig`, `/wa`, `/snap`, `/fb` and `/news` open the game with that tag (set in
+  `netlify.toml`). In an Instagram bio use `preslink.netlify.app/ig`; on a story use the link sticker.
+- **Pictures:** `share/preslink-arcade-link.jpg` (1200 x 630, the link preview), `share/preslink-arcade-post.jpg`
+  (1080 x 1350, feeds) and `share/preslink-arcade-story.jpg` (1080 x 1920, stories; leave the gap under the address
+  for the link sticker).
+
+All of them are drawn by `site/poster.html`, so the wording lives in one place. To change one, edit that page, then
+render the files again with Playwright (save each format's `#sheet`: `page.pdf` for A3 and A4, a JPEG screenshot
+for the rest) and bump `?v=` on the link picture in `index.html`, because WhatsApp and Facebook keep an old
+preview for days. If the site's address changes, change `SITE` in `poster.html` and `share.html` and the
+`og:` tags in `index.html`.
+
+The posters make no prize claims, so they need no closing date and stay right whichever way the prize decision
+goes. They say what it costs, who runs it, that under-18s need permission to pay, and where the terms are.
+
+## Before taking real money
+
+None of this is legal advice. The research behind it, and what the site already does, is in the PR.
+
+1. **The prize decision.** A paid game with prizes of money's worth is "gaming" under the Gaming and Lotteries
+   Act 1956, and skill games count under the Gambling Regulation Act 2024. There is no exemption for a skill game
+   or for a charity, and most players are under 18. Stripe also needs written approval for paid contests with
+   prizes. Choose one, in writing, with the school and a solicitor:
+   - **Honours, not prizes** (the safest): winners get recognition, no money or money's worth. Switch the whole
+     site over with
+     `update public.settings set value = 'honours' where key = 'prize_mode';`
+     (and back with `'prizes'`). The Prizes page, the terms and every mention of prizes change at once.
+   - **Prizes**, only with the solicitor's written view and Stripe's approval.
+2. **Who runs it.** The site names PresLink and the school. If the money goes through a registered charity, add
+   its name, registered charity number and a contact email; they then appear in the terms, the privacy notice,
+   the About page and the posters' small print:
+   ```sql
+   update public.settings
+   set value = (coalesce(nullif(value, ''), '{}')::jsonb
+     || '{"org": {"name": "NAME OF THE CHARITY", "rcn": "20000000", "email": "preslink@pbc-cork.ie"}}'::jsonb)::text
+   where key = 'site_content';
+   ```
+   Then re-render the posters (above), or print them from `/poster.html` with the browser's Print.
+3. **Stripe's terms box.** In the Stripe Dashboard, **Settings → Business → Public details**
+   (<https://dashboard.stripe.com/settings/public>), set the terms of service URL to `https://preslink.netlify.app/#terms` (and the privacy policy to `/#privacy`). Checkout then asks
+   every payer to tick a box agreeing to the terms, which link to the site. Until then Checkout shows the same link
+   beside the Pay button.
+4. **Clear the test data** (demo payments and test plays) with the launch-day steps in `docs/admin.sql`.
+5. **Photos.** Make sure the school has permission to use the project photos, and that the people in them agreed.
+
+What the site already does: terms rewritten in plain words (who runs it, prices, refunds of unused plays within 14
+days, fair play, complaints, Irish law); a privacy notice (what is kept and why, who sees it, how long, rights,
+the Data Protection Commission); "under 18s need a parent's or guardian's permission to pay" on Home and before
+the first payment; no "only", "just" or commands to buy anywhere; spending caps; and the terms link on every
+Stripe payment.
 
 ## Safeguards
 
@@ -364,8 +422,8 @@ real money):
   limit for today."), with no invitation to come back and spend. Change them with
   `update public.settings set value = '3000' where key = 'daily_cap_cents';` (and `campaign_cap_cents`).
 - **Children's data.** The email is optional, used only to tell winners, seen only by the committee and
-  deleted once the prizes are given; under-16s are asked for a parent's email. After the prizes:
-  `update public.players set contact_email = null;`
+  deleted within 30 days of the end (as the privacy notice says); under-16s are asked for a parent's email. After
+  the prizes: `update public.players set contact_email = null;`
 - **Practice and calibration.** "Practise free" on Home plays three unscored lights that show only how many
   milliseconds early or late each tap was, and a phone's first paid play is preceded by them automatically. The
   median error of a phone's last ten practice taps, capped at 80 ms, is taken off its scored taps and recorded with

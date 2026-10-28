@@ -11,30 +11,108 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(self \"https://checkout.stripe.com\")"
 
-# Config and app code change between deploys: never cache them for long.
-[[headers]]
-  for = "/*.js"
-  [headers.values]
-    Cache-Control = "public, max-age=0, must-revalidate"
-
-[[headers]]
-  for = "/*.css"
-  [headers.values]
-    Cache-Control = "public, max-age=0, must-revalidate"
-
+# The pages and config.js are checked on every load. The app's code and styles are always asked for with a
+# version (app.js?v=40), and the version changes whenever the file does, so a phone keeps each version for a
+# year and opens the app without asking again. The font never changes.
 [[headers]]
   for = "/*.html"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
-# Icons have unique names, so they may be cached for a long time; the manifest must be served with its type.
 [[headers]]
-  for = "/assets/icon*"
+  for = "/config.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/app.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/mock.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/styles.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/admin.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/admin.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/fonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Photos and logos change rarely: a week.
+[[headers]]
+  for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=604800"
 
+# The manifest must be served with its type.
 [[headers]]
   for = "/manifest.webmanifest"
   [headers.values]
     Content-Type = "application/manifest+json"
     Cache-Control = "public, max-age=0, must-revalidate"
+
+# Short links for each place the game is shared. Each opens the game with a tag (?r=ig) that rides along with a
+# payment, so Stripe shows which posts and posters bring plays. Nothing about the person is recorded.
+[[redirects]]
+  from = "/ig"
+  to = "/?r=ig"
+  status = 302
+
+[[redirects]]
+  from = "/wa"
+  to = "/?r=wa"
+  status = 302
+
+[[redirects]]
+  from = "/snap"
+  to = "/?r=snap"
+  status = 302
+
+[[redirects]]
+  from = "/fb"
+  to = "/?r=fb"
+  status = 302
+
+[[redirects]]
+  from = "/news"
+  to = "/?r=news"
+  status = 302
+
+# The share kit, for the committee and anyone spreading the word.
+[[redirects]]
+  from = "/share"
+  to = "/share.html"
+  status = 200
+
+# The posters: the old addresses still work.
+[[redirects]]
+  from = "/posters"
+  to = "/poster.html"
+  status = 302
+
+[[redirects]]
+  from = "/poster.pdf"
+  to = "/posters/preslink-arcade-a3.pdf"
+  status = 302
+
+# The share pictures are re-rendered rarely; a day, so a new one shows up soon after.
+[[headers]]
+  for = "/share/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"

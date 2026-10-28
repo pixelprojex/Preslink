@@ -4,417 +4,370 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <title>PresLink Arcade poster</title>
-  <meta name="description" content="A3 poster with a QR code for PresLink Arcade. Save as PDF downloads the print file.">
+  <title>PresLink Arcade posters</title>
+  <meta name="description" content="The PresLink Arcade posters: A3 and A4 for printing, and images for sharing online.">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="preload" href="fonts/static/inter-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
   <style>
-    /* Four type tiers: 22 mm headline, 11 mm wordmark / scan label / URL, 5.5 mm pill and photo
-       titles, 4.3 mm captions, school name and footer. White is the dominant colour; green is kept
-       for the three things that matter (Arcade, Fund a school, SCAN TO PLAY); yellow marks the price;
-       purple is the school's alone. */
+    /* One design in five formats (?f=a3, a4, og, post, story). The two print formats share one layout drawn
+       in "u": a millimetre on A3 and 1/√2 of one on A4, so A4 is A3 shrunk exactly, as the paper is.
+       The three share images have layouts of their own, in pixels. Colours follow the app: ink type,
+       the yellow-to-orange light bar, green for the action, purple for PresLink and the school. */
+    /* Static weights rather than the app's variable font: PDF printers embed them as ordinary TrueType. */
+    @font-face { font-family: 'Inter'; font-weight: 500; font-display: block; src: url('fonts/static/inter-latin-500-normal.woff2') format('woff2'); }
+    @font-face { font-family: 'Inter'; font-weight: 600; font-display: block; src: url('fonts/static/inter-latin-600-normal.woff2') format('woff2'); }
+    @font-face { font-family: 'Inter'; font-weight: 700; font-display: block; src: url('fonts/static/inter-latin-700-normal.woff2') format('woff2'); }
+    @font-face { font-family: 'Inter'; font-weight: 800; font-display: block; src: url('fonts/static/inter-latin-800-normal.woff2') format('woff2'); }
+    @font-face { font-family: 'Inter'; font-weight: 900; font-display: block; src: url('fonts/static/inter-latin-900-normal.woff2') format('woff2'); }
     :root {
       --ink: #1c1c1e;
+      --text: #48484a;
       --muted: #6e6e73;
-      --green: #1f9d5a;
-      --yellow: #f6c21f;
-      --orange: #f26a1b;
+      --line: #e3e3e8;
+      --green: #1b874d;
       --purple: #5b3a9a;
-      --rule: #e3e3e8;
-      --paper: #ffffff;
-      --bg: #ededf0;
+      --purple-l: #f3eefa;
+      --bar: linear-gradient(90deg, #fff4c2 0%, #ffe27c 24%, #ffc94e 50%, #ffa63a 76%, #f26a1b 100%);
     }
-
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }
     body {
-      background: var(--bg);
+      background: #e9e9ee;
       color: var(--ink);
-      font-family: Inter, -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-feature-settings: 'cv11', 'ss01';
       -webkit-font-smoothing: antialiased;
-      text-rendering: optimizeLegibility;
+      text-rendering: geometricPrecision;
     }
+    p, h1, figure, dl, dd { margin: 0; }
 
-    /* ---------- Screen stage ---------- */
-    .stage {
-      padding: 40px 16px 64px;
-      display: flex;
-      justify-content: center;
-      overflow: hidden;
-    }
-    .frame { flex: none; }
-
-    /* ---------- The A3 sheet ---------- */
-    .sheet {
-      width: 297mm;
-      height: 420mm;
-      padding: 14mm 18mm 12mm;
-      background: var(--paper);
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      transform-origin: top left;
-      overflow: hidden;
-      flex: none;
-    }
-
-    /* a. Header: identification only, the quietest band */
-    .top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 20mm;
-    }
-    .brand { display: flex; align-items: center; gap: 5mm; }
-    .mark { width: 18mm; height: 18mm; display: block; }
-    .wordmark {
-      font-weight: 800;
-      font-size: 11mm;
-      letter-spacing: -0.025em;
-      line-height: 1;
-      white-space: nowrap;
-    }
-    .wordmark span { color: var(--green); }
-    .school { display: flex; align-items: center; gap: 5mm; }
-    .school-name {
-      color: var(--purple);
-      font-weight: 600;
-      font-size: 4.3mm;
-      letter-spacing: 0.005em;
-      line-height: 1;
-      padding-bottom: 1.8mm;
-      border-bottom: 0.45mm solid var(--purple);
-      white-space: nowrap;
-    }
-    .crest { height: 20mm; width: auto; display: block; }
-
-    /* b. Price, headline, the light bar */
-    .hero { text-align: center; margin-top: 7mm; }
-    .kicker {
-      margin: 0 0 4mm;
-      display: inline-flex;
-      align-items: center;
-      gap: 3.5mm;
-      padding: 2.2mm 7mm;
-      border-radius: 99mm;
-      background: var(--yellow);
-      color: var(--ink);
-      font-weight: 700;
-      font-size: 5.5mm;
-      letter-spacing: 0.01em;
-      line-height: 1;
-    }
-    .kicker strong { font-weight: 900; font-size: 1.15em; }
-    .kicker i { font-style: normal; opacity: .4; font-weight: 600; }
-    .hero h1 {
-      margin: 0;
-      font-weight: 900;
-      font-size: 22mm;
-      line-height: 0.95;
-      letter-spacing: -0.04em;
-    }
-    .hero h1 span { color: var(--green); }
-
-    /* the light bar: the game's own mark, with the pin on the page's centre axis pointing at the code */
-    .bar {
-      position: relative;
-      width: 150mm;
-      height: 10mm;
-      margin: 6mm auto 0;
-      border-radius: 99mm;
-      background: linear-gradient(90deg, #f6c21f 0%, #ffab45 60%, #f26a1b 100%);
-      box-shadow: inset 0 0 0 0.4mm var(--ink);
-    }
-    .bar .pin {
-      position: absolute;
-      left: 50%;
-      top: -4mm;
-      width: 1.7mm;
-      height: 22mm;
-      margin-left: -0.85mm;
-      border-radius: 1mm;
-      background: var(--ink);
-    }
-    .bar .light {
-      position: absolute;
-      left: 50%;
-      top: -3mm;
-      width: 7.2mm;
-      height: 16mm;
-      margin-left: -3.6mm;
-      border-radius: 99mm;
-      background: #fff;
-      border: 1.1mm solid var(--ink);
-    }
-
-    /* c. Scan: label, code with its own four-module quiet zone, typed fallback */
-    .scan { display: flex; flex-direction: column; align-items: center; margin-top: 10mm; }
-    .scan-label {
-      margin: 0;
-      font-weight: 800;
-      font-size: 11mm;
-      line-height: 1;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--green);
-    }
-    .qr { width: 156mm; height: 156mm; }
-    .qr svg { width: 100%; height: 100%; display: block; }
-    .url {
-      margin: 0;
-      font-weight: 800;
-      font-size: 11mm;
-      line-height: 1.1;
-      letter-spacing: 0;
-      word-break: break-all;
-      text-align: center;
-    }
-
-    /* d. Photos: one dominant face-first photo, equal heights, titles that say the outcome */
-    .stories {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 7mm;
-      margin-top: 14mm;
-    }
-    .stories figure { margin: 0; min-width: 0; }
-    .stories img {
-      width: 100%;
-      height: 60mm;
-      object-fit: cover;
-      display: block;
-      border-radius: 6mm;
-      background: #f2f2f4;
-    }
-    .stories figcaption { margin-top: 3.6mm; text-align: center; }
-    .stories b {
-      display: block;
-      font-weight: 800;
-      font-size: 6mm;
-      line-height: 1.15;
-      letter-spacing: -0.02em;
-    }
-
-    /* e. Footer: the promise sits where the eye leaves the page */
-    .foot {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 12mm;
-      margin-top: 4mm;
-      padding-top: 4mm;
-      border-top: 0.3mm solid var(--rule);
-      color: var(--muted);
-      font-weight: 600;
-      font-size: 4.3mm;
-      line-height: 1.3;
-    }
-    .foot p { margin: 0; }
-    .foot p:first-child { white-space: nowrap; }
-    .foot .promise { color: var(--ink); font-weight: 700; text-align: right; }
-
-    /* ---------- Screen-only controls ---------- */
+    /* ---------- Screen: the sheet scaled to fit, with a small toolbar ---------- */
     .tools {
-      position: fixed;
-      top: 16px;
-      right: 16px;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      max-width: calc(100vw - 32px);
+      position: sticky; top: 0; z-index: 5;
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px;
+      padding: 12px 16px; background: rgba(233, 233, 238, .92);
+      -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
     }
-    .tools .save {
-      text-decoration: none;
-      display: inline-block;
-      font: inherit;
-      font-weight: 700;
-      font-size: 14px;
-      line-height: 1;
-      padding: 12px 18px;
-      border: 0;
-      border-radius: 999px;
-      background: var(--ink);
-      color: #fff;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    .tools .save:hover { background: #000; }
-    .tools .hint {
-      font-size: 12px;
-      font-weight: 600;
-      line-height: 1.3;
-      color: var(--muted);
-      background: #fff;
-      border: 1px solid var(--rule);
-      border-radius: 14px;
-      padding: 8px 12px;
-    }
-    @media (max-width: 640px) { .tools .hint { display: none; } }
+    .seg { display: inline-flex; background: #dcdce3; border-radius: 10px; padding: 3px; }
+    .seg a { font-size: 13px; font-weight: 600; color: var(--ink); text-decoration: none; padding: 7px 12px; border-radius: 8px; white-space: nowrap; }
+    .seg a[aria-current="page"] { background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+    .tools .btn { font: inherit; font-size: 13px; font-weight: 700; line-height: 1; padding: 10px 16px; border: 0; border-radius: 999px; background: var(--ink); color: #fff; text-decoration: none; cursor: pointer; white-space: nowrap; }
+    .tools .hint { width: 100%; text-align: center; font-size: 12px; font-weight: 500; color: var(--muted); }
+    .stage { padding: 20px 16px 56px; display: flex; justify-content: center; overflow: hidden; }
+    .frame { flex: none; }
+    .sheet { position: relative; overflow: hidden; background: #fff; transform-origin: top left; flex: none; box-shadow: 0 10px 40px rgba(0, 0, 0, .12); }
+    body.render { background: #fff; }
+    body.render .tools { display: none; }
+    body.render .stage { padding: 0; display: block; }
+    body.render .sheet { box-shadow: none; }
 
-    /* ---------- Print ---------- */
-    @page { size: A3; margin: 0; }
+    /* ---------- Shared pieces ---------- */
+    .brand { display: flex; align-items: center; }
+    .brand img { display: block; }
+    .brand span { font-weight: 800; letter-spacing: -.025em; line-height: 1; color: var(--purple); white-space: nowrap; }
+    .brand b { font-weight: 800; color: var(--ink); }
+    .school { display: flex; align-items: center; }
+    .school span { color: var(--purple); font-weight: 600; line-height: 1.15; text-align: right; }
+    .school img { display: block; width: auto; }
+    .headline { font-weight: 800; letter-spacing: -.045em; line-height: .96; text-align: center; color: var(--ink); text-wrap: balance; }
+    .sub { text-align: center; color: var(--text); font-weight: 500; letter-spacing: -.01em; text-wrap: balance; }
+    .bar { position: relative; margin-left: auto; margin-right: auto; background: var(--bar); }
+    .bar .pin, .bar .light, .bar .ghost { position: absolute; }
+    .bar .pin { background: var(--ink); }
+    .bar .pin i { position: absolute; left: 50%; border-radius: 50%; background: var(--ink); }
+    .bar .light { background: #fff; }
+    .bar .ghost { background: #fff; }
+    .photos { display: grid; grid-template-columns: 1fr 1fr; }
+    .photos img { display: block; width: 100%; object-fit: cover; background: #f2f2f4; }
+    .photos figcaption { font-weight: 700; letter-spacing: -.015em; color: var(--ink); text-align: center; }
+    .cause-line { text-align: center; font-weight: 600; letter-spacing: -.015em; color: var(--ink); text-wrap: balance; }
+    .cause-line em { font-style: normal; color: var(--purple); }
+    .small { color: var(--muted); font-weight: 500; line-height: 1.35; text-align: center; text-wrap: balance; }
+    .print .online-only, .online .print-only { display: none; }
+
+    /* ---------- Print: A3 and A4 ---------- */
+    .print .sheet { width: calc(297 * var(--u)); height: calc(420 * var(--u)); padding: calc(14 * var(--u)) calc(14 * var(--u)) calc(12 * var(--u)); display: flex; flex-direction: column; }
+    .sheet > * { flex-shrink: 0; }
+    .print .id { display: flex; align-items: center; justify-content: space-between; height: calc(17 * var(--u)); }
+    .print .brand { gap: calc(3.4 * var(--u)); }
+    .print .brand img { width: calc(13 * var(--u)); height: calc(13 * var(--u)); }
+    .print .brand span { font-size: calc(8.6 * var(--u)); }
+    .print .school { gap: calc(3.6 * var(--u)); }
+    .print .school span { font-size: calc(3.9 * var(--u)); }
+    .print .school img { height: calc(17 * var(--u)); }
+    .print .headline { margin-top: calc(13 * var(--u)); font-size: calc(28 * var(--u)); }
+    .print .sub { margin-top: calc(6.5 * var(--u)); font-size: calc(7 * var(--u)); }
+    .print .bar { margin-top: calc(24 * var(--u)); width: calc(232 * var(--u)); height: calc(20 * var(--u)); border-radius: calc(10 * var(--u)); box-shadow: inset 0 calc(.35 * var(--u)) 0 rgba(255, 255, 255, .75), inset 0 calc(-.7 * var(--u)) calc(1.6 * var(--u)) rgba(190, 90, 0, .16), 0 calc(2.6 * var(--u)) calc(6.5 * var(--u)) rgba(242, 106, 27, .2); }
+    .print .bar .pin { left: 68%; top: calc(-5.5 * var(--u)); bottom: calc(-5.5 * var(--u)); width: calc(2.4 * var(--u)); margin-left: calc(-1.2 * var(--u)); border-radius: calc(1.2 * var(--u)); box-shadow: 0 0 0 calc(.8 * var(--u)) rgba(255, 255, 255, .85); }
+    .print .bar .pin i { top: calc(-10.5 * var(--u)); width: calc(7 * var(--u)); height: calc(7 * var(--u)); margin-left: calc(-3.5 * var(--u)); }
+    .print .bar .light { left: 60.5%; top: calc(-4.6 * var(--u)); bottom: calc(-4.6 * var(--u)); width: calc(6.4 * var(--u)); margin-left: calc(-3.2 * var(--u)); border-radius: calc(3.2 * var(--u)); box-shadow: 0 0 0 calc(1.05 * var(--u)) var(--ink), 0 calc(1.4 * var(--u)) calc(3.4 * var(--u)) rgba(0, 0, 0, .28); }
+    .print .bar .ghost { top: calc(-3.2 * var(--u)); bottom: calc(-3.2 * var(--u)); width: calc(5.2 * var(--u)); margin-left: calc(-2.6 * var(--u)); border-radius: calc(2.6 * var(--u)); }
+    .print .bar .g1 { left: 55%; opacity: .62; } .print .bar .g2 { left: 49.5%; opacity: .38; } .print .bar .g3 { left: 44%; opacity: .18; }
+    .print .scan { margin-top: calc(18 * var(--u)); display: flex; align-items: center; border: calc(.4 * var(--u)) solid var(--line); border-radius: calc(9 * var(--u)); padding: calc(2 * var(--u)) calc(10 * var(--u)) calc(2 * var(--u)) calc(2 * var(--u)); }
+    .print .qr { flex: none; width: calc(118 * var(--u)); height: calc(118 * var(--u)); }
+    .print .qr svg { display: block; width: 100%; height: 100%; }
+    .print .scan-text { flex: 1; min-width: 0; padding-left: calc(3 * var(--u)); }
+    .print .cta { font-size: calc(11.6 * var(--u)); font-weight: 800; letter-spacing: -.035em; line-height: 1; color: var(--green); }
+    .print .url { margin-top: calc(4.6 * var(--u)); font-size: calc(6.6 * var(--u)); font-weight: 700; letter-spacing: -.02em; line-height: 1.1; white-space: nowrap; }
+    .print .noapp { margin-top: calc(2.2 * var(--u)); font-size: calc(4.3 * var(--u)); font-weight: 500; color: var(--muted); line-height: 1.3; }
+    .print .prices { margin-top: calc(7 * var(--u)); border-top: calc(.4 * var(--u)) solid var(--line); }
+    .print .prices div { display: flex; justify-content: space-between; align-items: baseline; padding: calc(2.6 * var(--u)) 0; border-bottom: calc(.4 * var(--u)) solid var(--line); font-size: calc(5.4 * var(--u)); line-height: 1; }
+    .print .prices dt { font-weight: 500; color: var(--text); }
+    .print .prices dd { font-weight: 800; font-variant-numeric: tabular-nums; }
+    .print .prices .free dd { color: var(--green); }
+    .print .cause { margin-top: auto; background: var(--purple-l); border-radius: calc(9 * var(--u)); padding: calc(6 * var(--u)) calc(6 * var(--u)) calc(5 * var(--u)); }
+    .print .cause-line { font-size: calc(6 * var(--u)); line-height: 1.2; padding: 0 calc(6 * var(--u)); }
+    .print .photos { margin-top: calc(6 * var(--u)); gap: calc(5 * var(--u)); }
+    .print .photos img { height: calc(40 * var(--u)); border-radius: calc(5 * var(--u)); }
+    .print .photos figcaption { margin-top: calc(2.6 * var(--u)); font-size: calc(5 * var(--u)); }
+    .print .small { margin-top: calc(5 * var(--u)); font-size: calc(4.1 * var(--u)); padding: 0 calc(4 * var(--u)); }
+
+    /* ---------- Online: link preview (og), feed post (post), story (story) ---------- */
+    .online .sheet { display: flex; flex-direction: column; align-items: center; background: #f4f4f6; }
+    .online .brand img { width: calc(var(--k) * 1px); height: calc(var(--k) * 1px); }
+    .online .go { display: flex; flex-direction: column; align-items: center; }
+    .online .try { display: inline-flex; align-items: center; background: var(--green); color: #fff; font-weight: 800; letter-spacing: -.02em; line-height: 1; border-radius: 999px; white-space: nowrap; box-shadow: 0 6px 0 #146b3c; }
+    .online .try small { font-weight: 600; opacity: .82; letter-spacing: -.01em; }
+    .online .price-line { color: var(--text); font-weight: 600; letter-spacing: -.01em; text-align: center; }
+    .online .price-line i { font-style: normal; color: #b4b4bb; padding: 0 .35em; }
+    .online .bar { box-shadow: inset 0 2px 0 rgba(255, 255, 255, .75), inset 0 -4px 9px rgba(190, 90, 0, .16), 0 16px 40px rgba(242, 106, 27, .24); }
+    .online .bar .pin { box-shadow: 0 0 0 5px rgba(255, 255, 255, .85); }
+    .online .bar .light { box-shadow: 0 0 0 6px var(--ink), 0 8px 18px rgba(0, 0, 0, .28); }
+    .online .bar .g1 { opacity: .62; } .online .bar .g2 { opacity: .38; } .online .bar .g3 { opacity: .18; }
+
+    /* og: 1200 x 630. Everything that matters sits in the centre 630 px, for apps that crop to a square. */
+    .f-og .sheet { width: 1200px; height: 630px; padding: 46px 0 0; --k: 46; }
+    .f-og .brand { gap: 12px; } .f-og .brand span { font-size: 30px; }
+    .f-og .headline { margin-top: 30px; font-size: 106px; }
+    .f-og .bar { margin-top: 78px; width: 700px; height: 60px; border-radius: 30px; }
+    .f-og .bar .pin { left: 68%; top: -17px; bottom: -17px; width: 8px; margin-left: -4px; border-radius: 4px; }
+    .f-og .bar .pin i { top: -32px; width: 22px; height: 22px; margin-left: -11px; }
+    .f-og .bar .light { left: 60.5%; top: -14px; bottom: -14px; width: 20px; margin-left: -10px; border-radius: 10px; box-shadow: 0 0 0 3.5px var(--ink), 0 6px 14px rgba(0, 0, 0, .28); }
+    .f-og .bar .ghost { top: -10px; bottom: -10px; width: 16px; margin-left: -8px; border-radius: 8px; }
+    .f-og .bar .g1 { left: 55%; } .f-og .bar .g2 { left: 49.5%; } .f-og .bar .g3 { left: 44%; }
+    .f-og .go { margin-top: 58px; }
+    .f-og .try { gap: 14px; font-size: 34px; padding: 20px 34px; }
+    .f-og .try small { font-size: 28px; }
+    .f-og .sub, .f-og .price-line, .f-og #cause-online { display: none; }
+
+    /* post: 1080 x 1350, Instagram and Facebook feeds (the grid crops the sides to 3:4) */
+    .f-post .sheet { width: 1080px; height: 1350px; padding: 84px 96px 0; --k: 58; }
+    .f-post .brand { gap: 16px; } .f-post .brand span { font-size: 40px; }
+    .f-post .headline { margin-top: 60px; font-size: 140px; }
+    .f-post .sub { margin-top: 30px; font-size: 38px; }
+    .f-post .bar { margin-top: 100px; width: 820px; height: 76px; border-radius: 38px; }
+    .f-post .bar .pin { left: 68%; top: -21px; bottom: -21px; width: 9px; margin-left: -4.5px; border-radius: 5px; }
+    .f-post .bar .pin i { top: -40px; width: 27px; height: 27px; margin-left: -13.5px; }
+    .f-post .bar .light { left: 60.5%; top: -17px; bottom: -17px; width: 24px; margin-left: -12px; border-radius: 12px; box-shadow: 0 0 0 4px var(--ink), 0 7px 16px rgba(0, 0, 0, .28); }
+    .f-post .bar .ghost { top: -12px; bottom: -12px; width: 19px; margin-left: -9.5px; border-radius: 10px; }
+    .f-post .bar .g1 { left: 55%; } .f-post .bar .g2 { left: 49.5%; } .f-post .bar .g3 { left: 44%; }
+    .f-post .go { margin-top: 96px; }
+    .f-post .try { gap: 18px; font-size: 46px; padding: 28px 46px; }
+    .f-post .try small { font-size: 38px; }
+    .f-post .price-line { margin-top: 40px; font-size: 34px; }
+    .f-post .cause-line { margin-top: auto; margin-bottom: 72px; font-size: 32px; line-height: 1.3; max-width: 820px; color: var(--text); font-weight: 600; }
+
+    /* story: 1080 x 1920. The top 250 px and bottom 340 px stay clear for the app's own buttons; the gap
+       under the address is where the link sticker goes. */
+    .f-story .sheet { width: 1080px; height: 1920px; padding: 280px 64px 0; --k: 62; }
+    .f-story .brand { gap: 16px; } .f-story .brand span { font-size: 42px; }
+    .f-story .headline { margin-top: 56px; font-size: 148px; }
+    .f-story .sub { margin-top: 30px; font-size: 40px; }
+    .f-story .bar { margin-top: 96px; width: 880px; height: 84px; border-radius: 42px; }
+    .f-story .bar .pin { left: 68%; top: -23px; bottom: -23px; width: 10px; margin-left: -5px; border-radius: 5px; }
+    .f-story .bar .pin i { top: -44px; width: 30px; height: 30px; margin-left: -15px; }
+    .f-story .bar .light { left: 60.5%; top: -19px; bottom: -19px; width: 27px; margin-left: -13.5px; border-radius: 14px; box-shadow: 0 0 0 4.5px var(--ink), 0 8px 18px rgba(0, 0, 0, .28); }
+    .f-story .bar .ghost { top: -13px; bottom: -13px; width: 21px; margin-left: -10.5px; border-radius: 11px; }
+    .f-story .bar .g1 { left: 55%; } .f-story .bar .g2 { left: 49.5%; } .f-story .bar .g3 { left: 44%; }
+    .f-story .go { margin-top: 64px; order: 2; }
+    .f-story .try { gap: 20px; font-size: 50px; padding: 30px 50px; }
+    .f-story .try small { font-size: 42px; }
+    .f-story .price-line { order: -1; margin: 0 0 22px; font-size: 36px; }
+    .f-story .cause-line { order: 1; margin-top: 96px; font-size: 32px; line-height: 1.3; max-width: 860px; color: var(--text); font-weight: 600; }
+
+    /* ---------- Paper ---------- */
+    @page { margin: 0; }
     @media print {
-      html, body { background: #fff; width: 297mm; height: 420mm; overflow: hidden; }
+      html, body { background: #fff; }
+      .tools { display: none !important; }
       .stage { padding: 0; display: block; overflow: visible; }
       .frame { width: auto !important; height: auto !important; }
-      .sheet { transform: none !important; margin: 0; page-break-after: avoid; break-after: avoid; }
-      .tools { display: none !important; }
+      .sheet { transform: none !important; box-shadow: none; break-after: avoid; }
       * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
   </style>
+  <style id="page-size">@page { size: 297mm 420mm; }</style>
 </head>
 <body>
-  <div class="tools">
-    <span class="hint">Print at 100%, not “fit to page”. Do not fold. Hang with the top edge about 1.6 m from the floor.</span>
-    <a class="save" href="poster.pdf" download="PresLink-Arcade-poster-A3.pdf">Save as PDF</a>
-  </div>
+  <nav class="tools" aria-label="Poster">
+    <span class="seg" id="formats">
+      <a href="?f=a3">A3</a><a href="?f=a4">A4</a><a href="?f=og">Link preview</a><a href="?f=post">Post</a><a href="?f=story">Story</a>
+    </span>
+    <a class="btn" id="download" href="posters/preslink-arcade-a3.pdf" download>Download PDF</a>
+    <p class="hint" id="hint">Print at actual size (100%), not “fit to page”. Hang it with the code at about 1.4 m.</p>
+  </nav>
 
   <div class="stage">
     <div class="frame">
-      <div class="sheet">
-
-        <header class="top">
-          <div class="brand">
-            <img class="mark" src="assets/cross.svg" alt="">
-            <div class="wordmark">PresLink <span>Arcade</span></div>
-          </div>
-          <div class="school">
-            <div class="school-name">Presentation Brothers College</div>
-            <img class="crest" src="assets/crest.jpg" alt="Presentation Brothers College crest">
-          </div>
+      <div class="sheet" id="sheet">
+        <header class="id print-only">
+          <div class="brand"><img src="assets/cross.svg" alt=""><span>PresLink <b>Arcade</b></span></div>
+          <div class="school"><span>Presentation Brothers<br>College, Cork</span><img src="assets/crest.jpg" alt="Presentation Brothers College crest"></div>
         </header>
+        <div class="brand online-only"><img src="assets/cross.svg" alt=""><span>PresLink <b>Arcade</b></span></div>
 
-        <section class="hero">
-          <p class="kicker"><strong>€2 a go</strong> <i>·</i> 3 for €5 <i>·</i> 7 for €10</p>
-          <h1>Play. Win prizes.<br><span>Fund a school.</span></h1>
-          <div class="bar" aria-hidden="true"><span class="pin"></span><span class="light"></span></div>
+        <h1 class="headline">Can you stop<br>the light?</h1>
+        <p class="sub" id="sub">Tap when it hits the mark. Three lights, one score.</p>
+
+        <div class="bar" aria-hidden="true">
+          <span class="ghost g3"></span><span class="ghost g2"></span><span class="ghost g1"></span>
+          <span class="pin"><i></i></span>
+          <span class="light"></span>
+        </div>
+
+        <section class="scan print-only">
+          <div class="qr" id="qr" role="img" aria-label="QR code that opens PresLink Arcade"></div>
+          <div class="scan-text">
+            <p class="cta">Scan to<br>try it free</p>
+            <p class="url" id="url">preslink.netlify.app</p>
+            <p class="noapp">No app needed. It opens in your phone’s browser.</p>
+            <dl class="prices">
+              <div class="free"><dt>Practice</dt><dd>Free</dd></div>
+              <div><dt>1 play</dt><dd>€2</dd></div>
+              <div><dt>3 plays</dt><dd>€5</dd></div>
+              <div><dt>7 plays</dt><dd>€10</dd></div>
+            </dl>
+          </div>
         </section>
 
-        <section class="scan">
-          <p class="scan-label">Scan to play</p>
-          <div class="qr" id="qr" role="img" aria-label="QR code for PresLink Arcade"></div>
-          <p class="url" id="url"></p>
+        <div class="go online-only">
+          <span class="try">Try it free <small id="url-online">preslink.netlify.app</small></span>
+          <p class="price-line">Practice free<i>·</i>€2 a play<i>·</i>3 for €5<i>·</i>7 for €10</p>
+        </div>
+
+        <section class="cause print-only">
+          <p class="cause-line">Every euro, after card fees, goes to PresLink for the <em>Presentation Brothers’ schools in Ghana and Nigeria.</em></p>
+          <div class="photos">
+            <figure><img src="assets/photo-classrooms.jpg" alt="Children in a new classroom in Ghana" style="object-position: 58% 40%"><figcaption>New classrooms</figcaption></figure>
+            <figure><img src="assets/photo-bikes.jpg" alt="Students with their bicycles outside school" style="object-position: 50% 30%"><figcaption>Bikes to school</figcaption></figure>
+          </div>
         </section>
+        <p class="cause-line online-only" id="cause-online">Every euro, after card fees, goes to PresLink for the Presentation Brothers’ schools in Ghana and Nigeria.</p>
 
-        <section class="stories">
-          <figure>
-            <img src="assets/photo-bikes.jpg" alt="Students with bicycles" style="object-position: 50% 25%">
-            <figcaption><b>Bikes to school</b></figcaption>
-          </figure>
-          <figure>
-            <img src="assets/photo-babies.jpg" alt="Mother of Mercy Home" style="object-position: 50% 55%">
-            <figcaption><b>Care for babies</b></figcaption>
-          </figure>
-          <figure>
-            <img src="assets/photo-classrooms.jpg" alt="A new classroom in Ghana" style="object-position: 62% 50%">
-            <figcaption><b>New classrooms</b></figcaption>
-          </figure>
-        </section>
-
-        <footer class="foot">
-          <p>Student-run since 2005</p>
-          <p class="promise">Every cent after card fees goes to schools in Ghana and Nigeria.</p>
-        </footer>
-
+        <p class="small print-only">A game of skill run by PresLink, the student charity committee of Presentation Brothers College, The Mardyke, Cork T12 VK49<span class="org"></span>. Under 18s need a parent’s or guardian’s permission to pay. Spending is capped at €20 a day and €100 in all. Terms: <span class="terms">preslink.netlify.app/#terms</span></p>
       </div>
     </div>
   </div>
 
+  <script src="config.js"></script>
   <script src="vendor/qrcode.js"></script>
   <script>
     (function () {
       'use strict';
-
-      // ---- The address the poster points at ----
       var params = new URLSearchParams(location.search);
-      var url = (params.get('url') || '').trim() || (location.origin + '/');
-      document.getElementById('url').textContent = url.replace(/^https?:\/\//i, '').replace(/\/$/, '');
-
-      // ---- QR code as inline SVG ----
-      // Error correction H (30 %) so the centre tile and rounded data modules stay well inside the
-      // tolerance. The SVG carries its own four-module quiet zone (ISO/IEC 18004), so nothing printed
-      // next to the code can crowd it. Finder patterns are only lightly rounded so the 1:1:3:1:1
-      // ratio detectors look for survives on the diagonals.
-      var INK = '#1c1c1e';
-      var qr = qrcode(0, 'H');
-      qr.addData(url);
-      qr.make();
-
-      var n = qr.getModuleCount();
-      var quiet = 4;                 // four modules of white on every side, inside the SVG
-      var size = n + quiet * 2;
-      var f = function (v) { return (Math.round(v * 1000) / 1000).toString(); };
-
-      // Centre tile: about a fifth of the code width, snapped to whole modules and centred on
-      // the grid so the cleared block is a clean square (7 x 7 for a 33-module code).
-      var k = Math.round(n * 0.21);
-      if ((k % 2) !== (n % 2)) k += 1;
-      var first = (n - k) / 2;            // first module row/column under the tile
-      var tile = k;
-      var tx = first + quiet;
-
-      var inFinder = function (r, c) {
-        return (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7);
+      var FORMATS = {
+        a3: { print: true, u: '1mm', page: '297mm 420mm', pdf: 'posters/preslink-arcade-a3.pdf', hint: 'Print at actual size (100%), not “fit to page”. Hang it with the code at about 1.4 m.' },
+        a4: { print: true, u: '0.70711mm', page: '210mm 297mm', pdf: 'posters/preslink-arcade-a4.pdf', hint: 'Print at actual size (100%). For noticeboards, doors and handouts.' },
+        og: { img: 'share/preslink-arcade-link.jpg', hint: 'What a shared link shows in WhatsApp, iMessage, Instagram and Facebook. Share the link, not the picture.' },
+        post: { img: 'share/preslink-arcade-post.jpg', hint: 'For an Instagram or Facebook post. Put preslink.netlify.app/ig in your bio, or the link in the post text.' },
+        story: { img: 'share/preslink-arcade-story.jpg', hint: 'For a story. Add the link sticker in the gap under the address.' }
       };
-      var underTile = function (r, c) {
-        return r >= first && r < first + k && c >= first && c < first + k;
-      };
+      var f = FORMATS[params.get('f')] ? params.get('f') : 'a3';
+      var F = FORMATS[f];
+      var body = document.body;
+      body.classList.add(F.print ? 'print' : 'online', 'f-' + f);
+      if (params.has('render')) body.classList.add('render');
+      if (F.print) {
+        document.documentElement.style.setProperty('--u', F.u);
+        document.getElementById('page-size').textContent = '@page { size: ' + F.page + '; }';
+      }
+      [].forEach.call(document.querySelectorAll('#formats a'), function (a) {
+        if (a.getAttribute('href') === '?f=' + f) a.setAttribute('aria-current', 'page');
+      });
+      var dl = document.getElementById('download');
+      dl.href = F.pdf || F.img;
+      dl.textContent = F.pdf ? 'Download PDF' : 'Download image';
+      document.getElementById('hint').textContent = F.hint;
 
-      var out = [];
-      out.push('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + ' ' + size + '" shape-rendering="geometricPrecision">');
-      out.push('<rect width="' + size + '" height="' + size + '" fill="#fff"/>');
-      out.push('<g fill="' + INK + '">');
+      // The address: always the real site, so a poster printed from a preview copy still works. Each print
+      // format adds its own tag (?r=a3), so the payments show which poster a visit came from.
+      var SITE = (params.get('url') || 'https://preslink.netlify.app').replace(/\/+$/, '');
+      var bare = SITE.replace(/^https?:\/\//i, '');
+      document.getElementById('url').textContent = bare;
+      document.getElementById('url-online').textContent = bare;
+      [].forEach.call(document.querySelectorAll('.terms'), function (el) { el.textContent = bare + '/#terms'; });
 
-      // Data, timing and alignment modules as rounded squares (rx = 30 % of a module).
-      for (var r = 0; r < n; r++) {
-        for (var c = 0; c < n; c++) {
-          if (!qr.isDark(r, c) || inFinder(r, c)) continue;
-          if (underTile(r, c)) continue;
-          out.push('<rect x="' + (c + quiet) + '" y="' + (r + quiet) + '" width="1" height="1" rx="0.3"/>');
-        }
+      // The organiser's details, once the committee has saved them in the console (content.org).
+      var cfg = window.PRESLINK_CONFIG;
+      if (cfg && cfg.SUPABASE_URL) {
+        fetch(cfg.SUPABASE_URL + '/rest/v1/rpc/stats', { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: cfg.SUPABASE_KEY }, body: '{}' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (s) {
+            var org = (s && s.content && s.content.org) || {};
+            var t = (org.name ? ', under ' + org.name : '') + (org.rcn ? ' (registered charity number ' + org.rcn + ')' : '');
+            [].forEach.call(document.querySelectorAll('.org'), function (el) { el.textContent = t; });
+          })
+          .catch(function () {});
       }
 
-      // Finder patterns: outer square, white ring, inner square, each only lightly rounded.
-      var finder = function (x, y) {
-        out.push('<rect x="' + x + '" y="' + y + '" width="7" height="7" rx="1.2" fill="' + INK + '"/>');
-        out.push('<rect x="' + (x + 1) + '" y="' + (y + 1) + '" width="5" height="5" rx="0.9" fill="#fff"/>');
-        out.push('<rect x="' + (x + 2) + '" y="' + (y + 2) + '" width="3" height="3" rx="0.5" fill="' + INK + '"/>');
-      };
-      finder(quiet, quiet);
-      finder(quiet + n - 7, quiet);
-      finder(quiet, quiet + n - 7);
-      out.push('</g>');
+      if (F.print) drawQr(SITE + '/?r=' + f);
 
-      // Centre tile with the cross (same artwork as assets/cross.svg, inlined so it prints reliably).
-      out.push('<rect x="' + f(tx) + '" y="' + f(tx) + '" width="' + f(tile) + '" height="' + f(tile) + '" rx="' + f(tile * 0.18) + '" fill="#fff"/>');
-      var cw = tile * 0.82;
-      var cx = tx + (tile - cw) / 2;
-      out.push('<g transform="translate(' + f(cx) + ' ' + f(cx) + ') scale(' + f(cw / 100) + ')">' +
-        '<path fill="#F6C21F" stroke="#F6C21F" stroke-width="3" stroke-linejoin="round" d="M45 50h10l12-43H33zM50 45v10l43 12V33zM55 50H45L33 93h34zM50 55V45L7 33v34z"/>' +
-        '<g fill="#F26A1B" fill-opacity=".85"><circle cx="50" cy="41" r="8.5"/><circle cx="59" cy="50" r="8.5"/><circle cx="50" cy="59" r="8.5"/><circle cx="41" cy="50" r="8.5"/></g>' +
-        '</g>');
-      out.push('</svg>');
+      // QR code as inline SVG. Error correction H (30 %) so the centre tile stays well inside what a reader
+      // can repair. The SVG carries its own four-module quiet zone (ISO/IEC 18004). Finder patterns are only
+      // lightly rounded so the 1:1:3:1:1 ratio readers look for survives.
+      function drawQr(url) {
+        var INK = '#1c1c1e';
+        var qr = qrcode(0, 'H');
+        qr.addData(url);
+        qr.make();
+        var n = qr.getModuleCount(), quiet = 4, size = n + quiet * 2;
+        var r3 = function (v) { return (Math.round(v * 1000) / 1000).toString(); };
+        var k = Math.round(n * 0.21);
+        if ((k % 2) !== (n % 2)) k += 1;
+        var first = (n - k) / 2, tx = first + quiet;
+        var inFinder = function (r, c) { return (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7); };
+        var underTile = function (r, c) { return r >= first && r < first + k && c >= first && c < first + k; };
+        var out = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + ' ' + size + '" shape-rendering="geometricPrecision">',
+          '<rect width="' + size + '" height="' + size + '" fill="#fff"/>', '<g fill="' + INK + '">'];
+        for (var r = 0; r < n; r++) {
+          for (var c = 0; c < n; c++) {
+            if (!qr.isDark(r, c) || inFinder(r, c) || underTile(r, c)) continue;
+            out.push('<rect x="' + (c + quiet) + '" y="' + (r + quiet) + '" width="1" height="1" rx="0.3"/>');
+          }
+        }
+        var finder = function (x, y) {
+          out.push('<rect x="' + x + '" y="' + y + '" width="7" height="7" rx="1.2" fill="' + INK + '"/>');
+          out.push('<rect x="' + (x + 1) + '" y="' + (y + 1) + '" width="5" height="5" rx="0.9" fill="#fff"/>');
+          out.push('<rect x="' + (x + 2) + '" y="' + (y + 2) + '" width="3" height="3" rx="0.5" fill="' + INK + '"/>');
+        };
+        finder(quiet, quiet); finder(quiet + n - 7, quiet); finder(quiet, quiet + n - 7);
+        out.push('</g>');
+        out.push('<rect x="' + r3(tx) + '" y="' + r3(tx) + '" width="' + k + '" height="' + k + '" rx="' + r3(k * 0.18) + '" fill="#fff"/>');
+        var cw = k * 0.82, cx = tx + (k - cw) / 2;
+        out.push('<g transform="translate(' + r3(cx) + ' ' + r3(cx) + ') scale(' + r3(cw / 100) + ')">' +
+          '<path fill="#F6C21F" stroke="#F6C21F" stroke-width="3" stroke-linejoin="round" d="M45 50h10l12-43H33zM50 45v10l43 12V33zM55 50H45L33 93h34zM50 55V45L7 33v34z"/>' +
+          '<g fill="#F26A1B" fill-opacity=".85"><circle cx="50" cy="41" r="8.5"/><circle cx="59" cy="50" r="8.5"/><circle cx="50" cy="59" r="8.5"/><circle cx="41" cy="50" r="8.5"/></g></g>');
+        out.push('</svg>');
+        document.getElementById('qr').innerHTML = out.join('');
+      }
 
-      document.getElementById('qr').innerHTML = out.join('');
-
-      // ---- Screen: scale the sheet down when the window is narrower than A3 ----
-      var sheet = document.querySelector('.sheet');
-      var frame = document.querySelector('.frame');
+      // Screen: shrink the sheet to the window.
+      var sheet = document.getElementById('sheet'), frame = document.querySelector('.frame');
       function fit() {
+        if (body.classList.contains('render')) return;
+        sheet.style.transform = '';
         var w = sheet.offsetWidth, h = sheet.offsetHeight;
-        var avail = document.documentElement.clientWidth - 32;
-        var k = Math.min(1, avail / w);
-        sheet.style.transform = k < 1 ? 'scale(' + k + ')' : '';
-        frame.style.width = Math.round(w * k) + 'px';
-        frame.style.height = Math.round(h * k) + 'px';
+        var s = Math.min(1, (document.documentElement.clientWidth - 32) / w);
+        sheet.style.transform = s < 1 ? 'scale(' + s + ')' : '';
+        frame.style.width = Math.round(w * s) + 'px';
+        frame.style.height = Math.round(h * s) + 'px';
       }
       fit();
       window.addEventListener('resize', fit);
       window.addEventListener('beforeprint', function () { sheet.style.transform = ''; frame.style.width = ''; frame.style.height = ''; });
       window.addEventListener('afterprint', fit);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fit(); body.setAttribute('data-ready', '1'); });
+      else body.setAttribute('data-ready', '1');
     })();
   </script>
 </body>

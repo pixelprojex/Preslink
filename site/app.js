@@ -23,7 +23,10 @@
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   // "JAK", "jak 2", "JAK2" and "JAK#2" all mean the same name.
   const normTag = (raw) => String(raw || '').toUpperCase().replace(/[\s#]/g, '').replace(/^([A-Z]{2,3})(\d{1,3})$/, '$1#$2');
-  const vibrate = (p) => { try { if (navigator.vibrate) navigator.vibrate(p); } catch (_) { /* ignore */ } };
+  // Android vibrates; iPhones have no vibration API, so they get the switch-control haptic below instead.
+  const IOS_TOUCH = /iP(hone|ad|od)/.test(navigator.userAgent || '') || (/Mac/.test(navigator.platform || '') && navigator.maxTouchPoints > 1);
+  const CAN_VIBRATE = !IOS_TOUCH && typeof navigator.vibrate === 'function';
+  const vibrate = (p) => { if (!CAN_VIBRATE) return; try { navigator.vibrate(p); } catch (_) { /* ignore */ } };
   const reduceMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   // "JAK#2" -> JAK with a small #2
   // Two people with the same initials: the second is the letters with a 2 in a bubble, never "FB#2" on screen.
@@ -73,6 +76,18 @@
     SERVER_ERROR: 'Something went wrong on our side. Please try again.',
   };
   const msg = (e) => MESSAGES[e && e.code] || MESSAGES.SERVER_ERROR;
+  // Which link brought this visit (?r=ig from a poster or post): kept for the visit and sent with a payment, so the
+  // committee can see which posters work. Nothing else is recorded, and nothing about the person.
+  const SOURCE = (() => {
+    try {
+      const u = new URL(location.href);
+      const r = u.searchParams.get('r');
+      if (r && /^[a-z0-9-]{1,16}$/i.test(r)) sessionStorage.setItem('preslink.r', r.toLowerCase());
+      // Off the address bar once read, so a link copied from it doesn't carry the tag on.
+      if (u.searchParams.has('r')) { u.searchParams.delete('r'); history.replaceState(history.state, '', u.pathname + u.search + u.hash); }
+      return sessionStorage.getItem('preslink.r') || '';
+    } catch (_) { return ''; }
+  })();
 
   // ---------------------------------------------------------------------------
   // Storage and state
@@ -174,16 +189,50 @@
   // ---------------------------------------------------------------------------
   // UI helpers
   // ---------------------------------------------------------------------------
+  // iPhone haptics. Safari plays the system tick when a switch control (<input type="checkbox" switch>, Safari
+  // 17.4 and later) is toggled by a real tap. So each plain button gets a transparent label over it, wired to a
+  // hidden switch: the finger lands on the label, the click still bubbles to the button's own handlers, and the
+  // switch ticks. (The technique of the ios-haptics library, MIT.) Never on a submit button or a link, where a
+  // label would take over the default action. setText changes a button's words without dropping its label.
+  function hap(el) {
+    if (!IOS_TOUCH || !el || el.querySelector(':scope > .hap')) return;
+    const l = document.createElement('label'); l.className = 'hap'; l.setAttribute('aria-hidden', 'true');
+    const i = document.createElement('input'); i.type = 'checkbox'; i.setAttribute('switch', ''); i.tabIndex = -1;
+    i.addEventListener('click', (e) => e.stopPropagation());
+    l.appendChild(i); el.appendChild(l);
+  }
+  function hapAll(root = document) { if (IOS_TOUCH) $$('button[type="button"], #game', root).forEach(hap); }
+  function setText(el, text) { const l = el.querySelector(':scope > .hap'); el.textContent = text; if (l) el.appendChild(l); }
+  // Android: a short tick on every press, before the click lands (the game's taps have their own patterns).
+  document.addEventListener('pointerdown', (e) => {
+    if (!CAN_VIBRATE || e.pointerType === 'mouse') return;
+    const b = e.target.closest('button, a.cell');
+    if (b && !b.disabled && !b.closest('#game')) vibrate(8);
+  }, { passive: true });
+  // iOS only shows :active styles when the page listens for touches.
+  document.addEventListener('touchstart', () => {}, { passive: true });
+  // Stripe's checkout opens faster when the connection is already made: warm it on the first tap that may buy.
+  let stripeWarm = false;
+  document.addEventListener('pointerdown', (e) => {
+    if (stripeWarm || DEMO || !e.target.closest('[data-bundle], #home-play, .js-play, #result-again, #name-submit, #practice-go')) return;
+    if (e.target.closest('#home-play') && isNew()) return;
+    stripeWarm = true;
+    const l = document.createElement('link'); l.rel = 'preconnect'; l.href = 'https://checkout.stripe.com'; document.head.appendChild(l);
+  }, { passive: true });
+
   let toastTimer = 0;
   function toast(text, isError = false, ms = 3200) {
+    if (isError) vibrate([30, 50, 30]);
     const t = $('#toast');
     t.textContent = text;
+    t.dataset.ic = isError ? '!' : /^New badge/.test(text) ? '★' : /^(Saved|Copied|Welcome|You now|Signed out|Back online|You are top)/.test(text) ? '✓' : '';
     t.classList.toggle('error', isError);
     t.classList.toggle('top', !$('#sheet-backdrop').hidden); // over a sheet it sits under the app bar; otherwise above the tab bar
     t.hidden = false;
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => { t.hidden = true; }, ms);
   }
+  $('#toast').addEventListener('click', () => { $('#toast').hidden = true; });
   function overlay(text) {
     const o = $('#overlay');
     if (!text) { o.hidden = true; return; }
@@ -196,6 +245,7 @@
     $('#toast').classList.add('top'); // a toast already showing must not sit on the sheet's buttons
   }
   function closeSheets() {
+    if (/^#(terms|privacy)$/.test(location.hash)) history.replaceState(null, '', '#' + current);
     $('#toast').classList.remove('top'); // a toast that was held clear of a sheet drops back above the tab bar
     $$('.sheet').forEach((s) => { s.hidden = true; });
     $('#sheet-backdrop').hidden = true;
@@ -207,6 +257,34 @@
     if (e.target.closest('[data-close]')) closeSheets();
   });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheets(); });
+  // A sheet's title bar can be pulled down to close it, as in an app (not the code sheet, which has its own Done).
+  (() => {
+    let sh = null, y0 = 0, dy = 0, t0 = 0;
+    document.addEventListener('pointerdown', (e) => {
+      const head = e.target.closest('.sheet-head');
+      if (!head || e.pointerType === 'mouse' || e.target.closest('button') || window.innerWidth >= 900) return;
+      const s = head.closest('.sheet');
+      if (!s || s.id === 'sheet-code') return;
+      sh = s; y0 = e.clientY; dy = 0; t0 = performance.now();
+    }, { passive: true });
+    document.addEventListener('pointermove', (e) => {
+      if (!sh) return;
+      dy = Math.max(0, e.clientY - y0);
+      if (dy > 3) { sh.style.transition = 'none'; sh.style.transform = `translateY(${dy}px)`; }
+    }, { passive: true });
+    const end = () => {
+      if (!sh) return;
+      const s = sh; sh = null;
+      const flick = dy > 40 && performance.now() - t0 < 260;
+      s.style.transition = 'transform .2s cubic-bezier(.2, .8, .2, 1)';
+      if (dy > 110 || flick) {
+        s.style.transform = 'translateY(100%)';
+        setTimeout(() => { s.style.transform = ''; s.style.transition = ''; if (s.id === 'sheet-contact') skipContact(); else closeSheets(); }, 170);
+      } else { s.style.transform = ''; setTimeout(() => { s.style.transition = ''; }, 220); }
+    };
+    document.addEventListener('pointerup', end);
+    document.addEventListener('pointercancel', end);
+  })();
   // How to play: shown by its rows, and once by itself before the very first light.
   function showIntro() {
     return new Promise((resolve) => {
@@ -255,7 +333,8 @@
     b.dataset.open = '1';
     const li = b.closest('li');
     if (!li) return;
-    const [title, text] = BADGE_TEXT[b.dataset.badge] || ['', ''];
+    const [title, raw] = BADGE_TEXT[b.dataset.badge] || ['', ''];
+    const text = HONOURS() ? raw.replace('A spot prize at the end.', 'Honoured at the end.') : raw;
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
     bubble.setAttribute('role', 'status');
@@ -324,6 +403,7 @@
   // Router and tab bar
   // ---------------------------------------------------------------------------
   const SCREENS = ['home', 'cabinet', 'play', 'board', 'prize', 'about', 'you', 'signin'];
+  const TAB_ORDER = { home: 0, cabinet: 0, play: 0, board: 1, prize: 2, about: 3, you: 4, signin: 4 };
   const screens = $$('.screen');
   let current = 'home';
   function go(name) {
@@ -334,12 +414,19 @@
     if (!SCREENS.includes(name)) name = 'home';
     if (name === 'play' && !player && !wantPractice) { go('home'); return; }
 
+    const from = current;
     if (name !== current) prevScreen = current;
     current = name;
-    const tname = { board: 'Leaderboard', prize: 'Prizes', about: 'About', you: 'You', play: 'Play', signin: 'Sign in' }[name];
+    const tname = { board: 'Leaderboard', prize: HONOURS() ? 'Honours' : 'Prizes', about: 'About', you: 'You', play: 'Play', signin: 'Sign in' }[name];
     document.title = tname ? `${tname} · PresLink Arcade` : 'PresLink Arcade';
     closeSheets();
     screens.forEach((s) => { s.hidden = s.dataset.screen !== name; });
+    const scr = screens.find((s) => s.dataset.screen === name);
+    if (scr && from !== name) {
+      scr.classList.remove('from-l', 'from-r'); void scr.offsetWidth;
+      scr.classList.add((TAB_ORDER[name] || 0) >= (TAB_ORDER[from] || 0) ? 'from-r' : 'from-l');
+    }
+    if (name !== 'board') $('#me-bar').hidden = true;
     window.scrollTo(0, 0);
     const tab = { home: 'play', cabinet: 'play', play: 'play', signin: 'play', board: 'board', prize: 'board', about: 'about', you: 'you' }[name];
     $$('#tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
@@ -361,7 +448,12 @@
     if (name === 'you') openYou();
     if (name === 'signin') setTimeout(() => $('#signin-name').focus(), 60);
   }
-  window.addEventListener('hashchange', () => render(location.hash.slice(1) || 'home'));
+  const SHEET_LINKS = ['terms', 'privacy'];
+  window.addEventListener('hashchange', () => {
+    const h = location.hash.slice(1);
+    if (SHEET_LINKS.includes(h)) { openSheet(h); return; }
+    render(h || 'home');
+  });
   document.addEventListener('click', (e) => {
     const back = e.target.closest('[data-back]');
     if (back) { e.preventDefault(); go(prevScreen === current ? 'home' : prevScreen); return; }
@@ -380,12 +472,17 @@
   // ---------------------------------------------------------------------------
   // Home and the money counter in the app bar
   // ---------------------------------------------------------------------------
+  // Someone new (no player, never practised) is offered the free practice first, as the posters promise.
+  function isNew() { const d = store.get('preslink.practice'); return !player && !(d && d.n > 0); }
+  const canPlayNow = () => !!player && (credits > 0 || !!openPlay);
+  const playLabel = () => canPlayNow() ? `Play · ${credits + (openPlay ? 1 : 0)} left` : 'Play · €2';
   function renderHome() {
     const btn = $('#home-play');
-    const canPlay = !!player && (credits > 0 || !!openPlay);
-    btn.textContent = canPlay ? `Play · ${credits + (openPlay ? 1 : 0)} left` : 'Play · €2';
-    btn.classList.toggle('ready', canPlay);
-    if (canPlay) prefetchPlay();
+    const fresh = isNew();
+    setText(btn, fresh ? 'Try it free' : playLabel());
+    btn.classList.toggle('ready', canPlayNow());
+    $('#home-practice').hidden = fresh;
+    if (canPlayNow()) prefetchPlay();
     renderHomeTop();
   }
   // The top three of the Everyone board on Home, from iPad width up (the card is hidden on a phone).
@@ -397,10 +494,10 @@
       rpc('board', { p_role: null }).then((r) => { if (seq !== homeTopSeq || boardCache.everyone) return; boardCache.everyone = r; renderHomeTop(); }).catch(() => {});
       return;
     }
-    $('#home-top-list').innerHTML = rows.slice(0, 3).map((r) => `<li class="${player && r.tag === player.tag ? 'me ' : ''}r${r.rank}"><span class="rank r${r.rank}">${r.rank}</span>${avatarHtml(r.initials, false, r.colour)}<span class="name"></span><span class="pts">${r.score}</span></li>`).join('');
+    $('#home-top-list').innerHTML = rows.slice(0, 3).map((r) => `<li class="${player && r.tag === player.tag ? 'me ' : ''}r${r.rank}"><span class="rank r${r.rank}">${r.rank}</span>${avatarHtml(r.initials, false, r.colour)}<span class="name">${player && r.tag === player.tag ? '<span class="badges"><span class="youtag">You</span></span>' : ''}</span><span class="pts">${r.score}</span></li>`).join('');
     $('#home-top-empty').hidden = rows.length > 0;
   }
-  $('#home-play').addEventListener('click', playOrBuy);
+  $('#home-play').addEventListener('click', () => { if (isNew()) practiseFromHome(); else playOrBuy(); });
   let wantGame = false;
   function startPlay() { sounds.prime(); wantGame = true; if (location.hash === '#play') { wantGame = false; game.state = 'idle'; startGame(); } else go('play'); }
   function playOrBuy() {
@@ -460,7 +557,7 @@
     if (from === null) { odoRoll(el, 0, target); return; }
     if (target !== from) odoRoll(el, from, target);
   }
-  const STATS_EVERY = 5000;
+  const STATS_EVERY = 15000;
   let statsTimer = 0;
   const inPlay = () => ['loading', 'countdown', 'sweeping', 'between'].includes(game.state);
   function pollStats() {
@@ -470,7 +567,7 @@
   }
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshStats(); pollStats(); });
   window.addEventListener('offline', () => toast('No connection', true, 4000));
-  window.addEventListener('online', () => { toast('Back online'); if (game.pending && game.state === 'done') submitPending(game.lastScore); else refreshStats(); });
+  window.addEventListener('online', () => { toast('Back online'); if (game.pending && game.state === 'done') submitPending().then((x) => showResult(game.lastScore, x.r, x.note)); else refreshStats(); });
 
   // The committee's words and photos (the console's Site content page). Empty fields keep the page's own.
   let contentKey = '';
@@ -517,6 +614,48 @@
     return d && !isNaN(d) ? 'Ends ' + d.toLocaleDateString('en-IE', { day: 'numeric', month: 'long' }) : '';
   };
   const closesText = () => endsText().replace('Ends ', '');
+  // Prizes or honours: the owner can run the boards for honours instead of prizes (no prize of money's worth) with
+  // one setting; every word that promises a prize follows it.
+  const HONOURS = () => !!stats && stats.prize_mode === 'honours';
+  function applyMode() {
+    const h = HONOURS();
+    document.documentElement.classList.toggle('honours', h);
+    $$('[data-honours]').forEach((el) => { if (el.dataset.prizes == null) el.dataset.prizes = el.textContent; setText(el, h ? el.dataset.honours : el.dataset.prizes); });
+    $$('.mode-prizes').forEach((el) => { el.hidden = h; });
+    $$('.mode-honours').forEach((el) => { el.hidden = !h; });
+  }
+  // The organiser's details from the site content (content.org: name, rcn, email; or content.contact.email).
+  function applyOrg(c) {
+    const org = (c && c.org) || {}, contact = (c && c.contact) || {};
+    const legal = (org.name ? `, under ${org.name}` : '') + (org.rcn ? ` (registered charity number ${org.rcn})` : '');
+    $$('.org-legal').forEach((el) => { el.textContent = legal; });
+    const email = String(org.email || contact.email || '').trim();
+    $$('.org-contact').forEach((el) => { el.innerHTML = email ? `Email: <a href="mailto:${esc(email)}">${esc(email)}</a>.` : 'You can contact us through the school.'; });
+    $$('.org-rcn').forEach((el) => { el.textContent = org.rcn ? ` · RCN ${org.rcn}` : ''; });
+  }
+  // The goal card on Home: the total so far, how far it is to the goal, and the time left.
+  const daysLeft = () => { const d = stats && stats.ends_on ? new Date(stats.ends_on + 'T23:59:59') : null; return d && !isNaN(d) ? Math.ceil((d - Date.now()) / 864e5) : null; };
+  let shownGoal = null;
+  function renderGoal() {
+    if (!stats) return;
+    const raised = Number(stats.total_raised_cents || 0), goal = Number(stats.goal_cents || 0);
+    const euros = Math.round(raised / 100);
+    const el = $('#goal-n');
+    if (shownGoal === null) odoRoll(el, 0, euros); else if (euros !== shownGoal) odoRoll(el, shownGoal, euros);
+    shownGoal = euros;
+    // The goal and its bar appear once there is something to show: a bar near empty puts people off giving.
+    const showGoal = goal > 0 && raised / goal >= 0.15;
+    $('#goal-of').textContent = showGoal ? `raised of ${euro(goal)}` : 'raised so far';
+    $('#goal-bar').hidden = !showGoal;
+    if (showGoal) $('#goal-fill').style.width = Math.min(100, raised / goal * 100).toFixed(1) + '%';
+    const bits = [];
+    const players = Number(stats.players || 0);
+    if (players >= 25) bits.push(`${players.toLocaleString('en-IE')} players`);
+    const closes = closesText(), left = daysLeft();
+    if (closes && left != null && left >= 0) bits.push(left <= 1 ? 'Last day' : left <= 60 ? `${left} days left` : `Closes ${closes}`);
+    $('#goal-meta').textContent = bits.join(' · ');
+    $('#goal-meta').hidden = !bits.length;
+  }
   let statsSeq = 0;
   async function refreshStats() {
     const seq = ++statsSeq;
@@ -525,13 +664,16 @@
     if (seq !== statsSeq) return; // a newer answer is on its way (e.g. right after a payment)
     stats = fresh;
     applyContent(stats.content || {});
+    applyOrg(stats.content || {});
+    applyMode();
     showRaised(Number(stats.total_raised_cents || 0));
     showRing(Number(stats.total_raised_cents || 0), Number(stats.goal_cents || 0));
     const ends = endsText();
-    $('#board-sub').textContent = ends ? `Prizes at the end · ${ends.replace('Ends', 'ends')}` : 'Prizes at the end';
+    const what = HONOURS() ? 'Honours' : 'Prizes';
+    $('#board-sub').textContent = ends ? `${what} at the end · ${ends.replace('Ends', 'ends')}` : `${what} at the end`;
     const closes = closesText();
-    $('#prize-sub').textContent = closes ? `Closes ${closes} · winners are emailed` : 'Winners are emailed at the close';
-    $('#home-ends').textContent = closes ? `Closes ${closes}` : '';
+    $('#prize-sub').textContent = HONOURS() ? (closes ? `Closes ${closes}` : 'Honoured at the close') : (closes ? `Closes ${closes} · winners are emailed` : 'Winners are emailed at the close');
+    renderGoal();
     const pz = stats.prizes || {};
     const put = (id, v) => { const el = $(id); const t = String(v || '').trim(); el.textContent = t || 'To be announced'; el.classList.toggle('tba', !t); };
     put('#prize-everyone', pz.everyone);
@@ -541,8 +683,11 @@
     put('#prize-first-play', pz.first_play);
   }
 
-  async function refreshMe() {
+  let meAt = 0;
+  async function refreshMe(force) {
     if (!player) return;
+    if (!force && Date.now() - meAt < 20000) return;
+    meAt = Date.now();
     try {
       const me = await api('me', { player_id: player.id });
       adoptPlayer(me);
@@ -565,7 +710,7 @@
     if (spend && spend.spent + amount > spend.campaign) { toast(limitText('SPEND_LIMIT'), true, 5000); return; }
     overlay('Opening secure checkout');
     try {
-      const r = await api('checkout', { player_id: player.id, bundle });
+      const r = await api('checkout', SOURCE ? { player_id: player.id, bundle, source: SOURCE } : { player_id: player.id, bundle });
       location.assign(r.url);
     } catch (ex) {
       overlay(null);
@@ -594,7 +739,7 @@
     if (result.player) adoptPlayer(result.player);
     const n = result.credits_added || 1;
     const b = BUNDLES[result.bundle];
-    $('#cab-title').textContent = result.demo ? 'Demo play' : 'Thank you';
+    $('#cab-title').textContent = result.demo ? 'Demo plays added' : 'Thank you';
     $('#cab-text').textContent = '';
     cabinetBusy = true;
     $('#cab-play').hidden = true;
@@ -603,8 +748,7 @@
     refreshStats();
     await wait(120);
     prefetchPlay(); // ready before the Start button is
-    await coinDrop(n);
-    $('#cab-text').textContent = n === 1 ? '1 play added' : `${n} plays added`;
+    await tokensIn(n);
     // The player starts the play themselves: the button pops in and waits.
     const btn = $('#cab-play');
     btn.hidden = false; btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop');
@@ -612,31 +756,23 @@
   }
   $('#cab-play').addEventListener('click', () => startPlay());
 
-  // A coin goes into the slot at the top, a play token pops out of the tray at the bottom.
-  // A coin goes into the slot at the top, a play token pops out of the tray at the bottom.
-  async function coinDrop(n) {
-    const coin = $('#coin'), slot = $('#cab-slot'), panel = $('#cab-panel'), token = $('#token'), val = $('#cab-credits');
-    const target = credits;
-    const from = Math.max(0, target - n);
+  // The tick draws itself, a token for each play drops in, and the count rolls up to the plays now ready.
+  async function tokensIn(n) {
+    const box = $('#cab-tokens'), val = $('#cab-credits'), card = $('#success-card');
+    const target = credits, from = Math.max(0, target - n);
     val.textContent = from;
-    coin.classList.remove('drop'); void coin.offsetWidth; coin.classList.add('drop');
-    await wait(760);
-    slot.classList.add('glow');
-    panel.classList.remove('hit'); void panel.offsetWidth; panel.classList.add('hit');
+    $('#cab-text').textContent = target === 1 ? 'play ready' : 'plays ready';
+    card.classList.remove('go'); void card.offsetWidth; card.classList.add('go');
+    box.innerHTML = Array.from({ length: Math.min(n, 7) }, (_, i) => `<span class="tk" style="--i:${i}"></span>`).join('');
+    await wait(reduceMotion() ? 0 : 380);
     vibrate(30);
-    await wait(280);
-    slot.classList.remove('glow');
-    coin.classList.remove('drop');
-    const step = n > 3 ? 240 : 420;
     for (let i = 0; i < n; i++) {
-      token.textContent = String(from + i + 1);
-      token.classList.remove('out'); void token.offsetWidth; token.classList.add('out');
-      await wait(step);
+      await wait(reduceMotion() ? 0 : n > 3 ? 70 : 120);
       val.textContent = from + i + 1;
       val.classList.remove('bump'); void val.offsetWidth; val.classList.add('bump');
-      vibrate(15);
+      vibrate(12);
     }
-    await wait(150);
+    await wait(60);
   }
 
   // ---------------------------------------------------------------------------
@@ -644,6 +780,23 @@
   // ---------------------------------------------------------------------------
   const game = { state: 'idle', play: null, round: 0, taps: [], scores: [], sweepStart: 0, trackW: 0, pending: null, lastScore: 0 };
   const marker = $('#marker'), track = $('#track'), pin = $('#pin'), swatch = $('#swatch');
+  // Three faint copies of the light a moment behind it: a trail that shows its speed and direction.
+  const ghosts = $$('#track .ghost');
+  function setGhosts(t, r) {
+    for (let k = 0; k < ghosts.length; k++) ghosts[k].style.transform = `translateX(${posAt(Math.max(0, t - (k + 1) * 22), r.phase, game.play.speed_ms) * game.trackW}px)`;
+  }
+  // Where the light stops: a ring spreads from it (green for a hit), and a perfect light throws sparks.
+  function ripple(pos, kind) {
+    if (reduceMotion()) return;
+    const x = (pos * game.trackW) + 'px';
+    const rp = document.createElement('span'); rp.className = 'ripple ' + kind; rp.style.left = x;
+    track.appendChild(rp); setTimeout(() => rp.remove(), 700);
+    if (kind !== 'perfect') return;
+    for (let i = 0; i < 12; i++) {
+      const sp = document.createElement('span'); sp.className = 'spark'; sp.style.left = x; sp.style.setProperty('--a', (i * 30) + 'deg');
+      track.appendChild(sp); setTimeout(() => sp.remove(), 800);
+    }
+  }
 
   function posAt(ms, phase, speed) {
     let x = ms / speed + phase;
@@ -726,6 +879,7 @@
     if (!player) { go('home'); return; }
     if (game.state === 'countdown' || game.state === 'sweeping' || game.state === 'between' || game.state === 'loading') return;
     if (!practised()) { startPractice('play'); return; }
+    if (game.pending && !game.sending) submitPending(); // an earlier play that has not reached the server yet
     game.practice = false;
     game.offset = deviceOffset();
     resetGameUI();
@@ -766,12 +920,12 @@
     game.round = i;
     const r = game.play.rounds[i];
     const m = $('#game-msg');
-    m.classList.remove('go', 'count', 'coach');
+    m.classList.remove('go', 'count', 'coach', 'target');
     m.textContent = `Light ${i + 1} of 3`;
     if (i === ROUNDS - 1 && !game.practice && best != null) {
       // the play's score is the rounded average, so a new best needs (s1 + s2 + s3) / 3 >= best + 0.5
       const need = Math.ceil(3 * best + 1.5 - game.scores[0] - game.scores[1]);
-      if (need > 50 && need <= 999) m.textContent = `Light 3 · ${need} for a new best`;
+      if (need > 50 && need <= 999) { m.textContent = `Light 3 · ${need} for a new best`; m.classList.add('target'); }
     }
     setPin(r.target);
     marker.classList.remove('hit', 'miss', 'hide');
@@ -781,16 +935,21 @@
     renderDots();
     game.sweepStart = performance.now();
     setMarker(posAt(0, r.phase, game.play.speed_ms));
+    setGhosts(0, r);
+    track.classList.add('moving');
     game.raf = requestAnimationFrame(loop);
   }
   function loop(now) {
     if (game.state !== 'sweeping') return;
     const r = game.play.rounds[game.round];
-    setMarker(posAt(now - game.sweepStart, r.phase, game.play.speed_ms));
+    const t = now - game.sweepStart;
+    setMarker(posAt(t, r.phase, game.play.speed_ms));
+    setGhosts(t, r);
     game.raf = requestAnimationFrame(loop);
   }
   function abandonGame() {
     cancelAnimationFrame(game.raf);
+    track.classList.remove('moving');
     $('#game').classList.remove('sweeping');
     game.state = 'idle';
   }
@@ -828,7 +987,20 @@
     const ts = e && Number.isFinite(e.timeStamp) ? e.timeStamp : NaN;
     return ts > 0 && ts <= now + 5 && ts > now - 400 ? ts : now;
   }
+  // The light's number holds for a moment, then the next light starts; a tap after the first instant skips the
+  // rest of the wait, so a quick player is never held back.
+  const HOLD_MS = 650, LAST_HOLD_MS = 600, BLINK_MS = 90, SKIP_AFTER_MS = 220;
+  let skipHold = null;
+  function hold(ms) {
+    return new Promise((resolve) => {
+      const since = performance.now();
+      const done = () => { clearTimeout(t); skipHold = null; resolve(); };
+      const t = setTimeout(done, ms);
+      skipHold = () => { if (performance.now() - since >= SKIP_AFTER_MS) done(); };
+    });
+  }
   function onTap(e) {
+    if (game.state === 'between') { if (skipHold) skipHold(); return; }
     if (game.state !== 'sweeping') return;
     const ms = Math.round(touchTime(e) - DISPLAY_LAG_MS - (game.practice ? 0 : game.offset || 0) - game.sweepStart);
     if (ms < SWEEP_GUARD_MS) return;
@@ -840,17 +1012,21 @@
     const pos = posAt(ms, r.phase, game.play.speed_ms);
     const s = roundScore(pos, r.target, game.play.speed_ms);
     setMarker(pos); // the light stops, this frame, where it was when the finger landed
+    track.classList.remove('moving');
     marker.classList.add(s >= HIT ? 'hit' : 'miss');
     sounds.tap();
     const err = signedError(ms, r);
+    ripple(pos, s >= 999 || err === 0 ? 'perfect' : s >= HIT ? 'hit' : 'miss');
     game.taps.push(ms);
     game.scores.push(s);
     game.errs.push(err);
+    vibrate(10);
+    if (!game.practice && game.round === ROUNDS - 1) sendScore(); // the score leaves now, while its number shows
     requestAnimationFrame(() => afterRound(s, err)); // the score and the rest follow a frame later
   }
   $('#game').addEventListener('pointerdown', onTap);
   document.addEventListener('keydown', (e) => {
-    if ((e.code === 'Space' || e.code === 'Enter') && game.state === 'sweeping') onTap(e);
+    if ((e.code === 'Space' || e.code === 'Enter') && (game.state === 'sweeping' || game.state === 'between')) onTap(e);
   });
   // A keyboard plays the whole game: Space or Enter starts from Home or the cabinet, stops the light
   // (above), and plays again from the result. Buttons and fields keep their own keys.
@@ -872,7 +1048,7 @@
     const practice = !!game.practice;
     if (practice) recordPractice(err);
     if (s >= HIT) sounds.good();
-    vibrate(s >= 850 ? [20, 30, 20] : 25);
+    if (s >= 999 || err === 0) vibrate([20, 30, 20, 30, 50]); else if (s >= HIT) vibrate([12, 40, 22]);
     renderDots();
     const el = $('#score-value');
     el.textContent = practice ? `${Math.abs(err)} ms` : s; // practice shows only the timing, never a would-be score
@@ -881,23 +1057,24 @@
     const v = $('#verdict');
     v.textContent = practice ? (err === 0 ? 'Perfect' : err > 0 ? 'late' : 'early') : verdictFor(s, err);
     v.classList.toggle('miss', s < HIT);
+    v.classList.toggle('perfect', s >= 999 || err === 0);
     $('#game-msg').textContent = '';
     $('#coach').textContent = '';
-    await wait(850);
-    if (game.state !== 'between') return;
     if (game.round < ROUNDS - 1) {
+      await hold(HOLD_MS);
+      if (game.state !== 'between') return;
       v.textContent = '';
       $('#coach').textContent = '';
       $('#score-value').textContent = '';
       $('.score').classList.remove('pop', 'hit');
       marker.classList.add('hide'); // the light blinks off, then reappears at the next start, already moving
-      await wait(150);
+      await wait(BLINK_MS);
       if (game.state !== 'between') return;
       beginRound(game.round + 1);
-    } else if (practice) {
-      finishPractice();
     } else {
-      finishPlay();
+      await hold(LAST_HOLD_MS);
+      if (game.state !== 'between') return;
+      if (practice) finishPractice(); else finishPlay();
     }
   }
 
@@ -932,44 +1109,60 @@
     $('.score').classList.remove('pop', 'hit');
     $('#game-msg').textContent = 'Practice done';
     $('#practice-line').textContent = Math.abs(off) < 5 ? 'Your phone: on time' : `Your phone: ${Math.abs(off)} ms ${off > 0 ? 'late' : 'early'} · allowed for`;
-    $('#practice-go').textContent = practiceThen === 'play' ? 'Play for real' : 'Done';
+    $('#og-dot').style.left = (50 + Math.max(-80, Math.min(80, off)) / 80 * 44) + '%';
+    setText($('#practice-go'), practiceThen === 'play' ? 'Play for real' : playLabel());
     $('#practice-end').hidden = false;
   }
+  // After practice, the next step is a real play: straight in with plays left, otherwise checkout (the
+  // practice result stays underneath, so closing the sheet leaves things as they were).
   $('#practice-go').addEventListener('click', () => {
+    if (practiceThen !== 'play' && !canPlayNow()) { buy('single'); return; }
     game.practice = false;
     $('#practice-end').hidden = true;
-    if (practiceThen === 'play') { game.state = 'idle'; startGame(); } else { game.state = 'idle'; go('home'); }
+    game.state = 'idle'; startGame();
   });
   $('#practice-again').addEventListener('click', () => { game.state = 'idle'; startPractice(practiceThen); });
   let wantPractice = false;
-  $('#home-practice').addEventListener('click', () => {
+  // Share: the phone's own share sheet where there is one (the link shows up as the poster), else copy the link.
+  $('#about-share').addEventListener('click', () => {
+    const url = location.origin + '/?r=share';
+    if (navigator.share) { navigator.share({ title: 'PresLink Arcade', text: 'Can you stop the light?', url }).catch(() => {}); return; }
+    const done = () => toast('Copied the link');
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(url).then(done, () => toast(url, false, 6000));
+    else toast(url, false, 6000);
+  });
+  function practiseFromHome() {
     sounds.prime();
     if (location.hash === '#play') { game.state = 'idle'; startPractice('home'); return; }
     wantPractice = true; go('play');
-  });
+  }
+  $('#home-practice').addEventListener('click', practiseFromHome);
 
-  async function finishPlay() {
-    game.state = 'done';
+  // The score leaves at the last tap (sendScore), so the answer is usually back before the light's number has
+  // finished showing, and the result opens straight away.
+  function sendScore() {
     const score = Math.round(game.scores.reduce((a, b) => a + b, 0) / ROUNDS);
     game.lastScore = score;
-    $('#tap-hint').textContent = '';
-    $('#tap-hint').classList.remove('live');
-    $('#verdict').textContent = '';
-    $('#coach').textContent = 'Average of your 3 lights';
-    const el = $('#score-value');
-    await countUp(el, game.scores[ROUNDS - 1], score, 900, String); // from the last light's number, never through zero
-    $('.score').classList.add('pop');
-    vibrate(score >= 850 ? [30, 40, 30, 40, 60] : 40);
-    await wait(900);
-
     const payload = { player_id: player.id, play_id: game.play.play_id, score, taps: game.taps.slice(), offset: game.offset || 0 };
     game.pending = payload;
     store.set(PENDING_KEY, payload);
-    await submitPending(score);
+    game.sending = submitPending();
+  }
+  async function finishPlay() {
+    game.state = 'done';
+    $('#tap-hint').classList.remove('live');
+    const slow = setTimeout(() => { $('#tap-hint').textContent = 'Saving your score…'; }, 900);
+    const { r, note } = await (game.sending || submitPending());
+    clearTimeout(slow);
+    $('#tap-hint').textContent = '';
+    game.sending = null;
+    showResult(game.lastScore, r, note);
   }
 
-  async function submitPending(score) {
+  // Sends the play waiting in game.pending; answers { r, note } and keeps the player's numbers up to date.
+  async function submitPending() {
     const payload = game.pending;
+    if (!payload) return { r: null, note: '' };
     let r = null, note = '';
     try {
       r = await api('submit', payload);
@@ -987,7 +1180,7 @@
         note = 'Could not save your score yet. Check your connection and tap Try again.';
       }
     }
-    showResult(score, r, note);
+    return { r, note };
   }
 
   function showResult(score, r, note) {
@@ -1011,10 +1204,16 @@
     const first900 = !!r && score >= 900 && !store.get('preslink.got900');
     if (r && score >= 900) store.set('preslink.got900', true);
     const intoTop10 = !!r && rank != null && rank <= 10 && (prevRank == null || prevRank > 10);
-    if (score >= HIT && (newBest || first900 || intoTop10)) confetti.burst(score >= 900 ? 110 : 70); // never for a below-median play
+    if (current === 'play' && score >= HIT && (newBest || first900 || intoTop10)) confetti.burst(score >= 900 ? 110 : 70); // never for a below-median play
+    vibrate(newBest ? [25, 60, 25, 60, 90] : 30);
     kicker.textContent = newBest ? 'New best' : movedUp ? `Up ${prevRank - rank} ${prevRank - rank === 1 ? 'place' : 'places'}` : titleFor(score);
+    if (movedUp && !newBest) kicker.insertAdjacentHTML('afterbegin', '<svg aria-hidden="true"><use href="#i-up"/></svg>');
+    const fg = $('#gauge-fg'), C = 326.73;
+    fg.style.transition = 'none'; fg.style.strokeDasharray = `0 ${C}`; void fg.getBoundingClientRect();
+    fg.style.transition = '';
+    requestAnimationFrame(() => { fg.style.strokeDasharray = `${(Math.max(0, Math.min(1000, score)) / 1000 * C).toFixed(1)} ${C}`; });
     if (r) { store.set('preslink.prevBest', best); if (rank != null) store.set('preslink.prevRank', rank); }
-    countUp($('#result-score'), 0, score, 900, String);
+    countUp($('#result-score'), 0, score, 650, String);
     const lights = r && Array.isArray(r.rounds) && r.rounds.length === ROUNDS ? r.rounds.map((x) => Number(x)) : game.scores;
     const bestRound = Math.max(...lights);
     if (r && Array.isArray(badges)) {
@@ -1027,7 +1226,15 @@
         setTimeout(() => toast('New badge: ' + fresh.map((b) => BADGE_NAMES[b]).join(' and ')), 1300);
       }
     }
-    $('#result-rounds').innerHTML = '<span class="lbl">3 lights</span>' + lights.map((s) => `<span class="chip${s === bestRound ? ' top' : ''}">${s}</span>`).join('');
+    // One strip per light: the mark in the middle, the dot where the light stopped (early to the left, late to
+    // the right, 150 ms to the edge), the light's number and the milliseconds.
+    const errs = game.errs && game.errs.length === ROUNDS ? game.errs : null;
+    $('#result-rounds').innerHTML = lights.map((s, i) => {
+      const e = errs ? errs[i] : null;
+      const x = e == null ? null : 50 + Math.max(-1, Math.min(1, e / 150)) * 46;
+      const words = e == null ? '' : (s >= 999 || e === 0) ? 'perfect' : `${Math.abs(e)} ms ${e > 0 ? 'late' : 'early'}`;
+      return `<div class="rl${s === bestRound ? ' top' : ''}"><span class="rl-n">${i + 1}</span><span class="rl-track"><i class="rl-mark"></i>${x == null ? '' : `<i class="rl-dot${s >= HIT ? ' hit' : ''}" style="left:${x.toFixed(1)}%"></i>`}</span><span class="chip">${s}</span><span class="rl-ms">${words}</span></div>`;
+    }).join('');
     $('#result-best').textContent = r && best != null ? best : '–';
     $('#result-rank').textContent = rank ? '#' + rank : '–';
     $('#result-rank-sub').textContent = '';
@@ -1040,13 +1247,13 @@
     const again = $('#result-again');
     $('#result-topup').hidden = true;
     if (game.pending) {
-      again.textContent = 'Try again';
-      again.onclick = () => { n.hidden = true; submitPending(score); };
+      setText(again, 'Try again');
+      again.onclick = () => { n.hidden = true; submitPending().then((x) => showResult(score, x.r, x.note)); };
     } else if (credits > 0) {
-      again.textContent = `Play again · ${credits} left`;
+      setText(again, `Play again · ${credits} left`);
       again.onclick = () => { game.state = 'idle'; startGame(); };
     } else {
-      again.textContent = 'Play again · €2';
+      setText(again, 'Another play · €2');
       again.onclick = () => buy('single');
       $('#result-topup').hidden = false;
     }
@@ -1054,11 +1261,11 @@
     if (finePointer.matches) again.focus({ preventScroll: true }); // Enter or Space plays again
     // First scored play: ask where to send the news if they win, and nothing on top of it.
     const firstAsk = !!r && !!player && !player.contact_email && !store.get(CONTACT_ASKED_KEY);
-    if (r && rank === 1 && !firstAsk) toast('You are top of the board');
+    if (r && rank === 1 && prevRank !== 1 && !firstAsk) toast('You are top of the board');
     if (firstAsk) openContact(true);
   }
   // The reminder row on the result screen shows only while no email is on file.
-  function renderResultEmail() { $('#result-email').hidden = !player || !!player.contact_email || !!store.get(CONTACT_ASKED_KEY); }
+  function renderResultEmail() { const b = $('#result-email'); b.hidden = b.parentElement.hidden = !player || !!player.contact_email || !!store.get(CONTACT_ASKED_KEY); }
 
   // How far to the next place: the nudge that makes "one more go" worth it.
   async function showGap(rank) {
@@ -1132,14 +1339,14 @@
     ctx.fillStyle = '#1f9d5a'; ctx.font = font(200, 800); ctx.fillText(player.claim_code.split('').join(' '), W / 2, 1000);
     // rule, then the condition first so nobody reads the ticket as a prize
     ctx.fillStyle = '#e5e5ea'; ctx.fillRect(160, 1064, W - 320, 3);
-    ctx.fillStyle = '#1c1c1e'; ctx.font = font(36, 800); ctx.fillText('Show this to collect a prize.', W / 2, 1140);
+    ctx.fillStyle = '#1c1c1e'; ctx.font = font(36, 800); ctx.fillText(HONOURS() ? 'Proves your scores are yours.' : 'Show this to collect a prize.', W / 2, 1140);
     ctx.fillStyle = '#8e8e93'; ctx.font = font(28, 600); ctx.fillText(location.host || 'preslink.netlify.app', W / 2, 1200);
     return c;
   }
   // One rendered ticket per player, kept as a blob so the save button has nothing left to wait for.
   let ticket = null;
   async function ticketFor() {
-    const key = `${player.display}|${player.claim_code}|${location.host}`;
+    const key = `${player.display}|${player.claim_code}|${location.host}|${HONOURS() ? 'h' : 'p'}`;
     if (ticket && ticket.key === key) return ticket;
     const c = await renderTicket();
     const blob = await new Promise((resolve, reject) => c.toBlob((b) => (b ? resolve(b) : reject(new Error('no image'))), 'image/png'));
@@ -1242,7 +1449,7 @@
       renderContactSaved(); // the sheet stays open: the code is the other thing to keep
       renderYou();
       renderResultEmail();
-      toast(isSchool() ? `Saved. You are on the ${boardName(player.role)} board.` : 'Saved. We will email you if you win.');
+      toast(isSchool() ? `Saved. You are on the ${boardName(player.role)} board.` : HONOURS() ? 'Saved. We will email you if you top a board.' : 'Saved. We will email you if you win.');
     } catch (ex) {
       showError('contact-error', msg(ex));
     } finally { btn.disabled = false; }
@@ -1288,7 +1495,7 @@
   const ROLES = ['everyone', 'student', 'teacher'];
   const boardList = (role) => (role ? $(`#boards-wide .board[data-role="${role}"]`) : $('#board-list'));
   const skeletonRows = () => Array.from({ length: 5 }, () => '<li class="sk" aria-hidden="true"><span class="rank"></span><span class="avatar"></span><span class="name"></span><span class="pts"></span></li>').join('');
-  function showSkeleton(role) { const list = boardList(role); if (!list.children.length) list.innerHTML = skeletonRows(); }
+  function showSkeleton(role) { const list = boardList(role); if (!list.children.length) { list.classList.remove('podium'); list.innerHTML = skeletonRows(); } }
   async function loadBoardsWide() {
     ROLES.forEach((role) => { if (boardCache[role]) renderBoard(boardCache[role], role); else showSkeleton(role); });
     const seq = ++boardSeq;
@@ -1310,8 +1517,6 @@
   async function loadSpot() {
     try { spot = await rpc('spot_prizes'); } catch (_) { spot = null; }
     const l = spot && spot.best_light, f = spot && spot.first_play;
-    if ($('#spot-light')) $('#spot-light').innerHTML = l ? `${nameHtml(l.initials)} · ${l.score}` : '–';
-    if ($('#spot-plays')) $('#spot-plays').innerHTML = p ? `${nameHtml(p.initials)} · ${p.plays}` : '–';
     $('#lead-light').innerHTML = l ? leadHtml(l.initials, l.score, l.colour) : '';
     $('#lead-first').innerHTML = f ? leadHtml(f.initials, f.score, f.colour) : '';
   }
@@ -1341,6 +1546,7 @@
     const list = boardList(role);
     const empty = role ? list.nextElementSibling : $('#board-empty');
     list.innerHTML = '';
+    list.classList.toggle('podium', rows.length > 0); // the top three stand on steps; the rest are rows
     empty.hidden = rows.length > 0;
     const lightTag = spot && spot.best_light ? spot.best_light.tag : null;
     const firstTag = spot && spot.first_play ? spot.first_play.tag : null;
@@ -1360,7 +1566,23 @@
         <span class="pts">${r.score}</span>`;
       list.appendChild(li);
     });
+    if (!role) watchMe();
   }
+  // The player's own row, pinned above the tab bar while it is scrolled out of sight.
+  let meObs = null;
+  function watchMe() {
+    const bar = $('#me-bar');
+    if (meObs) { meObs.disconnect(); meObs = null; }
+    bar.hidden = true;
+    if (wideBoards.matches || !player || !('IntersectionObserver' in window)) return;
+    const row = $('#board-list li.me');
+    const r = (boardCache[boardRole] || []).find((x) => x.tag === player.tag);
+    if (!row || !r) return;
+    bar.innerHTML = `<span class="rank">${r.rank}</span>${avatarHtml(r.initials, false, r.colour)}<span class="me-name">You</span><span class="pts">${r.score}</span>`;
+    meObs = new IntersectionObserver(([en]) => { bar.hidden = en.isIntersecting || current !== 'board'; }, { rootMargin: '0px 0px -96px 0px' });
+    meObs.observe(row);
+  }
+  $('#me-bar').addEventListener('click', () => { const row = $('#board-list li.me'); if (row) row.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'center' }); });
   // The leader on a prize card opens the board it leads.
   $('[data-screen="prize"]').addEventListener('click', (e) => {
     const lead = e.target.closest('.prize-lead');
@@ -1400,7 +1622,7 @@
     const firstEmpty = () => letters.findIndex((l) => !l);
     const paint = () => {
       boxes.forEach((b, i) => {
-        b.textContent = letters[i]; b.classList.toggle('filled', !!letters[i]); b.classList.toggle('active', i === active);
+        setText(b, letters[i]); b.classList.toggle('filled', !!letters[i]); b.classList.toggle('active', i === active);
         b.setAttribute('aria-label', letters[i] ? `Initial ${i + 1}: ${letters[i]}. Tap to clear` : `Initial ${i + 1}${i === 2 ? ', optional' : ''}, empty`);
       });
       pad.classList.toggle('full', active < 0);
@@ -1471,7 +1693,7 @@
     $('#you-panel').hidden = !player;
     if (!player) return;
     renderYou();
-    refreshMe().then(() => { $('#you-empty').hidden = !!player; $('#you-panel').hidden = !player; renderYou(); });
+    refreshMe(true).then(() => { $('#you-empty').hidden = !!player; $('#you-panel').hidden = !player; renderYou(); });
   }
   function renderYou() {
     if (!player) return;
@@ -1482,7 +1704,7 @@
     b.classList.toggle('school', isSchool());
     const eff = tileColour((player.display || player.initials).split('#')[0], player.colour);
     const letters = (player.display || player.initials).split('#')[0];
-    $$('#you-colours .sw').forEach((x) => { const on = Number(x.dataset.colour) === eff; x.textContent = letters; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
+    $$('#you-colours .sw').forEach((x) => { const on = Number(x.dataset.colour) === eff; setText(x, letters); x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
     $('#you-email-text').textContent = player.contact_email || 'Optional';
     $('#you-code').textContent = player.claim_code;
     $('#you-credits').textContent = credits;
@@ -1499,11 +1721,14 @@
   $('#you-colours').addEventListener('click', async (e) => {
     const sw = e.target.closest('.sw');
     if (!sw || !player) return;
+    const before = player.colour, want = Number(sw.dataset.colour);
+    if (sw.classList.contains('on')) return;
+    player.colour = want; savePlayer(); renderYou(); // at once; the server confirms behind it
     try {
-      adoptPlayer(await api('colour', { player_id: player.id, colour: Number(sw.dataset.colour) }));
+      adoptPlayer(await api('colour', { player_id: player.id, colour: want }));
       Object.keys(boardCache).forEach((k) => { delete boardCache[k]; });
       renderYou();
-    } catch (ex) { toast(msg(ex), true); }
+    } catch (ex) { player.colour = before; savePlayer(); renderYou(); toast(msg(ex), true); }
   });
   $('#you-edit').addEventListener('click', () => {
     const f = $('#edit-form');
@@ -1531,7 +1756,13 @@
     } finally { $('#edit-save').disabled = false; }
   });
   $('#you-signout').addEventListener('click', () => {
-    if (!confirm(`Sign out ${player.display} on this device? Sign back in with your initials and code ${player.claim_code}.`)) return;
+    if (!player) return;
+    $('#signout-tile').innerHTML = avatarHtml(player.display, true, player.colour);
+    $('#signout-code').textContent = player.claim_code;
+    openSheet('signout');
+  });
+  $('#signout-yes').addEventListener('click', () => {
+    closeSheets();
     clearPlayer();
     renderHome();
     toast('Signed out');
@@ -1562,18 +1793,18 @@
   // ---------------------------------------------------------------------------
   // Boot
   // ---------------------------------------------------------------------------
-  // Splash: plays on every open and reload. A tap skips it.
+  // Splash: a device's first visit only (decided in the head), about a second and a half. A tap skips it.
   const splashDone = new Promise((resolve) => {
     const el = $('#splash');
     if (!el) { resolve(); return; }
     const finish = () => { el.classList.add('gone'); resolve(); };
     const returning = /session_id=|cancelled=/.test(location.search) || document.documentElement.classList.contains('no-splash');
     if (returning) { finish(); return; }
-    setTimeout(finish, reduceMotion() ? 1400 : 3300);
+    setTimeout(finish, reduceMotion() ? 600 : 1450);
     el.addEventListener('click', finish);
   });
-  // Coming back to the tab from the back-forward cache counts as opening the site: play it again.
-  window.addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); });
+  // Back from another page (the back-forward cache): the page is as it was; only the numbers are refreshed.
+  window.addEventListener('pageshow', (e) => { if (e.persisted) { refreshStats(); refreshMe(true); } });
 
   async function boot() {
     const params = new URLSearchParams(location.search);
@@ -1584,17 +1815,20 @@
     const pending = store.get(PENDING_KEY);
     if (pending && player && pending.player_id === player.id && Array.isArray(pending.taps)) {
       api('submit', pending).then(() => store.del(PENDING_KEY), (ex) => { if (ex.code !== 'NETWORK' && ex.code !== 'SERVER_ERROR') store.del(PENDING_KEY); })
-        .finally(() => { refreshMe(); refreshStats(); });
+        .finally(() => { refreshMe(true); refreshStats(); });
     } else if (pending) store.del(PENDING_KEY);
     if (DEMO) toast('Demo: payments and scores are simulated on this device.', false, 4000);
 
     renderHome();
     refreshStats();
     pollStats();
-    render(location.hash.slice(1) || 'home');
+    const h0 = location.hash.slice(1);
+    if (SHEET_LINKS.includes(h0)) { render('home'); openSheet(h0); } else render(h0 || 'home');
+    if (params.get('r') && !sessionId && !cancelled) history.replaceState(null, '', location.pathname + location.hash); // the source is kept; the address stays clean
     if (sessionId) await confirmPayment(sessionId);
     else if (cancelled) toast('Payment cancelled. Nothing was charged.');
   }
+  hapAll();
   boot();
   setTimeout(prefetchBoards, 1500); // the leaderboard opens with rows already in hand
 })();

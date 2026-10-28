@@ -50,9 +50,11 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export class HttpError extends Error {
   status: number;
-  constructor(status: number, code: string) {
+  detail: string; // for the logs and for retries; never sent to the browser
+  constructor(status: number, code: string, detail = "") {
     super(code);
     this.status = status;
+    this.detail = detail;
   }
 }
 
@@ -117,7 +119,7 @@ export async function stripe(method: "GET" | "POST" | "DELETE", path: string, pa
   const data = await res.json();
   if (!res.ok) {
     console.error("stripe error", path, res.status, JSON.stringify(data));
-    throw new HttpError(502, "STRIPE_ERROR");
+    throw new HttpError(502, "STRIPE_ERROR", String(data?.error?.message ?? ""));
   }
   return data;
 }
@@ -216,14 +218,16 @@ async function checkout(req: Request, body: Body) {
     return { url: `${origin}/?session_id=${id}`, session_id: id, demo: true };
   }
 
-  const session = await stripe("POST", "/v1/checkout/sessions", {
+  // Where the player came from (a poster or a channel link, ?r=a3), kept short and plain.
+  const source = typeof body.source === "string" && /^[a-z0-9-]{1,16}$/.test(body.source) ? body.source : "";
+  const params: Record<string, string> = {
     mode: "payment",
     "line_items[0][quantity]": "1",
     "line_items[0][price_data][currency]": "eur",
     "line_items[0][price_data][unit_amount]": String(b.amount),
     "line_items[0][price_data][product_data][name]": `PresLink Arcade: ${b.label}`,
     "line_items[0][price_data][product_data][description]":
-      "Every play supports Presentation Brothers schools in Ghana and Nigeria.",
+      "Every play supports Presentation Brothers schools in Ghana and Nigeria. Unused plays can be refunded within 14 days.",
     success_url: `${origin}/?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/?cancelled=1`,
     client_reference_id: playerId,
@@ -233,7 +237,29 @@ async function checkout(req: Request, body: Body) {
     "payment_intent_data[description]": `PresLink Arcade: ${b.label} (${player.initials})`,
     "payment_intent_data[metadata][player_id]": playerId,
     submit_type: "pay",
-  });
+  };
+  if (source) params["metadata[source]"] = source;
+
+  // The payer ticks a box that links to our terms. Stripe allows that box only once a terms URL is
+  // saved in the Stripe Dashboard (Settings, Public details); until then the same link sits beside
+  // the Pay button instead.
+  const terms = `[terms](${origin}/#terms)`;
+  let session: { url: string; id: string };
+  try {
+    session = await stripe("POST", "/v1/checkout/sessions", {
+      ...params,
+      "consent_collection[terms_of_service]": "required",
+      "custom_text[terms_of_service_acceptance][message]":
+        `I agree to the PresLink Arcade ${terms}. If I am under 18, a parent or guardian has said I can pay.`,
+    });
+  } catch (e) {
+    if (!(e instanceof HttpError) || !/terms|consent/i.test(e.detail)) throw e;
+    session = await stripe("POST", "/v1/checkout/sessions", {
+      ...params,
+      "custom_text[submit][message]":
+        `By paying you agree to the PresLink Arcade ${terms}. Under 18s need a parent's or guardian's permission.`,
+    });
+  }
 
   return { url: session.url, session_id: session.id };
 }
