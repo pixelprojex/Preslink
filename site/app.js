@@ -5,15 +5,14 @@
   const CONFIG = window.PRESLINK_CONFIG || {};
   const DEMO = !CONFIG.SUPABASE_URL;
   const STORAGE_KEY = 'preslink.player';
-  const SCHOOL_ASKED_KEY = 'preslink.schoolAsked';
   const CONTACT_ASKED_KEY = 'preslink.contactAsked';
-  const CODE_SHOWN_KEY = 'preslink.codeShown';
   const HOW_SEEN_KEY = 'preslink.howSeen';
   const PENDING_KEY = 'preslink.pendingScore';
+  const PROGRESS_KEY = 'preslink.progress'; // the lights already played of a play left half-way
   const SWEEP_GUARD_MS = 60; // the server accepts taps from 60 ms into a sweep
+  const DOUBLE_TAP_MS = 200; // a second tap this soon after the one that started a light is a double tap, not a stop
   const ROUNDS = 3;
   const BUNDLES = { single: { amount: 2, credits: 1 }, triple: { amount: 5, credits: 3 }, seven: { amount: 10, credits: 7 } };
-  const SCHOOL = /^[a-z0-9._%+'-]+@(pbccork\.ie|pbc-cork\.ie)$/;
   const BOARD_NAMES = { everyone: 'Everyone', student: 'Students', teacher: 'Teachers' };
 
   const $ = (sel, root = document) => root.querySelector(sel);
@@ -50,17 +49,15 @@
     BAD_ROLE: 'To join a school board, add your school email on the You tab.',
     BAD_SESSION: 'This payment link is not valid any more. Nothing was charged.',
     UNKNOWN_SESSION: 'This payment link is not valid any more. Nothing was charged.',
-    BAD_GOAL: 'Enter a whole number of euro.',
     NO_PLAYER: 'No player with those initials.',
     BAD_SCHOOL_EMAIL: 'That is not a school email we recognise.',
     BAD_EMAIL: 'That does not look like an email address.',
     NEEDS_SCHOOL_EMAIL: 'Add your school email first.',
     BAD_SIGNIN: 'That name and code do not match.',
-    LOCKED: 'Too many tries. Wait 15 minutes.',
+    LOCKED: 'Too many tries for that name. Try again later.',
     BANNED: 'This player has been removed by the committee.',
+    CLOSED: 'The game has closed. Thank you for playing!',
     STRIPE_NOT_CONFIGURED: 'Payments are not switched on yet.',
-    BAD_STRIPE_KEY: 'That is not a Stripe secret key. It starts with sk_live_ or sk_test_.',
-    STRIPE_KEY_REJECTED: 'Stripe did not accept that key.',
     NO_SITE_URL: 'Payments are not set up for this address yet.',
     PLAYER_NOT_FOUND: 'We could not find your player on this device. Tap Play to start fresh.',
     SCORE_MISMATCH: 'That score did not check out, so it was not saved.',
@@ -69,10 +66,6 @@
     PLAY_VOID: 'That play was cancelled.',
     BAD_TAP: 'That play did not check out, so it was not saved.',
     STRIPE_ERROR: 'Stripe had a problem. Please try again.',
-    BAD_ADMIN: 'Wrong committee code.',
-    ADMIN_NOT_SET: 'No committee code has been set yet.',
-    CODE_TOO_SHORT: 'Use at least 6 characters.',
-    BAD_DATE: 'Use a date like 2026-12-12.',
     SERVER_ERROR: 'Something went wrong on our side. Please try again.',
   };
   const msg = (e) => MESSAGES[e && e.code] || MESSAGES.SERVER_ERROR;
@@ -97,11 +90,6 @@
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) { /* private mode */ } },
     del(k) { try { localStorage.removeItem(k); } catch (_) { /* ignore */ } },
   };
-  const session = {
-    get(k) { try { return sessionStorage.getItem(k); } catch (_) { return null; } },
-    set(k, v) { try { sessionStorage.setItem(k, v); } catch (_) { /* ignore */ } },
-    del(k) { try { sessionStorage.removeItem(k); } catch (_) { /* ignore */ } },
-  };
 
   let player = store.get(STORAGE_KEY);
   let credits = 0;
@@ -112,25 +100,38 @@
   let badges = null; // the player's badges from the server: null until known
   let stats = null;
   let boardRole = 'everyone';
-  let prevScreen = 'home';
 
   const savePlayer = () => store.set(STORAGE_KEY, player);
-  // The next play, fetched ahead of the tap so the light moves on the first frame of the game.
+  // The next play, fetched ahead of the tap so the light moves on the first frame of the game. An answer for
+  // another player, for a play this device has already scored or for the play under way is never kept: it
+  // would replay a finished play.
   let nextPlay = null, prefetching = null;
+  const scoredPlays = new Set();
   function prefetchPlay() {
-    if (!player || nextPlay || prefetching || (credits <= 0 && !openPlay)) return;
-    prefetching = api('start', { player_id: player.id })
-      .then((res) => { if (res && res.rounds && res.rounds.length === ROUNDS) { nextPlay = res; credits = res.credits; openPlay = { play_id: res.play_id }; renderHome(); } })
+    if (!player || nextPlay || prefetching || inPlay() || (credits <= 0 && !openPlay)) return;
+    const pid = player.id;
+    prefetching = api('start', { player_id: pid })
+      .then((res) => {
+        if (!res || !res.rounds || res.rounds.length !== ROUNDS || !player || player.id !== pid || scoredPlays.has(res.play_id)) return;
+        if (inPlay() && game.play && game.play.play_id === res.play_id) return;
+        nextPlay = res; credits = res.credits; openPlay = { play_id: res.play_id };
+        if (!inPlay()) renderHome();
+      })
       .catch(() => {})
       .finally(() => { prefetching = null; });
   }
-  const clearPlayer = () => { player = null; credits = 0; openPlay = null; nextPlay = null; best = null; bestLight = null; badges = null; store.del(STORAGE_KEY); store.del(SCHOOL_ASKED_KEY); store.del(CODE_SHOWN_KEY); store.del(CONTACT_ASKED_KEY); store.del('preslink.prevBest'); store.del('preslink.prevRank'); };
+  const clearPlayer = () => {
+    player = null; credits = 0; openPlay = null; nextPlay = null; best = null; bestLight = null; badges = null;
+    ['signin-name', 'signin-code'].forEach((id) => { $('#' + id).value = ''; }); // a shared device keeps nobody's code
+    [STORAGE_KEY, CONTACT_ASKED_KEY, PROGRESS_KEY, 'preslink.prevBest', 'preslink.prevRank'].forEach((k) => store.del(k));
+  };
   function adoptPlayer(p) {
-    if (!player || player.id !== p.id) badges = null; // another player: their badges come with their record
+    if (!player || player.id !== p.id) { badges = null; nextPlay = null; } // another player: their own badges and plays
     if (Array.isArray(p.badges)) badges = p.badges.slice();
     player = { id: p.id, tag: p.tag, initials: p.initials, suffix: p.suffix || 1, display: p.display || p.initials, role: p.role || 'everyone', claim_code: p.claim_code, school_email: p.school_email || null, contact_email: p.contact_email || null, colour: Number(p.colour) || 0 };
     credits = p.credits || 0;
     openPlay = p.open_play || null;
+    if (openPlay && inPlay() && game.play && game.play.play_id === openPlay.play_id) openPlay = null; // the play under way here
     best = p.best != null ? p.best : (p.best_this_week == null ? null : p.best_this_week);
     bestLight = p.best_light == null ? null : p.best_light;
     if (p.spent_cents != null) spend = { spent: Number(p.spent_cents) || 0, today: Number(p.spent_today_cents) || 0, daily: Number(p.daily_cap_cents) || 2000, campaign: Number(p.campaign_cap_cents) || 10000 };
@@ -161,7 +162,7 @@
     if (!res.ok) throw new ApiError((data && data.error) || 'SERVER_ERROR', res.status);
     return data;
   }
-  async function rpc(name, args = {}) {
+  async function rpcFetch(name, args) {
     if (DEMO) return window.PRESLINK_MOCK.rpc(name, args);
     let res;
     try {
@@ -170,15 +171,20 @@
     if (!res.ok) throw new ApiError('SERVER_ERROR', res.status);
     return res.json();
   }
+  // The same read asked for twice at once (the board from two places, stats at boot) goes out once.
+  const inflight = new Map();
+  function rpc(name, args = {}) {
+    const key = name + JSON.stringify(args);
+    if (!inflight.has(key)) inflight.set(key, rpcFetch(name, args).finally(() => inflight.delete(key)));
+    return inflight.get(key);
+  }
 
   // The first tap opens a small sheet asking for two or three letters; the player is created on submit.
   let pendingBundle = null;
-  let pendingAfter = null; // 'school' when the initials sheet was opened from the join-your-board row
-  function ensurePlayer(bundle, after) {
+  function ensurePlayer(bundle) {
     if (player) return true;
     pendingBundle = bundle || 'single';
     $('#name-submit').textContent = { single: 'Play · €2', triple: '3 plays · €5', seven: '7 plays · €10' }[pendingBundle] || 'Play';
-    pendingAfter = after || null;
     showError('name-error', '');
     nameInitials.set('');
     openSheet('name');
@@ -239,32 +245,56 @@
     $('#overlay-text').textContent = text;
     o.hidden = false;
   }
+  // While a sheet is open the page behind it is inert: no focus, no taps, no keys reach it. Terms or Privacy
+  // opened from inside another sheet sit on top of it, and closing them goes back to it as it was.
+  const openSheetEl = () => $$('.sheet').find((s) => !s.hidden) || null;
+  let sheetOpener = null, sheetBelow = null;
   function openSheet(id) {
-    $$('.sheet').forEach((s) => { s.hidden = s.id !== 'sheet-' + id; });
+    const was = openSheetEl(), sh = $('#sheet-' + id);
+    if (!sh) return;
+    if (!was) sheetOpener = document.activeElement;
+    sheetBelow = was && was !== sh && SHEET_LINKS.includes(id) ? was : null;
+    $$('.sheet').forEach((s) => { s.hidden = s !== sh; });
     $('#sheet-backdrop').hidden = false;
     $('#toast').classList.add('top'); // a toast already showing must not sit on the sheet's buttons
+    $('main.shell').inert = true; $('#tabbar').inert = true;
+    if (!sh.hasAttribute('tabindex')) sh.tabIndex = -1;
+    requestAnimationFrame(() => { if (!sh.hidden && !sh.contains(document.activeElement)) sh.focus({ preventScroll: true }); });
   }
-  function closeSheets() {
+  function closeSheets(all) {
     if (/^#(terms|privacy)$/.test(location.hash)) history.replaceState(null, '', '#' + current);
+    const below = sheetBelow; sheetBelow = null;
+    if (below && !all) { $$('.sheet').forEach((s) => { s.hidden = s !== below; }); below.focus({ preventScroll: true }); return; }
     $('#toast').classList.remove('top'); // a toast that was held clear of a sheet drops back above the tab bar
     $$('.sheet').forEach((s) => { s.hidden = true; });
     $('#sheet-backdrop').hidden = true;
+    $('main.shell').inert = false; $('#tabbar').inert = false;
+    const back = sheetOpener; sheetOpener = null;
+    if (!all && back && back.isConnected && back !== document.body && !back.closest('[hidden]')) back.focus({ preventScroll: true });
   }
-  $('#sheet-backdrop').addEventListener('click', () => { if (!$('#sheet-contact').hidden) { skipContact(); return; } if ($('#sheet-code').hidden) closeSheets(); });
+  // The first-play sheet records that it was asked however it is closed, so it does not come back after the next play.
+  function dismissSheet() {
+    const open = openSheetEl();
+    if (open && open.id === 'sheet-contact' && !sheetBelow) skipContact(); else closeSheets();
+  }
+  $('#sheet-backdrop').addEventListener('click', dismissSheet);
+  // Buttons do nothing by default, so only links have theirs stopped (cancelling a button's click would also
+  // cancel the iPhone haptic switch inside it).
+  const noNav = (e, el) => { if (el.tagName === 'A') e.preventDefault(); };
   document.addEventListener('click', (e) => {
     const s = e.target.closest('[data-sheet]');
-    if (s) { e.preventDefault(); openSheet(s.dataset.sheet); return; }
+    if (s) { noNav(e, s); openSheet(s.dataset.sheet); return; }
     if (e.target.closest('[data-close]')) closeSheets();
   });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheets(); });
-  // A sheet's title bar can be pulled down to close it, as in an app (not the code sheet, which has its own Done).
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && openSheetEl()) { e.preventDefault(); dismissSheet(); } });
+  // A sheet's title bar can be pulled down to close it, as in an app.
   (() => {
     let sh = null, y0 = 0, dy = 0, t0 = 0;
     document.addEventListener('pointerdown', (e) => {
       const head = e.target.closest('.sheet-head');
       if (!head || e.pointerType === 'mouse' || e.target.closest('button') || window.innerWidth >= 900) return;
       const s = head.closest('.sheet');
-      if (!s || s.id === 'sheet-code') return;
+      if (!s) return;
       sh = s; y0 = e.clientY; dy = 0; t0 = performance.now();
     }, { passive: true });
     document.addEventListener('pointermove', (e) => {
@@ -279,7 +309,7 @@
       s.style.transition = 'transform .2s cubic-bezier(.2, .8, .2, 1)';
       if (dy > 110 || flick) {
         s.style.transform = 'translateY(100%)';
-        setTimeout(() => { s.style.transform = ''; s.style.transition = ''; if (s.id === 'sheet-contact') skipContact(); else closeSheets(); }, 170);
+        setTimeout(() => { s.style.transform = ''; s.style.transition = ''; dismissSheet(); }, 170);
       } else { s.style.transform = ''; setTimeout(() => { s.style.transition = ''; }, 220); }
     };
     document.addEventListener('pointerup', end);
@@ -342,15 +372,6 @@
     li.classList.add('bubbling');
     li.appendChild(bubble);
   });
-  // Accordion rows: a title until tapped.
-  document.addEventListener('click', (e) => {
-    const btn = e.target.closest('.acc > .cell');
-    if (!btn) return;
-    const acc = btn.parentElement;
-    const open = !acc.classList.contains('open');
-    acc.classList.toggle('open', open);
-    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-  });
   function showError(id, text) { const el = $('#' + id); el.textContent = text || ''; el.hidden = !text; }
 
   // Count a number up smoothly (used for the money raised and the score).
@@ -410,16 +431,18 @@
     if (location.hash === '#' + name) render(name);
     else location.hash = name;
   }
+  // A screen that sends people on (no play to show, nothing in the cabinet) replaces itself in the history, so
+  // Back still leaves the app instead of bouncing between screens.
+  function redirect(name) { history.replaceState(null, '', '#' + name); render(name); }
   function render(name) {
     if (!SCREENS.includes(name)) name = 'home';
-    if (name === 'play' && !player && !wantPractice) { go('home'); return; }
+    if (name === 'play' && !player && !wantPractice) { redirect('home'); return; }
 
     const from = current;
-    if (name !== current) prevScreen = current;
     current = name;
     const tname = { board: 'Leaderboard', prize: HONOURS() ? 'Honours' : 'Prizes', about: 'About', you: 'You', play: 'Play', signin: 'Sign in' }[name];
     document.title = tname ? `${tname} · PresLink Arcade` : 'PresLink Arcade';
-    closeSheets();
+    closeSheets(true);
     screens.forEach((s) => { s.hidden = s.dataset.screen !== name; });
     const scr = screens.find((s) => s.dataset.screen === name);
     if (scr && from !== name) {
@@ -435,12 +458,12 @@
     $('#tabbar').hidden = name === 'play' || name === 'cabinet';
     if (name !== 'play' && game.state !== 'idle' && game.state !== 'done') abandonGame();
     if (name === 'home') { renderHome(); refreshStats(); refreshMe(); sizeDemo(); }
-    if (name === 'cabinet' && !cabinetBusy) { go('home'); return; }
+    if (name === 'cabinet' && !cabinetBusy) { redirect('home'); return; }
     if (name === 'play') {
       // Only an explicit tap starts a play; arriving here by Back/Forward shows the last result or goes home.
       if (wantPractice) { wantPractice = false; game.state = 'idle'; startPractice('home'); }
       else if (wantGame) { wantGame = false; startGame(); }
-      else if (game.state !== 'done' || ($('#result').hidden && $('#practice-end').hidden)) { go('home'); return; }
+      else if (game.state !== 'done' || ($('#result').hidden && $('#practice-end').hidden)) { redirect('home'); return; }
     }
     if (name === 'board') loadBoard();
     if (name === 'prize') loadPrizes();
@@ -455,14 +478,12 @@
     render(h || 'home');
   });
   document.addEventListener('click', (e) => {
-    const back = e.target.closest('[data-back]');
-    if (back) { e.preventDefault(); go(prevScreen === current ? 'home' : prevScreen); return; }
     const p = e.target.closest('.js-play');
-    if (p) { e.preventDefault(); playOrBuy(); return; }
+    if (p) { noNav(e, p); playOrBuy(); return; }
     const b = e.target.closest('[data-bundle]');
-    if (b) { e.preventDefault(); buy(b.dataset.bundle); return; }
+    if (b) { noNav(e, b); buy(b.dataset.bundle); return; }
     const t = e.target.closest('[data-go]');
-    if (t) { e.preventDefault(); go(t.dataset.go); }
+    if (t) { noNav(e, t); go(t.dataset.go); }
   });
   $$('#tabbar button').forEach((b) => b.addEventListener('click', () => {
     const tab = b.dataset.tab;
@@ -475,17 +496,22 @@
   // Someone new (no player, never practised) is offered the free practice first, as the posters promise.
   function isNew() { const d = store.get('preslink.practice'); return !player && !(d && d.n > 0); }
   const canPlayNow = () => !!player && (credits > 0 || !!openPlay);
-  const playLabel = () => canPlayNow() ? `Play · ${credits + (openPlay ? 1 : 0)} left` : 'Play · €2';
+  const playsLeft = () => credits + (openPlay ? 1 : 0);
+  const playLabel = () => canPlayNow() ? `Play · ${playsLeft()} left` : 'Play · €2';
+  // After the closing date nothing more can be bought or started (the server refuses too); practice stays open.
+  const isClosed = () => { const d = stats && stats.ends_on ? new Date(stats.ends_on + 'T23:59:59') : null; return !!d && !isNaN(d) && Date.now() > d.getTime(); };
   function renderHome() {
     const btn = $('#home-play');
-    const fresh = isNew();
-    setText(btn, fresh ? 'Try it free' : playLabel());
-    btn.classList.toggle('ready', canPlayNow());
-    $('#home-practice').hidden = fresh;
-    if (canPlayNow()) prefetchPlay();
+    const fresh = isNew(), closed = isClosed();
+    setText(btn, closed ? 'The game has closed' : fresh ? 'Try it free' : playLabel());
+    btn.disabled = closed;
+    btn.classList.toggle('ready', canPlayNow() && !closed);
+    $('[data-screen="home"] .bundles-line').hidden = closed;
+    $('#home-practice').hidden = fresh && !closed;
+    if (canPlayNow() && !closed) prefetchPlay();
     renderHomeTop();
   }
-  // The top three of the Everyone board on Home, from iPad width up (the card is hidden on a phone).
+  // The top three of the Everyone board on Home.
   let homeTopSeq = 0;
   function renderHomeTop() {
     const rows = boardCache.everyone;
@@ -510,7 +536,6 @@
   // eased motion whose length grows with the jump (a €2 nudge takes about 0.7 s, a €40 catch-up about
   // two and a half), so it winds up, spins and settles as one movement, never a run of separate ticks.
   const fmtEuro = (n) => '€' + n.toLocaleString('en-IE');
-  const fmtPlain = (n) => String(n);
   function odoStatic(el, value, fmt = fmtEuro) {
     const txt = fmt(value);
     el.innerHTML = Array.from(txt).map((c) => /\d/.test(c) ? `<span class="dg"><span class="strip"><span>${c}</span></span></span>` : `<span class="sep">${esc(c)}</span>`).join('');
@@ -562,8 +587,9 @@
   const inPlay = () => ['loading', 'countdown', 'sweeping', 'between'].includes(game.state);
   function pollStats() {
     clearTimeout(statsTimer);
-    if (document.hidden || inPlay()) return; // nothing moves on the page while the light sweeps
-    statsTimer = setTimeout(() => { refreshStats().finally(pollStats); }, STATS_EVERY);
+    if (document.hidden) return; // the page coming back starts it again
+    // nothing on the page moves while the light sweeps: during a play the poll only waits for the next turn
+    statsTimer = setTimeout(() => { if (inPlay()) pollStats(); else refreshStats().finally(pollStats); }, STATS_EVERY);
   }
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshStats(); pollStats(); });
   window.addEventListener('offline', () => toast('No connection', true, 4000));
@@ -656,7 +682,7 @@
     $('#goal-meta').textContent = bits.join(' · ');
     $('#goal-meta').hidden = !bits.length;
   }
-  let statsSeq = 0;
+  let statsSeq = 0, shownClosed = false;
   async function refreshStats() {
     const seq = ++statsSeq;
     let fresh;
@@ -674,6 +700,7 @@
     const closes = closesText();
     $('#prize-sub').textContent = HONOURS() ? (closes ? `Closes ${closes}` : 'Honoured at the close') : (closes ? `Closes ${closes} · winners are emailed` : 'Winners are emailed at the close');
     renderGoal();
+    if (isClosed() !== shownClosed) { shownClosed = isClosed(); renderHome(); } // the close passes while the page is open
     const pz = stats.prizes || {};
     const put = (id, v) => { const el = $(id); const t = String(v || '').trim(); el.textContent = t || 'To be announced'; el.classList.toggle('tba', !t); };
     put('#prize-everyone', pz.everyone);
@@ -738,7 +765,6 @@
     }
     if (result.player) adoptPlayer(result.player);
     const n = result.credits_added || 1;
-    const b = BUNDLES[result.bundle];
     $('#cab-title').textContent = result.demo ? 'Demo plays added' : 'Thank you';
     $('#cab-text').textContent = '';
     cabinetBusy = true;
@@ -759,7 +785,7 @@
   // The tick draws itself, a token for each play drops in, and the count rolls up to the plays now ready.
   async function tokensIn(n) {
     const box = $('#cab-tokens'), val = $('#cab-credits'), card = $('#success-card');
-    const target = credits, from = Math.max(0, target - n);
+    const target = playsLeft(), from = Math.max(0, target - n);
     val.textContent = from;
     $('#cab-text').textContent = target === 1 ? 'play ready' : 'plays ready';
     card.classList.remove('go'); void card.offsetWidth; card.classList.add('go');
@@ -779,6 +805,7 @@
   // Game: three lights, line each one up with the mark
   // ---------------------------------------------------------------------------
   const game = { state: 'idle', play: null, round: 0, taps: [], scores: [], sweepStart: 0, trackW: 0, pending: null, lastScore: 0 };
+  let armedAt = 0; // when the tap that started the current light landed (Start, Play again, a skipped wait)
   const marker = $('#marker'), track = $('#track'), pin = $('#pin'), swatch = $('#swatch');
   // Three faint copies of the light a moment behind it: a trail that shows its speed and direction.
   const ghosts = $$('#track .ghost');
@@ -853,7 +880,7 @@
     $('#game').hidden = false;
     $('#game').classList.remove('done');
     $('#game-msg').textContent = 'Ready';
-    $('#game-msg').classList.remove('go', 'coach');
+    $('#game-msg').classList.remove('target');
     $('#score-value').textContent = '';
     $('.score').classList.remove('pop', 'hit');
     $('#verdict').textContent = '';
@@ -879,6 +906,8 @@
     if (!player) { go('home'); return; }
     if (game.state === 'countdown' || game.state === 'sweeping' || game.state === 'between' || game.state === 'loading') return;
     if (!practised()) { startPractice('play'); return; }
+    armedAt = performance.now();
+    game.play = null;
     if (game.pending && !game.sending) submitPending(); // an earlier play that has not reached the server yet
     game.practice = false;
     game.offset = deviceOffset();
@@ -890,10 +919,14 @@
     game.state = 'loading';
     pollStats(); // pauses the counter refresh until the play is over
     let res = nextPlay; nextPlay = null;
-    const fetching = res ? Promise.resolve(res) : api('start', { player_id: player.id });
+    // A play already on its way (fetched ahead) is waited for, never asked for a second time.
+    const fetching = res ? Promise.resolve(res) : (async () => {
+      if (prefetching) await prefetching;
+      if (nextPlay) { const r = nextPlay; nextPlay = null; return r; }
+      return api('start', { player_id: player.id });
+    })();
     fetching.catch(() => {});
     const m = $('#game-msg');
-    m.classList.remove('count', 'go', 'coach');
     m.textContent = 'Light 1 of 3';
     // The first time, the rules sit over the game until Got it is tapped; nothing moves meanwhile.
     if (!store.get(HOW_SEEN_KEY) && best == null) { await showIntro(); if (game.state !== 'loading') return; }
@@ -905,14 +938,25 @@
       go('home');
       return;
     }
-    if (game.state !== 'loading') return;
+    if (game.state !== 'loading') { // left before the light came: the play waits on Home
+      if (res && res.play_id) { openPlay = { play_id: res.play_id }; credits = res.credits; renderHome(); }
+      return;
+    }
     if (!res.rounds || res.rounds.length !== ROUNDS) { game.state = 'idle'; toast(MESSAGES.SERVER_ERROR, true); go('home'); return; }
     game.play = res;
     credits = res.credits;
     openPlay = null;
     updatePlayCredits();
     $('#tap-hint').classList.add('live');
-    beginRound(0);
+    // A play left half-way carries on at its next light; the lights already played keep their scores.
+    const prog = store.get(PROGRESS_KEY);
+    let from = 0;
+    if (prog && prog.play_id === res.play_id && Array.isArray(prog.taps) && prog.taps.length > 0 && prog.taps.length < ROUNDS) {
+      game.taps = prog.taps.slice(); game.scores = prog.scores.slice(); game.errs = prog.errs.slice(); game.offset = prog.offset || 0;
+      from = prog.taps.length;
+      toast(`Carrying on from light ${from + 1}`);
+    } else if (prog) store.del(PROGRESS_KEY);
+    beginRound(from);
   }
   // Each light starts sweeping the moment it is announced. This is the first version's loop: a
   // frame callback draws posAt(now - sweepStart), and a tap is timed by the same clock.
@@ -920,7 +964,7 @@
     game.round = i;
     const r = game.play.rounds[i];
     const m = $('#game-msg');
-    m.classList.remove('go', 'count', 'coach', 'target');
+    m.classList.remove('target');
     m.textContent = `Light ${i + 1} of 3`;
     if (i === ROUNDS - 1 && !game.practice && best != null) {
       // the play's score is the rounded average, so a new best needs (s1 + s2 + s3) / 3 >= best + 0.5
@@ -942,6 +986,9 @@
   function loop(now) {
     if (game.state !== 'sweeping') return;
     const r = game.play.rounds[game.round];
+    // Away from the page for a long while (a call, another app): the light starts its sweep again, so no tap
+    // ever comes after the server's two-minute limit.
+    if (now - game.sweepStart > 90000) game.sweepStart = now;
     const t = now - game.sweepStart;
     setMarker(posAt(t, r.phase, game.play.speed_ms));
     setGhosts(t, r);
@@ -951,6 +998,8 @@
     cancelAnimationFrame(game.raf);
     track.classList.remove('moving');
     $('#game').classList.remove('sweeping');
+    // A scored play left before its last light waits on Home and carries on where it stopped.
+    if (!game.practice && game.play && game.play.play_id && !scoredPlays.has(game.play.play_id) && !game.pending) openPlay = { play_id: game.play.play_id };
     game.state = 'idle';
   }
 
@@ -1000,9 +1049,12 @@
     });
   }
   function onTap(e) {
-    if (game.state === 'between') { if (skipHold) skipHold(); return; }
+    if (e.target && e.target.closest && e.target.closest('.game-top, .practice-end')) return; // Back and the chips are not taps on the light
+    if (game.state === 'between') { armedAt = touchTime(e); if (skipHold) skipHold(); return; }
     if (game.state !== 'sweeping') return;
-    const ms = Math.round(touchTime(e) - DISPLAY_LAG_MS - (game.practice ? 0 : game.offset || 0) - game.sweepStart);
+    const at = touchTime(e);
+    if (at - armedAt < DOUBLE_TAP_MS) return;
+    const ms = Math.round(at - DISPLAY_LAG_MS - (game.practice ? 0 : game.offset || 0) - game.sweepStart);
     if (ms < SWEEP_GUARD_MS) return;
     if (e.cancelable) e.preventDefault();
     cancelAnimationFrame(game.raf);
@@ -1021,12 +1073,15 @@
     game.scores.push(s);
     game.errs.push(err);
     vibrate(10);
+    if (!game.practice && game.round < ROUNDS - 1) store.set(PROGRESS_KEY, { play_id: game.play.play_id, taps: game.taps, scores: game.scores, errs: game.errs, offset: game.offset || 0 });
     if (!game.practice && game.round === ROUNDS - 1) sendScore(); // the score leaves now, while its number shows
     requestAnimationFrame(() => afterRound(s, err)); // the score and the rest follow a frame later
   }
   $('#game').addEventListener('pointerdown', onTap);
   document.addEventListener('keydown', (e) => {
-    if ((e.code === 'Space' || e.code === 'Enter') && (game.state === 'sweeping' || game.state === 'between')) onTap(e);
+    if (e.code !== 'Space' && e.code !== 'Enter') return;
+    if (e.repeat || openSheetEl() || /^(input|textarea|select)$/i.test(e.target.tagName)) return; // a held key or a typed field is not a tap
+    if (game.state === 'sweeping' || game.state === 'between') onTap(e);
   });
   // A keyboard plays the whole game: Space or Enter starts from Home or the cabinet, stops the light
   // (above), and plays again from the result. Buttons and fields keep their own keys.
@@ -1034,7 +1089,8 @@
     if (e.code !== 'Space' && e.code !== 'Enter') return;
     if (e.metaKey || e.ctrlKey || e.altKey || /^(input|textarea|select|button|a)$/i.test(e.target.tagName)) return;
     if ($$('.sheet').some((s) => !s.hidden)) return;
-    if (current === 'home' && player && (credits > 0 || openPlay)) { e.preventDefault(); playOrBuy(); }
+    if (e.repeat) return;
+    if (current === 'home' && player && (credits > 0 || openPlay) && !isClosed()) { e.preventDefault(); playOrBuy(); }
     else if (current === 'cabinet' && !$('#cab-play').hidden) { e.preventDefault(); startPlay(); }
     else if (current === 'play' && game.state === 'done' && !$('#result').hidden) { e.preventDefault(); $('#result-again').click(); }
   });
@@ -1086,6 +1142,7 @@
     if (game.state === 'countdown' || game.state === 'sweeping' || game.state === 'between' || game.state === 'loading') return;
     practiceThen = then;
     game.practice = true;
+    armedAt = performance.now();
     resetGameUI();
     $('#play-credits').textContent = 'Practice';
     $('#tabbar').hidden = true;
@@ -1110,12 +1167,13 @@
     $('#game-msg').textContent = 'Practice done';
     $('#practice-line').textContent = Math.abs(off) < 5 ? 'Your phone: on time' : `Your phone: ${Math.abs(off)} ms ${off > 0 ? 'late' : 'early'} · allowed for`;
     $('#og-dot').style.left = (50 + Math.max(-80, Math.min(80, off)) / 80 * 44) + '%';
-    setText($('#practice-go'), practiceThen === 'play' ? 'Play for real' : playLabel());
+    setText($('#practice-go'), practiceThen === 'play' ? 'Play for real' : isClosed() ? 'Done' : playLabel());
     $('#practice-end').hidden = false;
   }
   // After practice, the next step is a real play: straight in with plays left, otherwise checkout (the
   // practice result stays underneath, so closing the sheet leaves things as they were).
   $('#practice-go').addEventListener('click', () => {
+    if (practiceThen !== 'play' && isClosed()) { game.practice = false; game.state = 'idle'; go('home'); return; }
     if (practiceThen !== 'play' && !canPlayNow()) { buy('single'); return; }
     game.practice = false;
     $('#practice-end').hidden = true;
@@ -1146,6 +1204,7 @@
     const payload = { player_id: player.id, play_id: game.play.play_id, score, taps: game.taps.slice(), offset: game.offset || 0 };
     game.pending = payload;
     store.set(PENDING_KEY, payload);
+    store.del(PROGRESS_KEY);
     game.sending = submitPending();
   }
   async function finishPlay() {
@@ -1160,22 +1219,30 @@
   }
 
   // Sends the play waiting in game.pending; answers { r, note } and keeps the player's numbers up to date.
+  const sentPlays = new Set(); // plays this device has tried to send: "already scored" then means saved
   async function submitPending() {
     const payload = game.pending;
     if (!payload) return { r: null, note: '' };
     let r = null, note = '';
-    try {
-      r = await api('submit', payload);
+    const tried = sentPlays.has(payload.play_id);
+    sentPlays.add(payload.play_id);
+    const done = () => {
       game.pending = null;
       store.del(PENDING_KEY);
+      scoredPlays.add(payload.play_id);
+      if (nextPlay && nextPlay.play_id === payload.play_id) nextPlay = null;
+      if (openPlay && openPlay.play_id === payload.play_id) openPlay = null;
+    };
+    try {
+      r = await api('submit', payload);
+      done();
       credits = r.credits;
       best = r.best != null ? r.best : r.best_this_week;
       if (r.best_light != null) bestLight = Math.max(bestLight || 0, r.best_light);
     } catch (ex) {
-      if (['ALREADY_SCORED', 'PLAY_NOT_FOUND', 'PLAY_VOID', 'SCORE_MISMATCH', 'BAD_TAP'].includes(ex.code)) {
-        game.pending = null;
-        store.del(PENDING_KEY);
-        note = ex.code === 'ALREADY_SCORED' ? '' : MESSAGES[ex.code];
+      if (['ALREADY_SCORED', 'PLAY_NOT_FOUND', 'PLAY_VOID', 'SCORE_MISMATCH', 'BAD_TAP', 'CLOSED'].includes(ex.code)) {
+        done();
+        note = ex.code === 'ALREADY_SCORED' && tried ? '' : MESSAGES[ex.code];
       } else {
         note = 'Could not save your score yet. Check your connection and tap Try again.';
       }
@@ -1188,7 +1255,7 @@
     updatePlayCredits();
     refreshStats();
     pollStats();
-    prefetchBoards();
+    prefetchBoards(true);
     if (credits > 0) prefetchPlay(); // Play again starts on the first frame too
     $('#game').classList.add('done');
     $('#game').hidden = true;
@@ -1249,18 +1316,21 @@
     if (game.pending) {
       setText(again, 'Try again');
       again.onclick = () => { n.hidden = true; submitPending().then((x) => showResult(score, x.r, x.note)); };
-    } else if (credits > 0) {
+    } else if (credits > 0 && !isClosed()) {
       setText(again, `Play again · ${credits} left`);
       again.onclick = () => { game.state = 'idle'; startGame(); };
+    } else if (isClosed()) {
+      setText(again, 'Done');
+      again.onclick = () => go('home');
     } else {
       setText(again, 'Another play · €2');
       again.onclick = () => buy('single');
       $('#result-topup').hidden = false;
     }
     $('#result').hidden = false;
-    if (finePointer.matches) again.focus({ preventScroll: true }); // Enter or Space plays again
     // First scored play: ask where to send the news if they win, and nothing on top of it.
     const firstAsk = !!r && !!player && !player.contact_email && !store.get(CONTACT_ASKED_KEY);
+    if (finePointer.matches && !firstAsk) again.focus({ preventScroll: true }); // Enter or Space plays again
     if (r && rank === 1 && prevRank !== 1 && !firstAsk) toast('You are top of the board');
     if (firstAsk) openContact(true);
   }
@@ -1287,10 +1357,10 @@
     showTicket();
     openSheet('code');
   }
-  $('#code-done').addEventListener('click', () => { store.set(CODE_SHOWN_KEY, true); closeSheets(); });
+  $('#code-done').addEventListener('click', () => closeSheets());
   $('#you-copy').addEventListener('click', () => copyCode());
   $('#code-save').addEventListener('click', () => saveCodeImage());
-  $('#you-save').addEventListener('click', () => (IS_APPLE_MOBILE ? showCodeSheet() : saveCodeImage())); // iPhone: the sheet shows what to tap
+  $('#you-save').addEventListener('click', () => (IOS_TOUCH ? showCodeSheet() : saveCodeImage())); // iPhone: the sheet shows what to tap
   async function copyCode() {
     if (!player) return;
     try { await navigator.clipboard.writeText(`PresLink Arcade: ${player.display} · code ${player.claim_code}`); toast('Copied'); }
@@ -1302,7 +1372,7 @@
   function roundRect(ctx, x, y, w, h, r) {
     ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
   }
-  const crossImage = new Promise((resolve) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => resolve(null); img.src = 'assets/cross.svg?v=11'; });
+  const crossImage = new Promise((resolve) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => resolve(null); img.src = 'assets/cross.svg?v=10'; });
   async function renderTicket() {
     const W = 1080, H = 1350;
     const c = document.createElement('canvas');
@@ -1365,14 +1435,12 @@
   // Save Image is a single tap, so the button opens that and the line under it says what to tap.
   // Android: a plain download, which lands in Downloads and shows up in the Gallery. Mac or PC: the
   // Downloads folder. Nothing else pops up anywhere.
-  const UA = navigator.userAgent || '';
-  const IS_APPLE_MOBILE = /iP(hone|ad|od)/.test(UA) || (/Mac/.test(navigator.platform || '') && navigator.maxTouchPoints > 1);
-  const IS_ANDROID = /Android/i.test(UA);
-  const SAVE_LABEL = IS_APPLE_MOBILE ? 'Save to Photos' : IS_ANDROID ? 'Save to Gallery' : 'Save picture';
+  const IS_ANDROID = /Android/i.test(navigator.userAgent || '');
+  const SAVE_LABEL = IOS_TOUCH ? 'Save to Photos' : IS_ANDROID ? 'Save to Gallery' : 'Save picture';
   const HINT_TAP = 'Then tap Save Image on the menu that opens.';
   const HINT_HOLD = 'Or hold your finger on the ticket, then tap Add to Photos.';
   $$('.save-btn').forEach((b) => { b.textContent = SAVE_LABEL; });
-  $$('#save-hint, #contact-save-hint').forEach((h) => { h.textContent = HINT_TAP; h.hidden = !IS_APPLE_MOBILE; });
+  $$('#save-hint, #contact-save-hint').forEach((h) => { h.textContent = HINT_TAP; h.hidden = !IOS_TOUCH; });
   function downloadBlob(blob, name) {
     const a = document.createElement('a');
     const url = URL.createObjectURL(blob);
@@ -1385,7 +1453,7 @@
     let t;
     try { t = await ticketFor(); } catch (_) { toast('Could not make the picture', true); return; }
     const canShareFile = !!(navigator.canShare && navigator.canShare({ files: [t.file] }));
-    if (IS_APPLE_MOBILE) {
+    if (IOS_TOUCH) {
       if (!canShareFile) { holdHint(); return; }
       try { await navigator.share({ files: [t.file], title: 'PresLink Arcade' }); toast('Saved'); }
       catch (_) { holdHint(); /* the menu was closed without saving */ }
@@ -1479,14 +1547,10 @@
     if (!tabs.length) return;
     const thumb = document.createElement('span'); thumb.className = 'thumb'; thumb.setAttribute('aria-hidden', 'true'); seg.prepend(thumb);
     seg.style.setProperty('--n', tabs.length);
-    const place = () => { const i = tabs.findIndex((b) => b.classList.contains('active') || b.classList.contains('on')); seg.style.setProperty('--i', Math.max(0, i)); thumb.style.opacity = i < 0 ? '0' : '1'; };
+    const place = () => { const i = tabs.findIndex((b) => b.classList.contains('active')); seg.style.setProperty('--i', Math.max(0, i)); thumb.style.opacity = i < 0 ? '0' : '1'; };
     place();
     new MutationObserver(place).observe(seg, { attributes: true, subtree: true, attributeFilter: ['class'] });
   });
-  function fmtWhen(iso) {
-    const d = new Date(iso);
-    return d.toLocaleDateString('en-IE', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('en-IE', { hour: '2-digit', minute: '2-digit' });
-  }
   let boardTouched = false;
   let boardSeq = 0;
   let spot = null;
@@ -1501,7 +1565,7 @@
     const seq = ++boardSeq;
     let lists;
     try {
-      lists = await Promise.all([...ROLES.map((role) => rpc('board', { p_role: role === 'everyone' ? null : role })), loadSpot(), refreshStats()]);
+      lists = await Promise.all([...ROLES.map((role) => rpc('board', { p_role: role === 'everyone' ? null : role })), loadSpot()]);
     } catch (ex) { toast(msg(ex), true); return; }
     if (seq !== boardSeq) return;
     ROLES.forEach((role, i) => {
@@ -1528,7 +1592,7 @@
     const seq = ++boardSeq;
     let rows = [];
     try {
-      [rows] = await Promise.all([rpc('board', { p_role: boardRole === 'everyone' ? null : boardRole }), loadSpot(), refreshStats()]);
+      [rows] = await Promise.all([rpc('board', { p_role: boardRole === 'everyone' ? null : boardRole }), loadSpot()]);
     } catch (ex) { toast(msg(ex), true); return; }
     if (seq !== boardSeq) return; // a newer tab tap is in flight
     const same = boardCache[boardRole] && JSON.stringify(boardCache[boardRole]) === JSON.stringify(rows);
@@ -1537,9 +1601,9 @@
   }
   setInterval(() => { if (current === 'board' && !document.hidden) loadBoard(); }, 20000); // the board stays live while it is open
   const boardCache = {};
-  function prefetchBoards() {
+  function prefetchBoards(force) {
     for (const role of ['everyone', isSchool() ? player.role : null]) {
-      if (role) rpc('board', { p_role: role === 'everyone' ? null : role }).then((rows) => { boardCache[role] = rows; }).catch(() => {});
+      if (role && (force || !boardCache[role])) rpc('board', { p_role: role === 'everyone' ? null : role }).then((rows) => { boardCache[role] = rows; }).catch(() => {});
     }
   }
   function renderBoard(rows, role) {
@@ -1664,10 +1728,11 @@
   // Sheets with a text field (school email) sit above the keyboard: iOS keeps the layout viewport
   // and shrinks the visual one, so the gap between them is the keyboard height.
   const vv = window.visualViewport;
+  let kbLift = -1;
   function fitSheets() {
     if (!vv) return;
     const lift = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
-    document.documentElement.style.setProperty('--kb', lift + 'px');
+    if (lift !== kbLift) { kbLift = lift; document.documentElement.style.setProperty('--kb', lift + 'px'); }
   }
   if (vv) { vv.addEventListener('resize', fitSheets); vv.addEventListener('scroll', fitSheets); }
   const editInitials = initialsField('edit-initials');
@@ -1680,7 +1745,7 @@
     btn.disabled = true;
     try {
       adoptPlayer(await api('register', { role: 'everyone', initials }));
-      store.del(SCHOOL_ASKED_KEY); store.del(CODE_SHOWN_KEY); store.del(CONTACT_ASKED_KEY); store.del('preslink.prevBest'); store.del('preslink.prevRank');
+      [CONTACT_ASKED_KEY, PROGRESS_KEY, 'preslink.prevBest', 'preslink.prevRank'].forEach((k) => store.del(k));
       closeSheets();
       buy(pendingBundle || 'single');
     } catch (ex) {
@@ -1707,7 +1772,7 @@
     $$('#you-colours .sw').forEach((x) => { const on = Number(x.dataset.colour) === eff; setText(x, letters); x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
     $('#you-email-text').textContent = player.contact_email || 'Optional';
     $('#you-code').textContent = player.claim_code;
-    $('#you-credits').textContent = credits;
+    $('#you-credits').textContent = playsLeft();
     $('#you-best').textContent = best == null ? '–' : best;
     $('#you-light').textContent = bestLight == null ? '–' : bestLight;
     $('#you-spent').textContent = '€' + Math.round(((spend && spend.spent) || 0) / 100);
@@ -1746,11 +1811,14 @@
     if (!/^[A-Z]{2,3}$/.test(initials)) { showError('edit-error', MESSAGES.BAD_INITIALS); return; }
     if (initials === player.initials) { $('#edit-form').hidden = true; return; }
     $('#edit-save').disabled = true;
+    const oldCode = player.claim_code;
     try {
       adoptPlayer(await api('update', { player_id: player.id, initials }));
       $('#edit-form').hidden = true;
       renderYou();
-      toast(`You now play as ${player.display}`);
+      // The code goes with the letters: when it changes, say so, because it is what collects a prize.
+      if (player.claim_code !== oldCode) toast(`You now play as ${player.display}. Your new code is ${player.claim_code}.`, false, 7000);
+      else toast(`You now play as ${player.display}`);
     } catch (ex) {
       showError('edit-error', msg(ex));
     } finally { $('#edit-save').disabled = false; }
@@ -1779,10 +1847,10 @@
     btn.disabled = true;
     showError('signin-error', '');
     try {
-      store.del(SCHOOL_ASKED_KEY); store.del('preslink.prevBest'); store.del('preslink.prevRank');
+      ['preslink.prevBest', 'preslink.prevRank', PROGRESS_KEY].forEach((k) => store.del(k));
       adoptPlayer(await api('signin', { initials, code }));
       store.set(HOW_SEEN_KEY, true); // they have played before
-      store.set(CODE_SHOWN_KEY, true);
+      $('#signin-name').value = ''; $('#signin-code').value = '';
       toast(`Welcome back, ${player.display}`);
       go('you');
     } catch (ex) {
@@ -1804,7 +1872,7 @@
     el.addEventListener('click', finish);
   });
   // Back from another page (the back-forward cache): the page is as it was; only the numbers are refreshed.
-  window.addEventListener('pageshow', (e) => { if (e.persisted) { refreshStats(); refreshMe(true); } });
+  window.addEventListener('pageshow', (e) => { if (e.persisted) { overlay(null); refreshStats(); refreshMe(true); } });
 
   async function boot() {
     const params = new URLSearchParams(location.search);

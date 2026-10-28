@@ -3,6 +3,8 @@
 // Stripe calls this after a successful Checkout. We verify the signature and add
 // the paid credits to the player. The same session is also confirmed by the
 // browser on return, so grant_credits is idempotent and the two never double-count.
+// A refund made in Stripe (charge.refunded) takes the refunded amount off the total
+// and the unused plays it paid for off the player (refund_payment, also idempotent).
 //
 // The signing secret comes from the endpoint the Committee page created (kept in app_secrets, read
 // with the service role), or from a STRIPE_WEBHOOK_SECRET environment secret, which wins if set.
@@ -114,6 +116,19 @@ async function grant(session: Record<string, unknown>): Promise<Record<string, u
   return JSON.parse(text);
 }
 
+async function refund(charge: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const intent = typeof charge.payment_intent === "string" ? charge.payment_intent : "";
+  if (!intent) return { ignored: "no_payment_intent" };
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/refund_payment`, {
+    method: "POST",
+    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ p_payment_intent: intent, p_refunded_cents: Number(charge.amount_refunded ?? 0) }),
+  });
+  const text = await res.text();
+  if (!res.ok) throw new Error(`refund_payment failed: ${res.status} ${text}`);
+  return JSON.parse(text);
+}
+
 export async function handler(req: Request): Promise<Response> {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
   const secret = await webhookSecret();
@@ -136,6 +151,10 @@ export async function handler(req: Request): Promise<Response> {
   try {
     if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") {
       const result = await grant(event.data?.object ?? {});
+      return Response.json({ received: true, ...result });
+    }
+    if (event.type === "charge.refunded") {
+      const result = await refund(event.data?.object ?? {});
       return Response.json({ received: true, ...result });
     }
     return Response.json({ received: true, ignored: event.type });

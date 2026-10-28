@@ -227,8 +227,10 @@
     }
     downloadCsv(rows, 'preslink-payments.csv');
   });
+  // A cell that starts with = + - or @ is read as a formula by spreadsheets: an apostrophe in front keeps it text.
+  const cell = (c) => { const t = String(c == null ? '' : c); return '"' + (/^[=+\-@\t\r]/.test(t) ? "'" + t : t).replace(/"/g, '""') + '"'; };
   function downloadCsv(rows, name) {
-    const csv = rows.map((r) => r.map((c) => '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"').join(',')).join('\n');
+    const csv = rows.map((r) => r.map(cell).join(',')).join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     a.download = name; a.click();
@@ -287,7 +289,7 @@
     const p = res.player;
     box.dataset.initials = p.initials;
     box.innerHTML = `<div class="head"><h3 style="margin:0">${esc(p.initials)}${p.banned ? ' <span class="muted">(banned)</span>' : ''}</h3><div class="actions" style="margin:0"><button class="mini" type="button" id="pl-close">Close</button></div></div>
-      <dl><dt>Board</dt><dd>${esc(BOARD[p.role] || p.role)}</dd><dt>Code</dt><dd>${esc(p.claim_code)}</dd><dt>Email</dt><dd>${esc(p.contact_email || '–')}</dd><dt>School email</dt><dd>${esc(p.school_email || '–')}</dd><dt>Plays left</dt><dd>${p.credits}</dd><dt>First seen</dt><dd>${esc(when(p.created_at))}</dd><dt>Last seen</dt><dd>${esc(when(p.last_seen_at))}</dd>${(res.others || []).length ? `<dt>Same letters</dt><dd>${res.others.map(esc).join(', ')}</dd>` : ''}</dl>
+      <dl><dt>Board</dt><dd>${esc(BOARD[p.role] || p.role)}</dd><dt>Code</dt><dd>${esc(p.claim_code)}</dd><dt>Email</dt><dd>${esc(p.contact_email || '–')}</dd><dt>School email</dt><dd>${esc(p.school_email || '–')}</dd><dt>Plays left</dt><dd>${p.credits + (res.plays || []).filter((x) => x.score == null && !x.voided).length}</dd><dt>First seen</dt><dd>${esc(when(p.created_at))}</dd><dt>Last seen</dt><dd>${esc(when(p.last_seen_at))}</dd>${(res.others || []).length ? `<dt>Same letters</dt><dd>${res.others.map(esc).join(', ')}</dd>` : ''}</dl>
       <h4>Plays</h4>
       <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Started</th><th>Score</th><th>Best light</th></tr></thead><tbody>${(res.plays || []).map((x) => `<tr><td>${esc(when(x.started_at))}</td><td class="num">${x.score == null ? 'unfinished' : x.score}${x.voided ? ' <span class="muted">(voided)</span>' : ''}</td><td class="num">${x.best_light == null ? '–' : x.best_light}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">No plays.</td></tr>'}</tbody></table></div>
       <h4>Payments</h4>

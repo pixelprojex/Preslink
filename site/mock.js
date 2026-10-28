@@ -110,6 +110,8 @@
     week_start: weekStart(), week_end: (() => { const d = new Date(weekStart() + 'T12:00:00'); d.setDate(d.getDate() + 6); return d.toISOString().slice(0, 10); })(),
   });
   const adminCheck = (code) => { if (code !== DEMO_ADMIN_CODE) fail('BAD_ADMIN'); };
+  // After the closing date (the end of that day) nothing more is bought or started, as on the server.
+  const closed = () => { const e = db.settings.ends_on; return !!e && Date.now() > new Date(e + 'T23:59:59').getTime(); };
   const stripeStatus = () => { const s = db.settings.stripe; return s ? { connected: true, mode: s.mode, account: s.account, webhook: true, from_env: false } : { connected: false, mode: '', account: '', webhook: false, from_env: false }; };
 
   async function api(action, b) {
@@ -117,14 +119,6 @@
     db = load() || db;
     const player = b.player_id ? db.players[b.player_id] : null;
     switch (action) {
-      case 'school': {
-        if (!player) fail('PLAYER_NOT_FOUND');
-        const email = String(b.email || '').replace(/\s+/g, '').toLowerCase();
-        const m = email.match(/^[^\s@]+@(pbccork\.ie|pbc-cork\.ie)$/);
-        if (!m) fail('BAD_SCHOOL_EMAIL');
-        player.role = m[1] === 'pbccork.ie' ? 'student' : 'teacher'; player.school_email = email; save(db);
-        return me(player);
-      }
       case 'contact': {
         if (!player) fail('PLAYER_NOT_FOUND');
         const email = String(b.email || '').replace(/\s+/g, '').toLowerCase();
@@ -183,6 +177,8 @@
       case 'me': if (!player) fail('PLAYER_NOT_FOUND'); return me(player);
       case 'checkout': {
         if (!player) fail('PLAYER_NOT_FOUND');
+        if (player.banned) fail('BANNED');
+        if (closed()) fail('CLOSED');
         const bu = BUNDLES[b.bundle]; if (!bu) fail('BAD_BUNDLE');
         const sp = spendOf(player.id);
         if (sp.spent_today_cents + bu.amount > sp.daily_cap_cents) fail('DAILY_LIMIT');
@@ -207,6 +203,7 @@
         if (player.banned) fail('BANNED');
         const open = db.plays.find((x) => x.player_id === player.id && x.score == null && !x.voided && x.rounds);
         if (open) return { play_id: open.id, speed_ms: open.speed_ms, rounds: open.rounds, credits: player.credits, resumed: true };
+        if (closed()) fail('CLOSED');
         if (player.credits <= 0) fail('NO_CREDITS');
         player.credits -= 1;
         const play = { id: uuid(), player_id: player.id, started_at: new Date().toISOString(), score: null, rounds: newRounds(), speed_ms: 1000, voided: false };
@@ -245,7 +242,6 @@
             return {
               stats: stats(), week: wk, weeks: [weekStart()], spot: spotPrizes(),
               board: all.map((r) => { const o = (own[r.role] || []).find((x) => x.tag === r.tag); return { ...r, rank_all: r.rank, rank: o ? o.rank : r.rank, finished_at: r.achieved_at }; }),
-              past_winners: [],
               payments: db.payments.slice().reverse().slice(0, 50).map((p) => ({ ...p, initials: db.players[p.player_id] ? disp(db.players[p.player_id]) : '???', role: (db.players[p.player_id] || {}).role })),
               by_day: Object.values(byDay).sort((a, c) => c.day.localeCompare(a.day)),
               players_by_role: roles,
@@ -320,11 +316,8 @@
     await wait(120);
     db = load() || db;
     if (name === 'stats') return stats();
-    if (name === 'site_content') return db.settings.content || {};
-    if (name === 'leaderboard') return board(args.p_role, args.p_week);
-    if (name === 'board') return board(args.p_role, null);
+    if (name === 'board') return board(args.p_role, null).map(({ plays, ...r }) => r); // no play counts, as on the server
     if (name === 'spot_prizes') return spotPrizes();
-    if (name === 'past_winners') return [];
     fail('UNKNOWN_RPC');
   }
 

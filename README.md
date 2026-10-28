@@ -118,7 +118,7 @@ server can read them. The free plays switch off by themselves the moment Stripe 
 | `site/posters/` | The print files: `preslink-arcade-a3.pdf` and `preslink-arcade-a4.pdf` |
 | `site/share.html`, `site/share/` | The share kit at `/share`: the link, the share pictures with one-tap sharing, ready-made words and the posters |
 | `site/fonts/` | Inter (OFL): the app's variable font, and static weights in `fonts/static/` that the posters use so PDFs embed ordinary TrueType |
-| `site/assets/` | Logo (`logo.svg`, `cross.svg`), icons, and the photo slots `photo-*.svg` to replace with real photos |
+| `site/assets/` | The PresLink cross (`cross.svg`), the school crest, icons, the project photos (JPEG and WebP) and the committee-photo placeholder `photo-school.svg` |
 | `supabase/functions/api/index.ts` | Register, checkout, confirm payment, start play, submit score, committee actions (including Stripe connect) |
 | `supabase/functions/stripe-webhook/index.ts` | Receives Stripe's payment confirmation |
 | `docs/admin.sql` | Extra SQL for the committee (most day-to-day admin is in the app's Committee screen) |
