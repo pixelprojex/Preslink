@@ -10,7 +10,7 @@
   const PENDING_KEY = 'preslink.pendingScore';
   const PROGRESS_KEY = 'preslink.progress'; // the lights already played of a play left half-way
   const SWEEP_GUARD_MS = 60; // the server accepts taps from 60 ms into a sweep
-  const DOUBLE_TAP_MS = 200; // a second tap this soon after the one that started a light is a double tap, not a stop
+  const DOUBLE_TAP_MS = 280; // a second tap this soon after the one that started a light is a double tap, not a stop (the light comes round again)
   const ROUNDS = 3;
   const BUNDLES = { single: { amount: 2, credits: 1 }, triple: { amount: 5, credits: 3 }, seven: { amount: 10, credits: 7 } };
   const BOARD_NAMES = { everyone: 'Everyone', student: 'Students', teacher: 'Teachers' };
@@ -272,6 +272,15 @@
     const back = sheetOpener; sheetOpener = null;
     if (!all && back && back.isConnected && back !== document.body && !back.closest('[hidden]')) back.focus({ preventScroll: true });
   }
+  // The page is inert exactly while a sheet shows, however the sheet came to be hidden.
+  // (It writes only what is out of step, so its own writes can't wake it again.)
+  new MutationObserver(() => {
+    if (openSheetEl()) return;
+    const main = $('main.shell'), bar = $('#tabbar'), back = $('#sheet-backdrop');
+    if (main.inert) main.inert = false;
+    if (bar.inert) bar.inert = false;
+    if (!back.hidden) back.hidden = true;
+  }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['hidden'] });
   // The first-play sheet records that it was asked however it is closed, so it does not come back after the next play.
   function dismissSheet() {
     const open = openSheetEl();

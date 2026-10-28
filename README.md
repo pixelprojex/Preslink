@@ -114,6 +114,8 @@ server can read them. The free plays switch off by themselves the moment Stripe 
 | `supabase/migrations/0021_even_curve.sql` | Scores spread evenly over the whole bar: 999 on the line down to about 60 at the far end, by the square of the distance |
 | `supabase/migrations/0020_email_spaces_case.sql` | Emails are lower-cased and stripped of every space before the check, so capitals and stray spaces never turn an address away |
 | `supabase/migrations/0028_prize_mode.sql` | The prize switch: setting `prize_mode` ('prizes' or 'honours'), carried by `stats()`; in 'honours' the site talks of honours instead of prizes |
+| `supabase/migrations/0029_public_reads_no_play_counts.sql` | The public board no longer carries play counts (paid plays measure spending); the unused `leaderboard()` and `past_winners()` closed to the public |
+| `supabase/migrations/0030_integrity.sql` | The closing date enforced, taps checked against the real time, sign-in lockouts that grow, demo checkouts granted once, Stripe refunds (`refund_payment`, `payments.refunded_cents`) taken off the total and the plays |
 | `site/poster.html` | The poster in five formats: `?f=a3` and `?f=a4` to print (QR from the vendored encoder in `site/vendor/`), `?f=og`, `?f=post` and `?f=story` for the share pictures |
 | `site/posters/` | The print files: `preslink-arcade-a3.pdf` and `preslink-arcade-a4.pdf` |
 | `site/share.html`, `site/share/` | The share kit at `/share`: the link, the share pictures with one-tap sharing, ready-made words and the posters |
@@ -297,7 +299,8 @@ The content document (`set_content`) holds: `hero.title`, `hero.subtitle`, `noti
   return from payment or a reload in the same tab never flashes it.
 - Every player has a four-digit **code**, shown once after the first play (save the ticket picture, or Copy) and always on
   the **You** tab. It proves a winning score is theirs and lets them **sign back in** on another device
-  (You tab → "Played before?"). Five wrong codes lock that name for 15 minutes. A lost code can be looked up
+  (You tab → "Played before?"). Five wrong codes lock those initials for 15 minutes, the next five for 30, and so
+  on up to 16 hours, so a code can't be found by guessing. A lost code can be looked up
   by the committee.
 
 ## Editing the content
@@ -316,9 +319,10 @@ The advisor reports two things on purpose:
 
 - **RLS enabled, no policies** on every table. Correct: nobody reads tables directly. The browser only calls
   three read functions and the Edge Functions use the service role.
-- **`leaderboard`, `spot_prizes` and `stats` are SECURITY DEFINER and callable by `anon`.** Also correct:
-  they are the public read-outs (letters, scores, totals). They never return codes, emails or
-  player ids. `past_winners` is left over from the weekly version and is no longer called.
+- **`board`, `spot_prizes` and `stats` are SECURITY DEFINER and callable by `anon`.** Also correct:
+  they are the public read-outs (letters, scores, totals). They never return codes, emails, play counts or
+  player ids. Nothing else is open to the public (`leaderboard`, `past_winners` and `site_content` from older
+  versions were closed in 0029 and 0030).
 
 ## How the game is kept honest
 
@@ -328,11 +332,19 @@ The advisor reports two things on purpose:
   passed.
 - Every play is logged with its three tap times. The committee reviews the top scores before announcing and can
   void a play. The terms say so.
-- A refresh mid-game never costs a credit: the same play resumes.
+- A play left half-way (a refresh, Back, a phone call) carries on at its next light; the lights already played keep
+  their scores, so leaving is never a way to try the same lights again. A finished play can never be replayed.
+- After the closing date (`ends_on`, end of that day in Dublin) no checkout opens and no play starts; a play under
+  way at the close can still be finished for an hour (migration 0030).
+- A refund made in Stripe comes back by itself (webhook `charge.refunded`): the amount leaves the total raised and
+  the spending limits, and the unused plays it paid for are taken off. Connect Stripe again after updating, so the
+  webhook also listens for refunds.
 - Nobody can read the players or payments tables from the browser; the only public reads are the
-  leaderboard, the spot prizes and the total.
+  leaderboard (scores only, never how many plays anyone has made), the spot prizes and the total.
 - The game runs in a browser, so a determined person with developer tools could still try to script a
-  perfect tap. Announcing winners after a human check, and the four-digit code, is the practical safeguard.
+  perfect tap; the server only refuses taps that add up to more time than has passed. Check the top plays in the
+  console before announcing: three lights at 990 or more, or a run of near-perfect plays, deserve a closer look,
+  and a winner's code and email should match the player on file.
 
 ## Running it locally
 

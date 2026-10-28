@@ -64,6 +64,7 @@
     .tips li + li { margin-top: 4px; }
     .toast { position: fixed; left: 50%; bottom: max(20px, env(safe-area-inset-bottom)); transform: translate(-50%, 20px); opacity: 0; background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 14px; font-weight: 650; font-size: 15px; transition: opacity .2s, transform .2s; pointer-events: none; }
     .toast.on { opacity: 1; transform: translate(-50%, 0); }
+    @media (max-width: 480px) { .channel .row { gap: 6px; } .channel .btn { min-height: 40px; padding: 0 12px; font-size: 14px; border-radius: 12px; } }
     @media (max-width: 380px) { .channel { grid-template-columns: 72px minmax(0, 1fr); } .channel img { width: 72px; } h1 { font-size: 30px; } }
   </style>
 </head>
