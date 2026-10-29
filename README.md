@@ -23,15 +23,16 @@ carries a 2), so nobody is ever refused.
 The look follows the conventions of native apps (grouped white cards on a soft grey canvas, large titles,
 segmented controls, initials tiles in one of eight muted pastel colours that the player can change on the You tab, a progress ring) in PresLink's colours: green for actions, orange for the
 light and the ring, the yellow of the Presentation Brothers cross for the logo. The logo and the running
-total raised sit at the top of every screen; there is a tab bar (Play, Board, About, You), a Prizes page
+total raised sit at the top of every screen; there is a tab bar (Play, Leaderboard, About, You), a Prizes page
 with a white card per prize (a tinted picture tile, or the prize's photo), and very little text. The
-leaderboard opens on a podium: the top three under a warm light, first in the middle under a crown, each tile
-ringed in gold, silver or bronze with its place on a medal; every row below carries a bar for its score against
-the top score, and your own row is green. The same pages lay themselves out for
-an iPad (a 640 px column with the tab bar underneath; About and You share rows, Home gets a top-three
+leaderboard is one plain list per board: the place (a round medal in muted gold, silver or bronze for the top
+three, a plain number below), the initials tile and the score, with your own row in green. The result is one
+card (the score, its three lights, your best and rank, Play again), and You is one card with your tile and
+code, three numbers (plays left, your best, donated) and a short list. The same pages lay themselves out for
+an iPad (a 640 px column with the tab bar underneath; About shares rows, Home gets a top-three
 card) and for a desktop (the tab bar becomes a sidebar with the school at its foot, sheets become centred
-modals, Home puts the hero beside the links and the top three, the leaderboard shows all three boards at
-once, a mouse gets hover states that touch never sees, and a keyboard plays the whole game with Space or Enter).
+modals, Home puts the hero beside the top three, You puts your card beside the rest, a mouse gets hover
+states that touch never sees, and a keyboard plays the whole game with Space or Enter).
 
 ```
   Device (QR) ──▶  Netlify (static site: site/)
@@ -319,7 +320,7 @@ The content document (`set_content`) holds: `hero.title`, `hero.subtitle`, `noti
   tab. The address is stored for the committee to check and export; nothing is emailed by the site itself.
 - The splash plays once per visit (decided by a tiny script in the page head, before anything loads), so a
   return from payment or a reload in the same tab never flashes it.
-- Every player has a four-digit **code**, shown once after the first play (save the ticket picture, or Copy) and always on
+- Every player has a four-digit **code**, shown once after the first play (save the ticket picture) and always on
   the **You** tab. It proves a winning score is theirs and lets them **sign back in** on another device
   (You tab → "Played before?"). Five wrong codes lock those initials for 15 minutes, the next five for 30, and so
   on up to 16 hours, so a code can't be found by guessing. A lost code can be looked up

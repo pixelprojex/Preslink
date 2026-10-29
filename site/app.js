@@ -96,7 +96,6 @@
   let spend = null; // { spent, today, daily, campaign } in cent, from the server
   let openPlay = null;
   let best = null;
-  let bestLight = null;
   let stats = null;
   let boardRole = 'everyone';
 
@@ -120,7 +119,7 @@
       .finally(() => { prefetching = null; });
   }
   const clearPlayer = () => {
-    player = null; credits = 0; openPlay = null; nextPlay = null; best = null; bestLight = null;
+    player = null; credits = 0; openPlay = null; nextPlay = null; best = null;
     ['signin-name', 'signin-code'].forEach((id) => { $('#' + id).value = ''; }); // a shared device keeps nobody's code
     [STORAGE_KEY, CONTACT_ASKED_KEY, PROGRESS_KEY, 'preslink.prevBest', 'preslink.prevRank'].forEach((k) => store.del(k));
   };
@@ -131,7 +130,6 @@
     openPlay = p.open_play || null;
     if (openPlay && inPlay() && game.play && game.play.play_id === openPlay.play_id) openPlay = null; // the play under way here
     best = p.best != null ? p.best : (p.best_this_week == null ? null : p.best_this_week);
-    bestLight = p.best_light == null ? null : p.best_light;
     if (p.spent_cents != null) spend = { spent: Number(p.spent_cents) || 0, today: Number(p.spent_today_cents) || 0, daily: Number(p.daily_cap_cents) || 2000, campaign: Number(p.campaign_cap_cents) || 10000 };
     savePlayer();
     renderHome();
@@ -433,7 +431,6 @@
       scr.classList.remove('from-l', 'from-r'); void scr.offsetWidth;
       scr.classList.add((TAB_ORDER[name] || 0) >= (TAB_ORDER[from] || 0) ? 'from-r' : 'from-l');
     }
-    if (name !== 'board') $('#me-bar').hidden = true;
     window.scrollTo(0, 0);
     const tab = { home: 'play', cabinet: 'play', play: 'play', signin: 'play', board: 'board', prize: 'board', about: 'about', you: 'you' }[name];
     $$('#tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
@@ -500,7 +497,7 @@
       rpc('board', { p_role: null }).then((r) => { if (seq !== homeTopSeq || boardCache.everyone) return; boardCache.everyone = r; renderHomeTop(); }).catch(() => {});
       return;
     }
-    $('#home-top-list').innerHTML = rows.slice(0, 3).map((r) => rowHtml(r, rows[0].score, !!player && r.tag === player.tag, true)).join('');
+    $('#home-top-list').innerHTML = rows.slice(0, 3).map((r) => rowHtml(r, !!player && r.tag === player.tag)).join('');
     $('#home-top-empty').hidden = rows.length > 0;
   }
   $('#home-play').addEventListener('click', () => playOrBuy());
@@ -1099,7 +1096,6 @@
       done();
       credits = r.credits;
       best = r.best != null ? r.best : r.best_this_week;
-      if (r.best_light != null) bestLight = Math.max(bestLight || 0, r.best_light);
     } catch (ex) {
       if (['ALREADY_SCORED', 'PLAY_NOT_FOUND', 'PLAY_VOID', 'SCORE_MISMATCH', 'BAD_TAP', 'CLOSED'].includes(ex.code)) {
         done();
@@ -1126,16 +1122,14 @@
     const prevRank = store.get('preslink.prevRank');
     const rank = r ? (r.rank_all != null ? r.rank_all : r.rank) : null;
     const newBest = !!r && prevBest != null && score > prevBest;
-    const movedUp = !!r && prevRank != null && rank != null && rank < prevRank;
-    kicker.className = 'result-kicker' + (newBest ? ' best' : movedUp ? ' up' : '');
+    kicker.className = 'result-kicker' + (newBest ? ' best' : '');
     if (newBest) sounds.best();
     const first900 = !!r && score >= 900 && !store.get('preslink.got900');
     if (r && score >= 900) store.set('preslink.got900', true);
     const intoTop10 = !!r && rank != null && rank <= 10 && (prevRank == null || prevRank > 10);
     if (current === 'play' && score >= HIT && (newBest || first900 || intoTop10)) confetti.burst(score >= 900 ? 110 : 70); // never for a below-median play
     vibrate(newBest ? [25, 60, 25, 60, 90] : 30);
-    kicker.textContent = newBest ? 'New best' : movedUp ? `Up ${prevRank - rank} ${prevRank - rank === 1 ? 'place' : 'places'}` : titleFor(score);
-    if (movedUp && !newBest) kicker.insertAdjacentHTML('afterbegin', '<svg aria-hidden="true"><use href="#i-up"/></svg>');
+    kicker.textContent = newBest ? 'New best' : titleFor(score);
     const fg = $('#gauge-fg'), C = 326.73;
     fg.style.transition = 'none'; fg.style.strokeDasharray = `0 ${C}`; void fg.getBoundingClientRect();
     fg.style.transition = '';
@@ -1143,14 +1137,10 @@
     if (r) { store.set('preslink.prevBest', best); if (rank != null) store.set('preslink.prevRank', rank); }
     countUp($('#result-score'), 0, score, 650, String);
     const lights = r && Array.isArray(r.rounds) && r.rounds.length === ROUNDS ? r.rounds.map((x) => Number(x)) : game.scores;
-    const bestRound = Math.max(...lights);
-    // One chip per light: green for a hit, gold edge on the play's best light.
-    $('#result-rounds').innerHTML = lights.map((s, i) => `<div class="lt${s >= HIT ? ' hit' : ''}${s === bestRound ? ' top' : ''}"><span>Light ${i + 1}</span><strong>${s}</strong></div>`).join('');
+    // The three lights the score is the average of
+    $('#result-rounds').innerHTML = lights.map((s, i) => `<div class="lt"><span>Light ${i + 1}</span><strong>${s}</strong></div>`).join('');
     $('#result-best').textContent = r && best != null ? best : '–';
     $('#result-rank').textContent = rank ? '#' + rank : '–';
-    $('#result-rank-sub').textContent = '';
-    $('#result-rank-sub').className = '';
-    if (r && rank) showGap(rank);
     renderResultEmail();
     const n = $('#result-note');
     n.textContent = note || '';
@@ -1181,19 +1171,8 @@
   // The reminder row on the result screen shows only while no email is on file.
   function renderResultEmail() { const b = $('#result-email'); b.hidden = b.parentElement.hidden = !player || !!player.contact_email || !!store.get(CONTACT_ASKED_KEY); }
 
-  // How far to the next place: the nudge that makes "one more go" worth it.
-  async function showGap(rank) {
-    const el = $('#result-rank-sub');
-    try {
-      const rows = await rpc('board', { p_role: null });
-      if (rank === 1) { el.textContent = 'Top of the board'; el.className = 'good'; return; }
-      const above = rows.find((x) => x.rank === rank - 1);
-      if (above) { el.textContent = `${above.score - best + 1} to #${rank - 1}`; el.className = ''; }
-    } catch (_) { /* leave blank */ }
-  }
-
   // ---------------------------------------------------------------------------
-  // The code: shown once after the first play, saved as an image, copied, and always on the You tab
+  // The code: shown once after the first play, saved as an image, and always on the You tab
   // ---------------------------------------------------------------------------
   function showCodeSheet() {
     $('#code-name').innerHTML = nameHtml(player.display);
@@ -1202,14 +1181,8 @@
     openSheet('code');
   }
   $('#code-done').addEventListener('click', () => closeSheets());
-  $('#you-copy').addEventListener('click', () => copyCode());
   $('#code-save').addEventListener('click', () => saveCodeImage());
   $('#you-save').addEventListener('click', () => (IOS_TOUCH ? showCodeSheet() : saveCodeImage())); // iPhone: the sheet shows what to tap
-  async function copyCode() {
-    if (!player) return;
-    try { await navigator.clipboard.writeText(`PresLink Arcade: ${player.display} · code ${player.claim_code}`); toast('Copied'); }
-    catch (_) { toast(`${player.display} · ${player.claim_code}`); }
-  }
   // The ticket: a 4:5 image with the PresLink cross, the light bar, the initials and the code, and
   // the words that matter: it is not a prize, it is the code that collects one if you win. Shown in
   // the code sheet and saved by the button below (where it goes depends on the device, see save).
@@ -1397,56 +1370,20 @@
   });
   let boardTouched = false;
   let boardSeq = 0;
-  // A wide screen shows all three boards side by side; the tabs and one board otherwise.
-  const wideBoards = window.matchMedia('(min-width: 1100px)');
-  const ROLES = ['everyone', 'student', 'teacher'];
-  const boardList = (role) => (role ? $(`#boards-wide .board[data-role="${role}"]`) : $('#board-list'));
-  const boardPodium = (role) => (role ? $(`#boards-wide .podium[data-role="${role}"]`) : $('#board-podium'));
-  const boardEmpty = (role) => boardList(role).parentElement.querySelector('.lb-empty');
-  // A row: the place, the initials tile, a bar for the score against the top score, the score. Home's top three
-  // carry their medals; on the boards the top three stand on the podium and the rows below are plain numbers.
-  function rowHtml(r, top, me, medal) {
-    const w = top > 0 ? Math.max(4, Math.min(100, r.score / top * 100)) : 0;
-    const place = medal && r.rank <= 3 ? `<span class="medal m${r.rank}">${r.rank}</span>` : `<span class="rank">${r.rank}</span>`;
-    return `<li${me ? ' class="me"' : ''}>${place}${avatarHtml(r.initials, false, r.colour)}<span class="mid">${me ? '<span class="youtag">You</span>' : ''}<span class="bar" aria-hidden="true"><i style="width:${w.toFixed(1)}%"></i></span></span><span class="pts">${r.score}</span></li>`;
+  // A row: the place (a medal for the top three, a plain number below), the initials tile, the score.
+  function rowHtml(r, me) {
+    const place = r.rank <= 3 ? `<span class="medal m${r.rank}">${r.rank}</span>` : `<span class="rank">${r.rank}</span>`;
+    return `<li${me ? ' class="me"' : ''}>${place}${avatarHtml(r.initials, false, r.colour)}<span class="who">${me ? 'You' : ''}</span><span class="pts">${r.score}</span></li>`;
   }
-  // The podium: first in the middle under a crown, second on the left, third on the right, each tile ringed in its
-  // medal's colour with the place on the medal.
-  const podiumHtml = (rows) => rows.slice(0, 3).map((r, i) => {
-    const me = !!player && r.tag === player.tag;
-    return `<li class="p${i + 1}${me ? ' me' : ''}">${i === 0 ? '<svg class="crown" aria-hidden="true"><use href="#i-crown"/></svg>' : ''}<span class="pod-tile"><span class="medal m${i + 1}">${r.rank}</span>${avatarHtml(r.initials, true, r.colour)}</span><span class="pts">${r.score}</span>${me ? '<span class="youtag">You</span>' : ''}</li>`;
-  }).join('');
-  const emptyHtml = (role) => `<span class="lb-empty-ic" aria-hidden="true"><svg><use href="#i-cup"/></svg></span><strong>No scores yet</strong><span>${role !== 'everyone' && !isSchool() ? 'Students and teachers join with their school email on the You tab.' : 'The first score takes the top spot.'}</span>`;
-  // What each board shows now, so a refresh that changes nothing redraws nothing (and nothing replays its entrance).
-  const painted = {};
-  function paint(rows, role) {
-    const key = `${role || boardRole}|${player ? player.tag : ''}|${JSON.stringify(rows)}`;
-    if (painted[role || ''] === key) return;
-    painted[role || ''] = key;
-    renderBoard(rows, role);
+  const emptyHtml = (role) => `<strong>No scores yet</strong><span>${role !== 'everyone' && !isSchool() ? 'Students and teachers join with their school email on the You tab.' : 'The first score takes the top spot.'}</span>`;
+  // What the board shows now, so a refresh that changes nothing redraws nothing (and nothing replays its entrance).
+  let painted = '';
+  function paint(rows) {
+    const key = `${boardRole}|${player ? player.tag : ''}|${JSON.stringify(rows)}`;
+    if (painted === key) return;
+    painted = key;
+    renderBoard(rows);
   }
-  const skeletonPodium = () => [1, 2, 3].map((i) => `<li class="p${i} sk" aria-hidden="true"><span class="pod-tile"><span class="avatar big"></span></span><span class="pts"></span></li>`).join('');
-  const skeletonRows = () => Array.from({ length: 5 }, () => '<li class="sk" aria-hidden="true"><span class="rank"></span><span class="avatar"></span><span class="mid"><span class="bar"></span></span><span class="pts"></span></li>').join('');
-  function showSkeleton(role) {
-    const list = boardList(role), pod = boardPodium(role);
-    if (list.children.length || pod.children.length) return;
-    painted[role || ''] = '';
-    pod.innerHTML = skeletonPodium(); pod.hidden = false;
-    list.innerHTML = skeletonRows(); list.hidden = false;
-    boardEmpty(role).hidden = true;
-  }
-  async function loadBoardsWide() {
-    ROLES.forEach((role) => { if (boardCache[role]) paint(boardCache[role], role); else showSkeleton(role); });
-    const seq = ++boardSeq;
-    let lists;
-    try {
-      lists = await Promise.all(ROLES.map((role) => rpc('board', { p_role: role === 'everyone' ? null : role })));
-    } catch (ex) { toast(msg(ex), true); return; }
-    if (seq !== boardSeq) return;
-    ROLES.forEach((role, i) => { boardCache[role] = lists[i]; paint(lists[i], role); });
-  }
-  const onWideChange = () => { if (current === 'board') loadBoard(); };
-  if (wideBoards.addEventListener) wideBoards.addEventListener('change', onWideChange); else wideBoards.addListener(onWideChange);
   async function loadSpot() {
     let spot = null;
     try { spot = await rpc('spot_prizes'); } catch (_) { /* leave blank */ }
@@ -1457,53 +1394,42 @@
   async function loadBoard() {
     if (!boardTouched) boardRole = isSchool() ? player.role : 'everyone';
     $$('[data-screen="board"] .tab').forEach((x) => { x.classList.toggle('active', x.dataset.role === boardRole); x.setAttribute('aria-selected', x.dataset.role === boardRole); });
-    if (wideBoards.matches) return loadBoardsWide();
-    if (boardCache[boardRole]) paint(boardCache[boardRole]); else { $('#board-list').innerHTML = ''; $('#board-podium').innerHTML = ''; showSkeleton(); } // the last known rows at once; fresh ones follow
+    if (boardCache[boardRole]) paint(boardCache[boardRole]); // the last known rows at once; fresh ones follow
+    else { painted = ''; $('#board-list').hidden = true; $('#board-empty').innerHTML = '<span>Loading…</span>'; $('#board-empty').hidden = false; }
     const seq = ++boardSeq;
     let rows = [];
     try {
       rows = await rpc('board', { p_role: boardRole === 'everyone' ? null : boardRole });
-    } catch (ex) { toast(msg(ex), true); return; }
+    } catch (ex) {
+      toast(msg(ex), true);
+      if (seq === boardSeq && !boardCache[boardRole]) $('#board-empty').innerHTML = `<span>${esc(msg(ex))}</span>`; // the open board tries again every 20 seconds
+      return;
+    }
     if (seq !== boardSeq) return; // a newer tab tap is in flight
     boardCache[boardRole] = rows;
     paint(rows);
+    prefetchBoards(false, ['everyone', 'student', 'teacher']); // the other tabs open at once
   }
   setInterval(() => { if (current === 'board' && !document.hidden) loadBoard(); }, 20000); // the board stays live while it is open
   const boardCache = {};
-  function prefetchBoards(force) {
-    for (const role of ['everyone', isSchool() ? player.role : null]) {
+  // Everyone and the player's own board by default: the ones a new score changes and a visitor opens first.
+  function prefetchBoards(force, roles = ['everyone', isSchool() ? player.role : null]) {
+    for (const role of roles) {
       if (role && (force || !boardCache[role])) rpc('board', { p_role: role === 'everyone' ? null : role }).then((rows) => { boardCache[role] = rows; }).catch(() => {});
     }
   }
-  function renderBoard(rows, role) {
-    const list = boardList(role), pod = boardPodium(role), empty = boardEmpty(role);
+  function renderBoard(rows) {
+    const list = $('#board-list'), empty = $('#board-empty');
     const TOP = 20;
-    const mine = player ? rows.findIndex((r) => r.tag === player.tag) : -1;
-    let html = rows.slice(3, TOP).map((r) => rowHtml(r, rows[0].score, !!player && r.tag === player.tag)).join('');
-    if (mine >= TOP) html += '<li class="gap" aria-hidden="true">···</li>' + rowHtml(rows[mine], rows[0].score, true);
-    pod.innerHTML = podiumHtml(rows);
-    pod.hidden = !rows.length;
+    const isMe = (r) => !!player && r.tag === player.tag;
+    const mine = player ? rows.findIndex(isMe) : -1;
+    let html = rows.slice(0, TOP).map((r) => rowHtml(r, isMe(r))).join('');
+    if (mine >= TOP) html += '<li class="gap" aria-hidden="true">···</li>' + rowHtml(rows[mine], true);
     list.innerHTML = html;
-    list.hidden = !html;
-    empty.innerHTML = rows.length ? '' : emptyHtml(role || boardRole);
+    list.hidden = !rows.length;
+    empty.innerHTML = rows.length ? '' : emptyHtml(boardRole);
     empty.hidden = rows.length > 0;
-    if (!role) watchMe();
   }
-  // The player's own row, pinned above the tab bar while it is scrolled out of sight.
-  let meObs = null;
-  function watchMe() {
-    const bar = $('#me-bar');
-    if (meObs) { meObs.disconnect(); meObs = null; }
-    bar.hidden = true;
-    if (wideBoards.matches || !player || !('IntersectionObserver' in window)) return;
-    const row = $('#board-list li.me');
-    const r = (boardCache[boardRole] || []).find((x) => x.tag === player.tag);
-    if (!row || !r) return;
-    bar.innerHTML = `<span class="rank">${r.rank}</span>${avatarHtml(r.initials, false, r.colour)}<span class="me-name">You</span><span class="pts">${r.score}</span>`;
-    meObs = new IntersectionObserver(([en]) => { bar.hidden = en.isIntersecting || current !== 'board'; }, { rootMargin: '0px 0px -96px 0px' });
-    meObs.observe(row);
-  }
-  $('#me-bar').addEventListener('click', () => { const row = $('#board-list li.me'); if (row) row.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'center' }); });
   // The leader on a prize card opens the board it leads.
   $('[data-screen="prize"]').addEventListener('click', (e) => {
     const lead = e.target.closest('.prize-lead');
@@ -1622,7 +1548,6 @@
     if (!player) return;
     $('#you-name').innerHTML = nameHtml(player.display || player.initials);
     $('#you-avatar').outerHTML = avatarHtml(player.display || player.initials, true, player.colour).replace('<span ', '<span id="you-avatar" ');
-    $('#you-panel .profile').dataset.k = tileColour((player.display || player.initials).split('#')[0], player.colour); // the card is lit in the tile's colour
     const b = $('#you-board');
     b.innerHTML = isSchool() ? `${CREST_IMG}${esc(boardName(player.role))} board<span class="profile-mail">${esc(player.school_email || '')}</span>` : 'Everyone board';
     b.classList.toggle('school', isSchool());
@@ -1630,7 +1555,6 @@
     $('#you-code').textContent = player.claim_code;
     $('#you-credits').textContent = playsLeft();
     $('#you-best').textContent = best == null ? '–' : best;
-    $('#you-light').textContent = bestLight == null ? '–' : bestLight;
     $('#you-spent').textContent = '€' + Math.round(((spend && spend.spent) || 0) / 100);
   }
   // Initials and colour change together in the edit card: the swatches show the letters as they are typed, and

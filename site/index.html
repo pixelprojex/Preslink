@@ -37,7 +37,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <!-- the game's server: connect while the page is still loading -->
   <link rel="preconnect" href="https://bsovummlmfclefdlvsic.supabase.co" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=50">
+  <link rel="stylesheet" href="styles.css?v=51">
 </head>
 <body>
 <div class="splash" id="splash" aria-hidden="true">
@@ -68,10 +68,6 @@
     <symbol id="i-cup" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M8 3h8v2h3.5a.5.5 0 0 1 .5.5V8a4 4 0 0 1-3.6 3.98A5 5 0 0 1 13 15.9V18h2.5a1.5 1.5 0 0 1 1.5 1.5V21H7v-1.5A1.5 1.5 0 0 1 8.5 18H11v-2.1a5 5 0 0 1-3.4-3.92A4 4 0 0 1 4 8V5.5a.5.5 0 0 1 .5-.5H8zm0 4H6v1a2 2 0 0 0 2 2zm8 0v3a2 2 0 0 0 2-2V7z" fill="currentColor"/></symbol>
     <symbol id="i-cap" viewBox="0 0 24 24"><path d="M12 3 1.5 8.2 12 13.4l8.5-4.2V15H22V8.2z" fill="currentColor"/><path d="M6 11.6V15c0 1.66 2.69 3 6 3s6-1.34 6-3v-3.4l-6 2.97z" fill="currentColor"/></symbol>
     <symbol id="i-book" viewBox="0 0 24 24"><path d="M3 5.5C5.6 4.3 8.6 4.4 11 6v13c-2.4-1.5-5.4-1.6-8-.5zM21 5.5c-2.6-1.2-5.6-1.1-8 .5v13c2.4-1.5 5.4-1.6 8-.5z" fill="currentColor"/></symbol>
-    <symbol id="i-crown" viewBox="0 0 32 24"><path d="M3.2 7.6 9.4 13l6.6-10 6.6 10 6.2-5.4-2.5 13.9H5.7z" fill="currentColor"/><rect x="5.7" y="20.2" width="20.6" height="2.8" rx="1.2" fill="currentColor"/><circle cx="16" cy="2.6" r="2.1" fill="currentColor"/><circle cx="3" cy="7" r="1.8" fill="currentColor"/><circle cx="29" cy="7" r="1.8" fill="currentColor"/></symbol>
-    <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2.2a2.8 2.8 0 0 0 0 5.6V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2.2a2.8 2.8 0 0 0 0-5.6z" fill="currentColor"/></symbol>
-    <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5" fill="currentColor"/><path d="M14.9 8.4a4.1 4.1 0 1 0 0 7.2" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><path d="M7.4 10.8h5.4M7.4 13.2h5.4" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></symbol>
-    <symbol id="i-up" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   </defs>
 </svg>
 
@@ -146,13 +142,11 @@
           <div class="result-score"><span id="result-score">0</span><small>of 1000</small></div>
         </div>
         <div class="lights" id="result-rounds"></div>
-      </div>
-      <div class="stat-row" id="result-stats">
-        <div class="stat"><span>Your best</span><strong id="result-best">–</strong></div>
-        <div class="stat"><span>Rank</span><strong id="result-rank">–</strong><small id="result-rank-sub"></small></div>
-      </div>
-      <p class="result-note" id="result-note" hidden></p>
-      <div class="card pad cta-card">
+        <div class="result-stats" id="result-stats">
+          <p><span>Your best</span><strong id="result-best">–</strong></p>
+          <p><span>Rank</span><strong id="result-rank">–</strong></p>
+        </div>
+        <p class="result-note" id="result-note" hidden></p>
         <button class="btn btn-primary btn-xl" type="button" id="result-again">Play again</button>
         <p class="bundles-line" id="result-topup" hidden><button class="link" type="button" data-bundle="triple">3 plays · €5</button><button class="link" type="button" data-bundle="seven">7 plays · €10</button></p>
       </div>
@@ -170,17 +164,10 @@
       <button role="tab" type="button" class="tab" data-role="student" aria-selected="false"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Students</button>
       <button role="tab" type="button" class="tab" data-role="teacher" aria-selected="false"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Teachers</button>
     </div>
-    <div class="card lb" id="board-single">
-      <ol class="podium" id="board-podium" aria-label="Top three"></ol>
+    <div class="card lb">
       <ol class="board" id="board-list"></ol>
       <div class="lb-empty" id="board-empty" hidden></div>
     </div>
-    <div class="boards-wide" id="boards-wide">
-      <div class="card lb"><h2 class="card-h">Everyone</h2><ol class="podium" data-role="everyone" aria-label="Top three"></ol><ol class="board" data-role="everyone"></ol><div class="lb-empty" hidden></div></div>
-      <div class="card lb"><h2 class="card-h pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Students</h2><ol class="podium" data-role="student" aria-label="Top three"></ol><ol class="board" data-role="student"></ol><div class="lb-empty" hidden></div></div>
-      <div class="card lb"><h2 class="card-h pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Teachers</h2><ol class="podium" data-role="teacher" aria-label="Top three"></ol><ol class="board" data-role="teacher"></ol><div class="lb-empty" hidden></div></div>
-    </div>
-    <div class="me-bar" id="me-bar" hidden></div>
   </section>
 
   <!-- ================= PRIZES ================= -->
@@ -261,20 +248,17 @@
         <span class="avatar big" id="you-avatar">··</span>
         <span class="profile-name sr-only" id="you-name">···</span>
         <span class="profile-board" id="you-board">Everyone board</span>
-      </div>
-      <div class="card code-card">
-        <span class="profile-label">Your code</span>
-        <strong id="you-code">0000</strong>
-        <p class="small" data-honours="Proves your scores are yours.">Show this to collect a prize.</p>
-        <div class="grid-2 code-actions"><button class="btn btn-small save-btn" type="button" id="you-save">Save picture</button><button class="btn btn-small" type="button" id="you-copy">Copy</button></div>
+        <div class="code-box">
+          <span class="profile-label">Your code</span>
+          <strong id="you-code">0000</strong>
+          <p class="small" data-honours="Proves your scores are yours.">Show this to collect a prize.</p>
+          <button class="btn btn-small save-btn" type="button" id="you-save">Save picture</button>
+        </div>
       </div>
       <div class="card you-stats">
-        <div class="stat-grid">
-          <div class="tile t-plays"><svg aria-hidden="true"><use href="#i-ticket"/></svg><strong id="you-credits">0</strong><span>Plays left</span></div>
-          <div class="tile t-best"><svg aria-hidden="true"><use href="#i-cup"/></svg><strong id="you-best">–</strong><span>Your best</span></div>
-          <div class="tile t-light"><svg aria-hidden="true"><use href="#i-flash"/></svg><strong id="you-light">–</strong><span>Best light</span></div>
-          <div class="tile t-gift"><svg aria-hidden="true"><use href="#i-coin"/></svg><strong id="you-spent">€0</strong><span>Donated</span></div>
-        </div>
+        <p><strong id="you-credits">0</strong><span>Plays left</span></p>
+        <p><strong id="you-best">–</strong><span>Your best</span></p>
+        <p><strong id="you-spent">€0</strong><span>Donated</span></p>
       </div>
       <form id="edit-form" class="card pad stack" autocomplete="off" novalidate hidden>
         <h2 class="card-h">Your initials</h2>
@@ -290,7 +274,6 @@
       <div class="card">
         <button class="cell" type="button" id="you-email"><span>Email<small id="you-email-text">Add your email</small></span> <span class="chev">›</span></button>
         <button class="cell" type="button" id="you-edit"><span>Change initials or colour</span> <span class="chev">›</span></button>
-        <button class="cell" type="button" data-go="signin"><span>Sign in as someone else</span> <span class="chev">›</span></button>
         <button class="cell danger" type="button" id="you-signout"><span>Sign out</span></button>
       </div>
     </div>
@@ -465,6 +448,6 @@
 <script src="config.js"></script>
 <!-- the demo backend loads only when no server is configured -->
 <script>if (!(window.PRESLINK_CONFIG || {}).SUPABASE_URL) document.write('<script src="mock.js?v=43"><\/script>');</script>
-<script src="app.js?v=44"></script>
+<script src="app.js?v=45"></script>
 </body>
 </html>
