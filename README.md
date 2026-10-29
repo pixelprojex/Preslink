@@ -99,6 +99,7 @@ open Supabase.
 | `site/mock.js` | Demo backend. Active only while `config.js` is empty, so the site works before Supabase is wired |
 | `site/qr.html` | Old poster address; forwards to `poster.html` |
 | `site/robots.txt`, `site/sitemap.xml` | For search engines: everything may be crawled, and the page with its photos (see **Search engines**) |
+| `.github/workflows/indexnow.yml`, `site/2bd96824e96199e73fa1d53b924ff191.txt` | Tells Bing and the other IndexNow search engines after every release that the page changed |
 | `site/manifest.webmanifest`, `site/assets/icon-*.png` | The name and icons a phone uses when the site is added to the home screen, and Google's logo |
 | `supabase/migrations/0001_init.sql` | Database tables and functions |
 | `supabase/migrations/0002_names_signin_admin.sql` | Unique names, name blocklist, sign back in, bans, goal and prize settings, committee functions |
@@ -244,10 +245,17 @@ charity**:
 - The committee page, the poster tools and the poster files say `noindex`, so the game's page is the one
   people find. Deploy previews are kept out of Google by Netlify itself.
 - Icons at 48, 96, 192 and 512 px give Google and phones a sharp logo; the photos have descriptive alt text.
+- Search engines and link previews never get the welcome animation: they see the page at once.
+- **IndexNow** (`.github/workflows/indexnow.yml`): after every change reaches `main` and Netlify has published
+  it, GitHub tells Bing, Yandex, Seznam and Naver that the page changed (Bing also feeds DuckDuckGo, Yahoo,
+  Ecosia and ChatGPT search). The key file is `site/2bd96824e96199e73fa1d53b924ff191.txt`. It runs by itself;
+  it can also be run by hand from the repository's **Actions** tab. Google does not take part in IndexNow.
 - Lighthouse (mobile): SEO 100, accessibility 100, performance 98.
 
-Nobody can make Google list a new site the moment it goes up, but these steps get it in within days. Do them
-once, after the site is live on its final address:
+None of this reaches Google until it is on the live site (merged into `main` and published by Netlify), and
+Google only learns that a new site exists when it is told (Search Console) or finds a link to it. Nobody can
+make Google list a new site the moment it goes up, but these steps get it in within days. Do them once, after
+the site is live on its final address:
 
 1. **Google Search Console.** Go to <https://search.google.com/search-console>, sign in with the account
    that should own it, choose **Add property → URL prefix**, and enter `https://preslink.netlify.app/`.
@@ -267,7 +275,8 @@ once, after the site is live on its final address:
 
 "PresLink Arcade" is a name nobody else uses, so it comes up first once Google has the page. If the site
 ever moves to its own domain, change the address in `index.html` (canonical, `og:url`, `og:image`,
-`twitter:image`, the JSON-LD), `robots.txt` and `sitemap.xml`, and add the new address in Search Console.
+`twitter:image`, the JSON-LD), `robots.txt`, `sitemap.xml` and `.github/workflows/indexnow.yml`, and add the
+new address in Search Console.
 
 ## The committee console
 

@@ -7,11 +7,13 @@
   <meta name="color-scheme" content="light">
   <script>
     // The welcome animation plays once, on a device's very first visit; every later open goes straight in.
+    // Search engines and link previews never get it: they see the page itself at once.
     // Decided here, before anything draws, so there is nothing to hide after the fact.
     (function () {
       try {
         var back = /session_id=|cancelled=/.test(location.search);
-        if (back || localStorage.getItem('preslink.welcomed')) document.documentElement.classList.add('no-splash');
+        var robot = /bot|crawl|spider|slurp|lighthouse|inspectiontool|facebookexternalhit|whatsapp|embedly|preview/i.test(navigator.userAgent);
+        if (back || robot || localStorage.getItem('preslink.welcomed')) document.documentElement.classList.add('no-splash');
         else localStorage.setItem('preslink.welcomed', '1');
       } catch (e) { document.documentElement.classList.add('no-splash'); }
     })();

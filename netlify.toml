@@ -185,6 +185,13 @@
   [headers.values]
     X-Robots-Tag = "noindex"
 
+# The IndexNow key (see .github/workflows/indexnow.yml): search engines read it, but it is not a page to list.
+[[headers]]
+  for = "/2bd96824e96199e73fa1d53b924ff191.txt"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+    Cache-Control = "public, max-age=3600"
+
 # The sitemap and robots file are read fresh.
 [[headers]]
   for = "/sitemap.xml"

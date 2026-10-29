@@ -1,0 +1,33 @@
+# After each change reaches main and Netlify has published it, tell the IndexNow search engines that the page
+# has changed: Bing (which also feeds DuckDuckGo, Yahoo, Ecosia and ChatGPT search), Yandex, Seznam and Naver.
+# Google does not take part in IndexNow; for Google, the site is added once in Search Console (README, Search
+# engines). The key is public by design: search engines check it against the file at the site's root.
+name: IndexNow
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SITE: https://preslink.netlify.app
+      HOST: preslink.netlify.app
+      KEY: 2bd96824e96199e73fa1d53b924ff191
+    steps:
+      - name: Wait until Netlify serves the key file
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS "$SITE/$KEY.txt" | grep -qx "$KEY"; then echo "Key file is live."; exit 0; fi
+            sleep 15
+          done
+          echo "The key file is not live after 15 minutes."; exit 1
+      - name: Tell IndexNow the page changed
+        run: |
+          curl -fsS -X POST "https://api.indexnow.org/indexnow" \
+            -H "Content-Type: application/json; charset=utf-8" \
+            -d "{\"host\":\"$HOST\",\"key\":\"$KEY\",\"keyLocation\":\"$SITE/$KEY.txt\",\"urlList\":[\"$SITE/\"]}" \
+            -w "\nIndexNow answered HTTP %{http_code}\n"
