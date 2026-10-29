@@ -20,13 +20,21 @@ Presentation Brothers College can optionally give their school email to join the
 already has the same letters you still get them, shown with a small blue numbered bubble on your circle (the second JAK
 carries a 2), so nobody is ever refused.
 
-The look follows the conventions of native apps (grouped white cards on a soft grey canvas, large titles,
-segmented controls, initials tiles in one of eight muted pastel colours that the player can change on the You tab, a progress ring) in PresLink's colours: green for actions, orange for the
+Before a player's very first real play comes a **practice**, once: after paying, Start opens a big box ("This
+is a practice: three free lights to try the game, they don't count"), the three lights run on a game card
+edged in gold and marked Practice, and a second box ("Practice done", the practice score, "Now for real")
+leads into the real play. It can't be skipped (Back leaves, and it is there again next time), it never comes
+back once done, and a player who already has a score never sees it. Practice lights are made up on the
+device, not the day's real lights, and nothing about them is sent to the server or uses a play.
+
+The look is white and plain, after Duolingo (white pages and cards with a light grey edge, white buttons with
+a lip, large titles, tabs underlined in green, initials tiles in one of eight muted pastel colours that the player can change on the You tab, a progress ring) in PresLink's colours: green for actions, orange for the
 light and the ring, the yellow of the Presentation Brothers cross for the logo. The logo and the running
 total raised sit at the top of every screen; there is a tab bar (Play, Leaderboard, About, You), a Prizes page
-with a white card per prize (a tinted picture tile, or the prize's photo), and very little text. The
-leaderboard is one plain list per board: the place (a round medal in muted gold, silver or bronze for the top
-three, a plain number below), the initials tile and the score, with your own row in green. The result is one
+with a white card per prize (its photo, or a grey box with a question mark until there is one), and very
+little text. The leaderboard puts the top three on a podium (their tiles and scores on flat gold, silver and
+bronze steps, first in the middle and highest) and everyone else in plain rows (place, initials tile, score),
+with your own row edged in green. The result is one
 card (the score, its three lights, your best and rank, Play again), and You is one card with your tile and
 code, three numbers (plays left, your best, donated) and a short list. The same pages lay themselves out for
 an iPad (a 640 px column with the tab bar underneath; About shares rows, Home gets a top-three
@@ -331,7 +339,7 @@ The content document (`set_content`) holds: `hero.title`, `hero.subtitle`, `noti
 All the words are in `site/index.html`. The About page was written from the school's newsletters and the
 Presentation Brothers' website; the committee should check it. Three photos are real (`photo-classrooms.jpg`,
 `photo-bikes.jpg`, `photo-babies.jpg`); `photo-school.svg` (the committee card) is a placeholder until a photo
-is chosen, and each prize card shows a tinted picture until its photo is added.
+is chosen, and each prize card shows a grey box with a question mark until its photo is added.
 Prices live in
 three places that must agree: the bundle buttons in `index.html`, `BUNDLES` in
 `supabase/functions/api/index.ts` and `BUNDLES` in `supabase/functions/stripe-webhook/index.ts`.

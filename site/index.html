@@ -37,7 +37,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <!-- the game's server: connect while the page is still loading -->
   <link rel="preconnect" href="https://bsovummlmfclefdlvsic.supabase.co" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=51">
+  <link rel="stylesheet" href="styles.css?v=52">
 </head>
 <body>
 <div class="splash" id="splash" aria-hidden="true">
@@ -63,11 +63,6 @@
     <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M12 2l8 3v6.5c0 4.6-3.3 8.3-8 10.5-4.7-2.2-8-5.9-8-10.5V5z" fill="#ffc800"/><path d="M12 6.4l1.6 3.3 3.6.5-2.6 2.5.6 3.6-3.2-1.7-3.2 1.7.6-3.6-2.6-2.5 3.6-.5z" fill="#fff"/></symbol>
     <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#ff4b4b"/><path d="M2.6 12h18.8M12 2.4c3.2 2.6 3.2 16.6 0 19.2M12 2.4c-3.2 2.6-3.2 16.6 0 19.2" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/></symbol>
     <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#1cb0f6"/><circle cx="12" cy="9.2" r="3.6" fill="#fff"/><path d="M5.2 19a7 7 0 0 1 13.6 0 10 10 0 0 1-13.6 0z" fill="#fff"/></symbol>
-    <symbol id="i-flash" viewBox="0 0 24 24"><path d="M13.2 2L4.5 13.5h6.1L9.8 22l8.7-11.5h-6.1z" fill="currentColor"/></symbol>
-    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 2.5c.5 4.7 2.8 7 7.5 7.5-4.7.5-7 2.8-7.5 7.5-.5-4.7-2.8-7-7.5-7.5 4.7-.5 7-2.8 7.5-7.5z" fill="currentColor"/><circle cx="18.5" cy="18.5" r="2" fill="currentColor"/></symbol>
-    <symbol id="i-cup" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M8 3h8v2h3.5a.5.5 0 0 1 .5.5V8a4 4 0 0 1-3.6 3.98A5 5 0 0 1 13 15.9V18h2.5a1.5 1.5 0 0 1 1.5 1.5V21H7v-1.5A1.5 1.5 0 0 1 8.5 18H11v-2.1a5 5 0 0 1-3.4-3.92A4 4 0 0 1 4 8V5.5a.5.5 0 0 1 .5-.5H8zm0 4H6v1a2 2 0 0 0 2 2zm8 0v3a2 2 0 0 0 2-2V7z" fill="currentColor"/></symbol>
-    <symbol id="i-cap" viewBox="0 0 24 24"><path d="M12 3 1.5 8.2 12 13.4l8.5-4.2V15H22V8.2z" fill="currentColor"/><path d="M6 11.6V15c0 1.66 2.69 3 6 3s6-1.34 6-3v-3.4l-6 2.97z" fill="currentColor"/></symbol>
-    <symbol id="i-book" viewBox="0 0 24 24"><path d="M3 5.5C5.6 4.3 8.6 4.4 11 6v13c-2.4-1.5-5.4-1.6-8-.5zM21 5.5c-2.6-1.2-5.6-1.1-8 .5v13c2.4-1.5 5.4-1.6 8-.5z" fill="currentColor"/></symbol>
   </defs>
 </svg>
 
@@ -93,7 +88,7 @@
       <p class="fine">Under 18s need a parent's or guardian's permission to pay.</p>
     </div>
     <div class="card home-top" id="home-top">
-      <div class="card-row"><h2 class="card-h">Leading now</h2><button class="pill-link" type="button" data-go="prize"><span data-honours="Honours">Prizes</span> <span class="chev">›</span></button></div>
+      <div class="card-row"><h2 class="card-h">Leading now</h2><button class="text-link" type="button" data-go="prize"><span data-honours="Honours">Prizes</span> ›</button></div>
       <ol class="board mini" id="home-top-list"></ol>
       <p class="empty" id="home-top-empty" hidden>No scores yet. Be the first.</p>
       <button class="cell" type="button" data-go="board"><span>Full leaderboard</span> <span class="chev">›</span></button>
@@ -105,7 +100,6 @@
     <div class="card success-card" id="success-card">
       <div class="tick" aria-hidden="true"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="23"/><path d="M15.5 27.5l7 7 14.5-15"/></svg></div>
       <h2 id="cab-title">Thank you</h2>
-      <div class="tokens" id="cab-tokens" aria-hidden="true"></div>
       <p class="cab-count"><strong id="cab-credits">0</strong><span id="cab-text"></span></p>
       <button class="btn btn-primary btn-xl" id="cab-play" type="button" hidden>Start</button>
     </div>
@@ -113,6 +107,23 @@
 
   <!-- ================= PLAY ================= -->
   <section class="screen screen-game" data-screen="play" hidden>
+    <div class="card practice-box" id="practice-intro" hidden>
+      <button class="back" type="button" data-go="home" aria-label="Back">‹</button>
+      <p class="practice-tag">Practice</p>
+      <h2>This is a practice</h2>
+      <p>Three free lights to try the game. They don't count.</p>
+      <div class="demo-track" aria-hidden="true"><span class="demo-pin"></span><span class="demo-marker"></span></div>
+      <p class="practice-rule" id="practice-rule">Tap when the light is on the mark.</p>
+      <button class="btn btn-primary btn-xl" type="button" id="practice-go">Start practice</button>
+    </div>
+    <div class="card practice-box" id="practice-end" hidden>
+      <button class="back" type="button" data-go="home" aria-label="Back">‹</button>
+      <p class="practice-tag">Practice done</p>
+      <strong class="practice-score" id="practice-score">0</strong>
+      <h2>Now for real</h2>
+      <p>Your next three lights count.</p>
+      <button class="btn btn-primary btn-xl" type="button" id="practice-real">Play for real</button>
+    </div>
     <div class="game" id="game">
       <div class="game-top">
         <button class="back" type="button" data-go="home" aria-label="Back">‹</button>
@@ -136,7 +147,7 @@
 
     <div class="result" id="result" hidden>
       <div class="card result-head">
-        <p class="result-kicker" id="result-title">Score</p>
+        <p class="result-kicker" id="result-title" hidden>New best</p>
         <div class="gauge">
           <svg viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="gauge-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd24a"/><stop offset="1" stop-color="#f26a1b"/></linearGradient></defs><circle class="g-bg" cx="60" cy="60" r="52"/><circle class="g-fg" id="gauge-fg" cx="60" cy="60" r="52"/></svg>
           <div class="result-score"><span id="result-score">0</span><small>of 1000</small></div>
@@ -158,13 +169,14 @@
 
   <!-- ================= LEADERBOARD ================= -->
   <section class="screen" data-screen="board" hidden>
-    <div class="title row"><div><h1>Leaderboard</h1><p class="title-sub" id="board-sub">Prizes at the end</p></div><button class="pill-link" type="button" data-go="prize"><span data-honours="Honours">Prizes</span> <span class="chev">›</span></button></div>
+    <div class="title row"><div><h1>Leaderboard</h1><p class="title-sub" id="board-sub" hidden></p></div><button class="text-link" type="button" data-go="prize"><span data-honours="Honours">Prizes</span> ›</button></div>
     <div class="segmented" role="tablist">
       <button role="tab" type="button" class="tab active" data-role="everyone" aria-selected="true">Everyone</button>
-      <button role="tab" type="button" class="tab" data-role="student" aria-selected="false"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Students</button>
-      <button role="tab" type="button" class="tab" data-role="teacher" aria-selected="false"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Teachers</button>
+      <button role="tab" type="button" class="tab" data-role="student" aria-selected="false">Students</button>
+      <button role="tab" type="button" class="tab" data-role="teacher" aria-selected="false">Teachers</button>
     </div>
     <div class="card lb">
+      <ol class="podium" id="board-podium" aria-label="Top three" hidden></ol>
       <ol class="board" id="board-list"></ol>
       <div class="lb-empty" id="board-empty" hidden></div>
     </div>
@@ -173,31 +185,12 @@
   <!-- ================= PRIZES ================= -->
   <section class="screen" data-screen="prize" hidden>
     <div class="title"><h1 data-honours="Honours">Prizes</h1><p class="title-sub" id="prize-sub">Winners are emailed at the close</p></div>
-    <h2 class="sec-h">Top of each board</h2>
-    <div class="prize-grid boards">
-      <article class="card prize" data-prize="everyone">
-        <div class="prize-top"><div class="prize-media"><img alt="" hidden><svg aria-hidden="true"><use href="#i-cup"/></svg></div><div class="prize-body"><p class="prize-k">Everyone</p><p class="prize-what tba" id="prize-everyone">To be announced</p><p class="prize-how">Highest score</p></div></div>
-        <div class="prize-lead" id="lead-everyone"></div>
-      </article>
-      <article class="card prize" data-prize="students">
-        <div class="prize-top"><div class="prize-media"><img alt="" hidden><svg aria-hidden="true"><use href="#i-cap"/></svg></div><div class="prize-body"><p class="prize-k">Students</p><p class="prize-what tba" id="prize-students">To be announced</p><p class="prize-how pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Highest score by a student</p></div></div>
-        <div class="prize-lead" id="lead-student"></div>
-      </article>
-      <article class="card prize" data-prize="teachers">
-        <div class="prize-top"><div class="prize-media"><img alt="" hidden><svg aria-hidden="true"><use href="#i-book"/></svg></div><div class="prize-body"><p class="prize-k">Teachers</p><p class="prize-what tba" id="prize-teachers">To be announced</p><p class="prize-how pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Highest score by a teacher</p></div></div>
-        <div class="prize-lead" id="lead-teacher"></div>
-      </article>
-    </div>
-    <h2 class="sec-h" data-honours="Spot honours">Spot prizes</h2>
-    <div class="prize-grid spots">
-      <article class="card prize" data-prize="best_light">
-        <div class="prize-top"><div class="prize-media"><img alt="" hidden><svg aria-hidden="true"><use href="#i-flash"/></svg></div><div class="prize-body"><p class="prize-k">Best light</p><p class="prize-what tba" id="prize-best-light">To be announced</p><p class="prize-how">One light closest to 1,000</p></div></div>
-        <div class="prize-lead" id="lead-light"></div>
-      </article>
-      <article class="card prize" data-prize="first_play">
-        <div class="prize-top"><div class="prize-media"><img alt="" hidden><svg aria-hidden="true"><use href="#i-spark"/></svg></div><div class="prize-body"><p class="prize-k">First play</p><p class="prize-what tba" id="prize-first-play">To be announced</p><p class="prize-how">Best score on a first play</p></div></div>
-        <div class="prize-lead" id="lead-first"></div>
-      </article>
+    <div class="prize-grid">
+      <article class="card prize" data-prize="everyone"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Top score</h2><p class="prize-what tba" id="prize-everyone">To be announced</p></div></article>
+      <article class="card prize" data-prize="students"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Top student</h2><p class="prize-what tba" id="prize-students">To be announced</p></div></article>
+      <article class="card prize" data-prize="teachers"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Top teacher</h2><p class="prize-what tba" id="prize-teachers">To be announced</p></div></article>
+      <article class="card prize" data-prize="best_light"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Best single light</h2><p class="prize-what tba" id="prize-best-light">To be announced</p></div></article>
+      <article class="card prize" data-prize="first_play"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Best first play</h2><p class="prize-what tba" id="prize-first-play">To be announced</p></div></article>
     </div>
   </section>
 
@@ -219,7 +212,7 @@
     </div>
     </div>
     <div class="card story school">
-      <img class="photo" src="assets/photo-school.svg" alt="The PresLink committee">
+      <img class="photo" src="assets/photo-school.svg?v=2" alt="The PresLink committee">
       <div class="story-body"><h2><img src="assets/crest.svg?v=10" alt=""><span id="about-intro-title">Run by students</span></h2><p id="about-intro-text">PresLink is the student-run charity of Presentation Brothers College, Cork. Every cent raised here, after card fees, goes to PresLink.</p></div>
     </div>
     <div class="card" id="about-contact" hidden></div>
@@ -448,6 +441,6 @@
 <script src="config.js"></script>
 <!-- the demo backend loads only when no server is configured -->
 <script>if (!(window.PRESLINK_CONFIG || {}).SUPABASE_URL) document.write('<script src="mock.js?v=43"><\/script>');</script>
-<script src="app.js?v=45"></script>
+<script src="app.js?v=46"></script>
 </body>
 </html>
