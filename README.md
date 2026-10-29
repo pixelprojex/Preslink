@@ -68,13 +68,13 @@ step at the end of `docs/admin.sql`), or test scores will lead the boards and sp
 Optional: in Netlify, **Site configuration → Site details → Change site name** lets you pick a
 nicer address, for example `preslink-arcade`.
 
-The committee console is at your link with `/admin.html` on the end; the arcade itself has no link to it, so send the committee that address. Use the committee code you were given; the eye on the field shows what you typed. The console is read-only: it shows the money, the payments, the players and the leaders, and it cannot change the site. Prizes, the words and photos, the closing date and goal, Stripe, bans and the committee code are the owner's to change, through the API with the owner code (see "What the owner changes" below).
+The committee console is at your link with `/admin.html` on the end; the arcade itself has no link to it, so send the committee that address. Use the committee code you were given; the eye on the field shows what you typed. The committee runs the game from it: the money, the payments, the players and the winners, and the controls to ban a player, cancel a play, reset an offensive name, block initials and give a free play when one failed through a fault on our side. It never changes the site: prizes, the words and photos, the closing date and goal, the limits, Stripe and the committee code are the owner's, through the API with the owner code (see "What the owner changes" below).
 
-To take real money later: an adult opens a Stripe account for the charity, then in the console
-under **Stripe** pastes the Stripe secret key and taps **Connect**. The site checks the key
-with Stripe, creates the webhook for you and keeps both secrets in the database, where only the
-server can read them. The free plays switch off by themselves the moment Stripe is connected, and
-**Disconnect** brings them back. Nobody needs to open Supabase. Details are in section 2 below.
+To take real money later: an adult opens a Stripe account for the charity, and the owner connects it with
+one call (`stripe_connect`, section 2 below). The site checks the key with Stripe, creates the webhook for
+you and keeps both secrets in the database, where only the server can read them. The free plays switch off
+by themselves the moment Stripe is connected, and `stripe_disconnect` brings them back. Nobody needs to
+open Supabase.
 
 ---
 
@@ -85,7 +85,7 @@ server can read them. The free plays switch off by themselves the moment Stripe 
 | `site/index.html` | The whole app: home, coin cabinet, game, leaderboard, about, you, sign back in, terms |
 | `site/styles.css` | Design |
 | `site/app.js` | Front-end logic and the game |
-| `site/admin.html`, `site/admin.css`, `site/admin.js` | The committee console: its own plain page with a menu (overview, payments, players, prizes, site content, campaign, Stripe, names, committee code) |
+| `site/admin.html`, `site/admin.css`, `site/admin.js` | The committee console: its own plain page with a menu (overview, payments, players, winners, blocked names) |
 | `site/config.js` | **The only file you must edit**: Supabase URL and publishable key |
 | `site/mock.js` | Demo backend. Active only while `config.js` is empty, so the site works before Supabase is wired |
 | `site/qr.html` | Old poster address; forwards to `poster.html` |
@@ -101,7 +101,7 @@ server can read them. The free plays switch off by themselves the moment Stripe 
 | `supabase/migrations/0010_demo_payments_count.sql` | Demo plays count on the raised total (clear them before going live, see `docs/admin.sql`) |
 | `supabase/migrations/0011_score_floor.sql` | Every light scores at least 50, so a wild tap never gives zero |
 | `supabase/migrations/0012_bell_curve.sql` | Bell-shaped score curve (15 ms per e-fold) so the field spreads out and 900+ stays rare |
-| `supabase/migrations/0013_stripe_from_admin.sql` | Server-only `app_secrets` table so the committee connects Stripe from the Committee screen instead of the Supabase dashboard |
+| `supabase/migrations/0013_stripe_from_admin.sql` | Server-only `app_secrets` table, so Stripe is connected through the API instead of the Supabase dashboard |
 | `supabase/migrations/0014_fair_scores_contact.sql` | Bell-shaped score curve over milliseconds (40 ms wide), one-second sweep, `contact_email` and the committee's email list |
 | `supabase/migrations/0015_tolerant_submit.sql` | The server scores the taps itself and ignores the browser's number, so an older build keeps working when the curve changes; taps count from 60 ms |
 | `supabase/migrations/0016_top_is_999.sql` | 999 is the ceiling; a cusp over the first 3 ms of error makes the top a fine ruler, so the best score is one person's |
@@ -119,6 +119,7 @@ server can read them. The free plays switch off by themselves the moment Stripe 
 | `supabase/migrations/0028_prize_mode.sql` | The prize switch: setting `prize_mode` ('prizes' or 'honours'), carried by `stats()`; in 'honours' the site talks of honours instead of prizes |
 | `supabase/migrations/0029_public_reads_no_play_counts.sql` | The public board no longer carries play counts (paid plays measure spending); the unused `leaderboard()` and `past_winners()` closed to the public |
 | `supabase/migrations/0030_integrity.sql` | The closing date enforced, taps checked against the real time, sign-in lockouts that grow, demo checkouts granted once, Stripe refunds (`refund_payment`, `payments.refunded_cents`) taken off the total and the plays |
+| `supabase/migrations/0031_committee_controls.sql` | The console's controls: free plays (`free_plays`, `admin_give_play`, at most `settings.free_play_limit` each), the winners ranked as the public site ranks them (`admin_winners`), the blocked-names list (`admin_blocked`, `admin_unblock_initials`, the built-in list stays), the campaign at a glance (`admin_campaign`), refunds in the payments list and a player's record |
 | `site/poster.html` | The poster in four formats, `?f=a3`, `a4`, `social` and `message` (QR from the vendored encoder in `site/vendor/`) |
 | `site/posters/` | The four poster files, served at `/a3`, `/a4`, `/social` and `/message` |
 | `tools/posters.cjs` | Saves the four poster files from `poster.html` (Playwright) |
@@ -126,7 +127,7 @@ server can read them. The free plays switch off by themselves the moment Stripe 
 | `site/assets/` | The PresLink cross (`cross.svg`), the school crest, icons, the project photos (JPEG and WebP) and the committee-photo placeholder `photo-school.svg` |
 | `supabase/functions/api/index.ts` | Register, checkout, confirm payment, start play, submit score, committee actions (including Stripe connect) |
 | `supabase/functions/stripe-webhook/index.ts` | Receives Stripe's payment confirmation |
-| `docs/admin.sql` | Extra SQL for the committee (most day-to-day admin is in the app's Committee screen) |
+| `docs/admin.sql` | Extra SQL for the committee (most day-to-day admin is in the committee console) |
 | `netlify.toml` | Netlify settings and security headers |
 
 ## Launch checklist
@@ -153,18 +154,19 @@ supabase functions deploy stripe-webhook --no-verify-jwt
 ### 2. Stripe (payments)
 
 The Stripe account must be opened by an adult in the charity's name, with the charity's bank account
-and registered details. A student cannot be the account holder. Everything else happens on the
-Committee screen; nobody needs to open Supabase.
+and registered details. A student cannot be the account holder. The owner connects it with one call;
+nobody needs to open Supabase.
 
 1. Create the account at <https://dashboard.stripe.com/register>. Stay in **Test mode** for now.
 2. **Developers → API keys** → copy the **Secret key** (`sk_test_...`).
-3. Open the console (`/admin.html`), enter the committee code, and under **Stripe** paste the
-   key and tap **Connect**. The site checks the key with Stripe, creates the webhook endpoint
-   (`.../functions/v1/stripe-webhook`, listening for `checkout.session.completed` and
-   `checkout.session.async_payment_succeeded`) and stores the key and the webhook signing secret in the
-   database table `app_secrets`, which only the server can read. The card then shows the Stripe account
-   name and whether it is a test or a live key. Free plays stop at once.
-4. **Disconnect** removes the key, deletes the webhook endpoint and brings the free plays back.
+3. Send the key with the owner code (see "What the owner changes"):
+   `{"action":"admin","code":"<committee code>","owner_code":"<owner code>","op":"stripe_connect","secret_key":"sk_test_..."}`.
+   The site checks the key with Stripe, creates the webhook endpoint (`.../functions/v1/stripe-webhook`,
+   listening for `checkout.session.completed`, `checkout.session.async_payment_succeeded` and
+   `charge.refunded`) and stores the key and the webhook signing secret in the database table `app_secrets`,
+   which only the server can read. The console's Overview then shows payments as on, in test or live mode.
+   Free plays stop at once.
+4. `stripe_disconnect` removes the key, deletes the webhook endpoint and brings the free plays back.
    Connecting a new key replaces the old webhook endpoint, so you can repeat step 3 any time.
 5. Optional but recommended: apply for Stripe's reduced nonprofit pricing (search "Stripe nonprofit
    pricing" in the Stripe support site) and switch on Apple Pay and Google Pay under **Settings →
@@ -172,7 +174,7 @@ Committee screen; nobody needs to open Supabase.
 
 If you would rather keep the secrets out of the database, the old way still works and wins: set
 `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` under **Edge Functions → Secrets** in Supabase, and the
-Committee screen shows that Stripe is set from the server. `SITE_URL` (your site address without a
+console shows payments as on. `SITE_URL` (your site address without a
 trailing slash) is optional in both cases: without it the function sends players back to the address
 the request came from.
 
@@ -197,9 +199,9 @@ the request came from.
 ### 5. Go live
 
 1. Finish Stripe account activation (the charity's details and bank account).
-2. Switch the Stripe dashboard to **Live mode**, copy the **live** secret key (`sk_live_...`) and on
-   the Committee screen under **Payments** tap **Connect** with it. The site swaps the webhook and the
-   secrets for you; the card should now say Live.
+2. Switch the Stripe dashboard to **Live mode**, copy the **live** secret key (`sk_live_...`) and connect
+   it with `stripe_connect` as in section 2. The site swaps the webhook and the secrets for you; the
+   console's Overview should now say "On, live".
 3. Work through **Before taking real money** below (the organiser's details, the prize decision, Stripe's
    terms link).
 4. Print the posters from `/a3` and `/a4`, and send the link round (see **Posters**).
@@ -209,61 +211,79 @@ the request came from.
 
 1. The owner sets the closing date and the five prize texts (Everyone, Students, Teachers, Best light,
    First play), each with a photo if there is one, through the API with the owner code (below). They
-   appear on the Prizes page as typed, one boxed card per prize; an empty line shows "To be announced".
-2. At the end, **Overview** shows the leader of each board and the two spot-prize holders, with their codes
-   and emails; **Players** has everyone with a CSV download for the emails.
-3. Announce the letters. A winner shows their **You** tab (or the saved code image): letters and code must match.
+   appear on the Prizes page as typed, one card per prize; an empty line shows "To be announced".
+2. At the end, **Winners** in the console shows the top three of each prize, ranked exactly as the site
+   ranks them, with their codes and emails, and a CSV.
+3. Announce the initials. A winner shows their **You** tab (or the saved code picture): the initials and the
+   code must match the Winners page.
 
 ## The committee console
 
-A separate, plain page at `/admin.html`, reached only by its address (the arcade has no link to it): white, system type, a menu
-on the left (a strip across the top on a phone), nothing of the arcade's look. It needs the committee
-code, which is stored only as a hash in the database and locks for 15 minutes after 8 wrong tries; every
-secret field has an eye to show what was typed. The pages:
+A separate, plain page at `/admin.html`, reached only by its address (the arcade has no link to it): white,
+system type, a menu on the left (a strip across the top on a phone), nothing of the arcade's look. It needs
+the committee code, which is stored only as a hash in the database and locks for 15 minutes after 8 wrong
+tries; the eye on the field shows what was typed. The committee runs the game from here, and nothing on it
+changes the site. Every change asks first, in a box under what was clicked, then says what it did.
 
-- **Overview**: money raised against the goal, payments (and today's), plays, players by board; the leader of
-  each board and the two spot-prize holders with codes and emails; money by day.
-- **Payments**: every payment, newest first, with a search over the name, the emails, the Stripe ids, the
-  bundle and the amount in euro, a date range, paging and a CSV download of whatever matches.
+- **Overview**:
+  - the campaign as the owner set it: the closing date and days left, the goal, the spending limits,
+    prizes or honours, and whether payments are on;
+  - money raised, payments (and today's), plays, and players by board;
+  - the leader of each prize, with code and email;
+  - the latest payments.
+- **Payments**:
+  - every payment, newest first, with its refund and an **Open in Stripe** link;
+  - a search over the name, the emails, the Stripe ids, the bundle and the amount in euro, a date range,
+    paging, and a CSV download of whatever matches.
+
+  Refunds are made in Stripe and show here once Stripe reports them.
 - **Players**: everyone, with a search over the name, the emails and the code, a board filter and a banned
-  filter; plays, best score and money paid per row; **View** opens the player with every play (void or
-  restore) and payment, **Ban**, **Unban** and a **new random name**; CSV download.
-- Nothing else: there is no Prizes, Site content, Campaign, Stripe, Names or Committee code page any more,
-  and no button that changes anything. The sign-in tidies a pasted code (spaces, odd dashes, case).
+  filter. A player's record shows their code (to help someone who lost it, and to check a winner), every
+  play, free play and payment, and the controls:
+  - **Give a free play**, with a short reason, for a play that failed through a fault on our side (the
+    Terms promise a new play or a refund). It is not a payment, so the money raised and the limits don't
+    move. At most three per player (`settings.free_play_limit`); none for a banned player or after the
+    close.
+  - **Cancel play** and **Restore**, on each play, with an optional reason kept with it.
+  - **Ban** and **Unban**. A banned player can't pay or play and leaves the boards and the winners.
+  - **Reset name**: a random new name, with the same code.
+- **Winners**: the top three of each prize (Everyone, Students, Teachers, Best light, First play), ranked
+  exactly as the public site ranks them, with codes and emails, and a CSV.
+- **Blocked names**: initials nobody can choose for a new name. The committee's own can be unblocked; the
+  site's built-in list stays.
 
 ### What the owner changes
 
-Every change goes through the same API (`action: "admin"`) but needs the owner code as well as the committee
-code: the Edge Function refuses `settings`, `set_content`, `upload_image`, `ban`, `void`, `block`, `reset_name`,
-`set_code`, `stripe_connect` and `stripe_disconnect` with `OWNER_ONLY` unless the request carries
-`owner_code` equal to the function's `OWNER_CODE` secret. Until that secret is set, nothing can be changed
-through the API at all (the database functions still work from the Supabase SQL editor). To enable it:
-Supabase, Edge Functions, Secrets, add `OWNER_CODE`. The demo backend's owner code is `OWNER`. The owner's
-own page for these changes is a later step; until then the calls below do the same thing:
+Changes to the site itself go through the same API (`action: "admin"`) but need the owner code as well as the
+committee code. The Edge Function refuses `settings`, `set_content`, `upload_image`, `set_code`,
+`stripe_connect` and `stripe_disconnect` with `OWNER_ONLY` unless the request carries `owner_code` equal to
+the function's `OWNER_CODE` secret.
+- Until that secret is set, none of them can be used. The database functions still work from the Supabase
+  SQL editor.
+- To set it: Supabase, Edge Functions, Secrets, add `OWNER_CODE`.
+- The demo backend's owner code is `OWNER`.
+
+The owner's own page for these changes is a later step. Until then, the calls below do the same thing:
 
 ```
 curl -X POST "$SUPABASE_URL/functions/v1/api" -H "Content-Type: application/json" -H "apikey: $SUPABASE_KEY" \
   -d '{"action":"admin","code":"<committee code>","owner_code":"<owner code>","op":"settings","prizes":{"everyone":"€50 voucher"},"ends_on":"2026-12-12","goal_cents":200000}'
 ```
 
+- `settings`: the goal, the closing date and the five prize texts (Everyone, Students, Teachers, Best light,
+  First play). They show on the Prizes page as typed.
+- `set_content` and `upload_image`: the site's words and photos (below).
+- `stripe_connect` and `stripe_disconnect`: payments on or off (section 2 above).
+- `set_code`: a new committee code, at least six characters.
+
+The spending limits and the prize mode are rows in `settings`, changed in SQL (see **Safeguards** and
+**Before taking real money**).
+
 The content document (`set_content`) holds: `hero.title`, `hero.subtitle`, `notice`, `about.intro_title`,
 `about.intro_text`, `about.intro_image`, `about.stories[]` (`image`, `title`, `text`), `contact` (`email`,
-`phone`, `instagram`, `website`) and `prize_photos` (`everyone`, `students`, `teachers`, `best_light`,
-`most_plays`); `upload_image` takes `type` and base64 `data` and returns a public `url` to put in it.
-
-- **Prizes** (owner): five plain text fields (Everyone, Students, Teachers, Best light, First play) and a photo each, shown on the Prizes page as typed (the photos are
-  kept in the site content document as `prize_photos`).
-- **Site content** (owner): the home title and the line under it, a notice shown on Home while set, the About page's
-  committee card photo, heading and text, the About stories (a photo, a heading and a line each, added, reordered
-  or removed; photos are shrunk in the browser and stored in the public `site` bucket) and the contact
-  details (email, phone, Instagram, website, shown as a Contact card on About). Saved as one document in
-  `settings.site_content`; the public `stats()` carries it, so the site shows it at once.
-- **Campaign**: the goal and the closing date.
-- **Stripe**: status, connect with a secret key (the webhook is created for you), disconnect, a link to the
-  Stripe dashboard.
-- **Names**: initials nobody may use, and the banned players.
-- **Committee code**: generate a new code (`PRES-`, three letters and a symbol, two groups of four digits)
-  with copy and show, or set your own.
+`phone`, `instagram`, `website`), `org` (`name`, `rcn`, `email`) and `prize_photos` (`everyone`, `students`,
+`teachers`, `best_light`, `first_play`); `upload_image` takes `type` and base64 `data` and returns a public
+`url` to put in it. The site shows the document at once: `stats()` carries it.
 
 ## Names, codes and signing back in
 

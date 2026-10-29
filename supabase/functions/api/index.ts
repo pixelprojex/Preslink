@@ -6,11 +6,12 @@
 // "register" needs no name: the database assigns a random three-letter one. New players start on the
 // Everyone board (role "everyone"); a school email given with "contact" moves a player onto the Students or
 // Teachers board by the shape of the address (students @pbccork.ie, teachers @pbc-cork.ie; nothing is sent).
-// One campaign, no weeks: boards and spot prizes run until the committee's end date.
+// One campaign, no weeks: boards and spot prizes run until the end date.
 // Admin calls carry the committee code; the database verifies it (SHA-256 hash in settings) and
-// locks the admin scope after repeated failures.
+// locks the admin scope after repeated failures. The committee runs the game with it; changing the
+// site itself also needs the owner's code (OWNER_OPS below).
 //
-// Stripe: the committee connects it from the Committee page (admin op "stripe_connect"): the key is
+// Stripe: the owner connects it (admin op "stripe_connect", with the owner code): the key is
 // checked with Stripe, the webhook endpoint is created, and both secrets are kept in app_secrets,
 // which only the service role can read. A STRIPE_SECRET_KEY environment secret, if set, wins.
 //   SITE_URL            optional, e.g. https://preslink.netlify.app (used for Stripe return URLs;
@@ -19,7 +20,7 @@
 const SUPABASE_URL = (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, "");
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const STRIPE_ENV_KEY = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
-// The key the committee saved from the Committee page, cached for a minute. Empty means demo mode.
+// The key saved with stripe_connect, cached for a minute. Empty means demo mode.
 let keyCache: { value: string; at: number } | null = null;
 export async function stripeKey(): Promise<string> {
   if (STRIPE_ENV_KEY) return STRIPE_ENV_KEY;
@@ -313,9 +314,9 @@ async function submit(req: Request, body: Body) {
     p_score: score,
     p_taps: taps,
     // Kept with the score for checking: the kind of device only (so no one kind of phone can be seen to dominate
-    // the winners, without keeping anything that could pick out a child's phone), and the phone's
-    // practice-measured offset (already taken off the taps by the browser).
-    p_client: { device: deviceFamily(ua), offset: clampInt(body.offset, -80, 80, 0) },
+    // the winners, without keeping anything that could pick out a child's phone). An older page's practice offset
+    // is not kept.
+    p_client: { device: deviceFamily(ua) },
   });
 }
 
@@ -353,11 +354,12 @@ async function signin(body: Body) {
   return await rpc("signin_player", { p_initials: initials, p_code: code });
 }
 
-const ADMIN_OPS = new Set(["overview", "emails", "void", "ban", "block", "set_code", "settings", "player", "reset_name", "stripe_status", "stripe_connect", "stripe_disconnect", "payments", "players", "set_content", "upload_image"]);
-// The operations that change anything (the site's words and photos, prizes, the campaign, Stripe, the
-// committee code, bans, voids, blocked names) belong to the site's owner, not the committee: they need the
-// OWNER_CODE secret as well as the committee code. With no OWNER_CODE configured, nothing can be changed.
-const OWNER_OPS = new Set(["void", "ban", "block", "set_code", "settings", "reset_name", "stripe_connect", "stripe_disconnect", "set_content", "upload_image"]);
+const ADMIN_OPS = new Set(["overview", "emails", "void", "ban", "block", "set_code", "settings", "player", "reset_name", "stripe_status", "stripe_connect", "stripe_disconnect", "payments", "players", "set_content", "upload_image", "give_play", "winners", "blocked", "campaign"]);
+// The operations that change the site itself (its words and photos, the prizes, the campaign, Stripe, the
+// committee code) belong to the site's owner, not the committee: they need the OWNER_CODE secret as well as the
+// committee code. With no OWNER_CODE configured, none of them can be used. Running the game (bans, cancelled
+// plays, offensive names, blocked names, free plays) needs the committee code alone.
+const OWNER_OPS = new Set(["set_code", "settings", "stripe_connect", "stripe_disconnect", "set_content", "upload_image"]);
 
 // The committee code is checked by the database (same lockout as every admin call).
 async function adminVerify(code: string) {
@@ -433,8 +435,10 @@ async function admin(body: Body) {
       return await rpc("admin_reset_name", { p_code: code, p_player_id: playerId });
     }
     case "void": {
+      // Cancel a play's score (voided true) or restore it (voided false); the reason is kept with a cancelled play.
       const playId = requireUuid(body.play_id, "BAD_PLAY");
-      await rpc("admin_void_play", { p_code: code, p_play_id: playId, p_voided: body.voided !== false, p_reason: String(body.reason ?? "committee").slice(0, 200) });
+      const reason = String(body.reason ?? "").replace(/\s+/g, " ").trim().slice(0, 200) || "committee";
+      await rpc("admin_void_play", { p_code: code, p_play_id: playId, p_voided: body.voided !== false, p_reason: reason });
       return { ok: true };
     }
     case "ban": {
@@ -445,9 +449,23 @@ async function admin(body: Body) {
     case "block": {
       const initials = String(body.initials ?? "").toUpperCase().trim();
       if (!/^[A-Z]{3}$/.test(initials)) throw new HttpError(400, "BAD_INITIALS");
-      await rpc("admin_block_initials", { p_code: code, p_initials: initials, p_block: body.block !== false });
+      // Unblocking reaches only the names the committee blocked; the site's own list stays (BUILT_IN_NAME).
+      if (body.block === false) await rpc("admin_unblock_initials", { p_code: code, p_initials: initials });
+      else await rpc("admin_block_initials", { p_code: code, p_initials: initials, p_block: true });
       return { ok: true };
     }
+    case "blocked": return await rpc("admin_blocked", { p_code: code });
+    case "give_play": {
+      // A new play for one that failed through a fault on our side (Terms, 7), with a short reason. Not a payment.
+      const playerId = requireUuid(body.player_id, "BAD_PLAYER");
+      const reason = String(body.reason ?? "").replace(/\s+/g, " ").trim();
+      if (reason.length < 3 || reason.length > 200) throw new HttpError(400, "BAD_REASON");
+      return await rpc("admin_give_play", { p_code: code, p_player_id: playerId, p_reason: reason });
+    }
+    // The top three of each prize slot, ranked as the public site ranks them, with codes and emails.
+    case "winners": return await rpc("admin_winners", { p_code: code });
+    // The closing date, goal, spending limits and prize mode, read only.
+    case "campaign": return await rpc("admin_campaign", { p_code: code });
     case "set_code": {
       const newCode = String(body.new_code ?? "");
       if (newCode.length < 6 || newCode.length > 200) throw new HttpError(400, "CODE_TOO_SHORT");

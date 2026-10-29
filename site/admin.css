@@ -1,4 +1,4 @@
-/* The committee console: plain, white, system type, thin lines, and nothing that edits. Nothing from the arcade's look. */
+/* The committee console: plain, white, system type, thin lines, and nothing that edits the site. Nothing from the arcade's look. */
 :root { --ink: #111827; --text: #374151; --muted: #6b7280; --line: #e5e7eb; --panel: #f9fafb; --blue: #1d4ed8; --red: #b91c1c; --green: #047857; --field: #d1d5db; }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -89,6 +89,31 @@ input[readonly] { background: var(--panel); }
 .detail dt { color: var(--muted); }
 .detail dd { margin: 0; }
 .detail h4 { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin: 16px 0 6px; font-weight: 500; }
+.detail .who { font-size: 18px; color: var(--ink); text-transform: none; letter-spacing: 0; margin: 0; }
+.detail .actions { margin-top: 0; }
+.code-line { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; margin: 0 0 12px; }
+.code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .06em; }
+.code-line .code { font-size: 22px; }
+.tag { display: inline-block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--red); border: 1px solid currentColor; border-radius: 4px; padding: 0 5px; vertical-align: 2px; }
+.detail .status { margin: 10px 0 0; }
+.status:empty { display: none; }
+.tbl-wrap + p, .pager + p { margin-top: 10px; }
+
+/* the campaign as the owner set it: shown, never edited here */
+.campaign { display: flex; flex-wrap: wrap; gap: 10px 28px; margin: 0 0 6px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.campaign dt { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.campaign dd { margin: 2px 0 0; font-size: 14px; }
+.campaign-note { margin: 0 0 16px; }
+
+/* every change asks first, inline */
+.confirm { border: 1px solid var(--field); border-radius: 8px; padding: 12px 14px; margin: 12px 0 4px; background: #fff; max-width: 640px; white-space: normal; }
+.confirm p { margin: 0 0 8px; font-size: 14px; color: var(--text); }
+.confirm .lbl { margin: 4px 0 6px; }
+.confirm .err { margin: 0 0 8px; }
+.confirm .actions { margin-top: 10px; }
+tr.cf-row > td { background: var(--panel); }
+.btn.danger { background: var(--red); color: #fff; border-color: var(--red); }
+.btn.danger:hover { background: #991b1b; }
 
 
 /* toast */
@@ -97,6 +122,10 @@ input[readonly] { background: var(--panel); }
 
 @media (max-width: 860px) {
   .shell { grid-template-columns: 1fr; grid-template-rows: 56px auto 1fr; }
+  .top { padding: 0 16px; }
+  .top-right { gap: 8px; }
+  .top-right .pill { display: none; } /* the Overview shows whether payments are on */
+  .top-right .btn { white-space: nowrap; }
   .menu { flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 8px 12px; gap: 4px; white-space: nowrap; -webkit-overflow-scrolling: touch; }
   .menu a { flex: none; }
   .main { padding: 18px 16px 40px; }

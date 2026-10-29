@@ -6,14 +6,14 @@
   <meta name="robots" content="noindex, nofollow">
   <title>Committee · PresLink Arcade</title>
   <link rel="icon" href="assets/cross.svg?v=10">
-  <link rel="stylesheet" href="admin.css?v=3">
+  <link rel="stylesheet" href="admin.css?v=4">
 </head>
 <body>
 
 <div id="login" class="login" hidden>
   <form id="login-form" class="login-card" autocomplete="off" novalidate>
     <h1>Committee</h1>
-    <p class="muted">PresLink Arcade console · read-only</p>
+    <p class="muted">PresLink Arcade console</p>
     <label class="lbl" for="login-code">Committee code</label>
     <div class="pw">
       <input id="login-code" type="password" autocomplete="current-password" spellcheck="false" autocapitalize="none" autocorrect="off">
@@ -34,18 +34,30 @@
     <a href="#overview" data-page="overview">Overview</a>
     <a href="#payments" data-page="payments">Payments</a>
     <a href="#players" data-page="players">Players</a>
+    <a href="#winners" data-page="winners">Winners</a>
+    <a href="#blocked" data-page="blocked">Blocked names</a>
   </nav>
   <main class="main">
 
     <section data-page="overview" hidden>
       <h2>Overview</h2>
+      <div id="ov-campaign" hidden>
+        <dl class="campaign" aria-label="The campaign">
+          <div><dt>Closes</dt><dd id="cp-close"></dd></div>
+          <div><dt>Goal</dt><dd id="cp-goal"></dd></div>
+          <div><dt>Spending limits</dt><dd id="cp-limits"></dd></div>
+          <div><dt>Prizes</dt><dd id="cp-mode"></dd></div>
+          <div><dt>Payments</dt><dd id="cp-pay"></dd></div>
+        </dl>
+        <p class="muted small campaign-note">Set by the site's owner. To change any of these, ask them.</p>
+      </div>
       <div class="figures">
         <div class="fig"><span>Raised</span><strong id="ov-raised">€0</strong><small id="ov-goal"></small></div>
         <div class="fig"><span>Payments</span><strong id="ov-payments">0</strong><small id="ov-today"></small></div>
         <div class="fig"><span>Plays</span><strong id="ov-plays">0</strong></div>
         <div class="fig"><span>Players</span><strong id="ov-players">0</strong><small id="ov-roles"></small></div>
       </div>
-      <h3>Leaders</h3>
+      <div class="head sub"><h3>Leaders</h3><a href="#winners" class="small">Top three of each</a></div>
       <div class="tbl-wrap"><table class="tbl" id="ov-leaders"><thead><tr><th>Prize</th><th>Name</th><th>Score</th><th>Code</th><th>Email</th></tr></thead><tbody></tbody></table></div>
       <div class="head sub"><h3>Latest payments</h3><a href="#payments" class="small">All payments</a></div>
       <div class="tbl-wrap"><table class="tbl" id="ov-recent"><thead><tr><th>When</th><th>Name</th><th>Plays</th><th>Amount</th><th>Email</th></tr></thead><tbody></tbody></table></div>
@@ -62,8 +74,9 @@
       </form>
       <div class="quick" id="pay-quick"><span class="muted small">Show</span><button type="button" class="mini" data-range="today">Today</button><button type="button" class="mini" data-range="7">Last 7 days</button><button type="button" class="mini" data-range="30">Last 30 days</button><button type="button" class="mini on" data-range="all">Everything</button></div>
       <p class="muted" id="pay-summary"></p>
-      <div class="tbl-wrap"><table class="tbl" id="pay-table"><thead><tr><th>When</th><th>Name</th><th>Board</th><th>Plays</th><th>Amount</th><th>Email</th><th>Source</th><th>Stripe session</th></tr></thead><tbody></tbody></table></div>
+      <div class="tbl-wrap"><table class="tbl" id="pay-table"><thead><tr><th>When</th><th>Name</th><th>Board</th><th>Plays</th><th>Amount</th><th>Refunded</th><th>Email</th><th>Source</th><th>Stripe</th></tr></thead><tbody></tbody></table></div>
       <div class="pager"><button class="btn small" id="pay-prev" type="button">Previous</button><span id="pay-page" class="muted small"></span><button class="btn small" id="pay-next" type="button">Next</button></div>
+      <p class="muted small">Refunds are made in Stripe and show here once Stripe reports them.</p>
     </section>
 
     <section data-page="players" hidden>
@@ -80,11 +93,31 @@
       <div class="detail" id="pl-detail" hidden></div>
     </section>
 
+    <section data-page="winners" hidden>
+      <div class="head"><h2>Winners</h2><button class="btn small" type="button" id="win-csv">Download CSV</button></div>
+      <p class="muted" id="win-sub"></p>
+      <p class="muted small">Ties are split as the Terms say: on a board the earlier score wins; for best light, the next-best light; for first play, that play's lights.</p>
+      <p class="muted small">Committee members and staff mentors can play but can't win prizes. If one is placed, the next player takes the place.</p>
+      <div id="win-slots"></div>
+    </section>
+
+    <section data-page="blocked" hidden>
+      <h2>Blocked names</h2>
+      <p class="muted">Blocked initials can't be chosen for a new name.</p>
+      <form class="filters" id="bl-form" autocomplete="off" novalidate>
+        <input type="text" id="bl-initials" maxlength="3" placeholder="ABC" aria-label="Initials to block" autocapitalize="characters" autocorrect="off" spellcheck="false">
+        <button class="btn" type="submit">Block</button>
+      </form>
+      <p class="status" id="bl-note" role="status"></p>
+      <div class="tbl-wrap"><table class="tbl" id="bl-table"><thead><tr><th>Initials</th><th>Blocked</th><th>Players with them</th><th></th></tr></thead><tbody></tbody></table></div>
+      <p class="muted small" id="bl-builtin"></p>
+    </section>
+
   </main>
 </div>
 <div class="toast" id="toast" hidden></div>
 <script src="config.js"></script>
-<script>if (!(window.PRESLINK_CONFIG || {}).SUPABASE_URL) document.write('<script src="mock.js?v=41"><\/script>');</script>
-<script src="admin.js?v=5"></script>
+<script>if (!(window.PRESLINK_CONFIG || {}).SUPABASE_URL) document.write('<script src="mock.js?v=43"><\/script>');</script>
+<script src="admin.js?v=6"></script>
 </body>
 </html>

@@ -58,8 +58,8 @@ update public.plays
 select public.grant_credits('manual-' || gen_random_uuid()::text, null,
                             '00000000-0000-0000-0000-000000000000', -- player id
                             'manual', 1, 0, 'eur', null, 'manual');
--- Note: amount_cents must be > 0 in the payments table; for a goodwill credit with no money, use this instead:
--- update public.players set credits = credits + 1 where id = '00000000-0000-0000-0000-000000000000';
+-- Note: amount_cents must be > 0 in the payments table. For a goodwill play with no money, use "Give a free play"
+-- on the player in the committee console: it adds the play and keeps the reason (at most three per player).
 
 -- 10. Find the payment for a Stripe Checkout session id (from the Stripe dashboard).
 select * from public.payments where stripe_session_id = 'cs_live_...';
@@ -75,10 +75,11 @@ select p.initials, p.claim_code, p.credits, p.last_seen_at
 -- delete from public.payments where stripe_session_id like 'demo_%';
 
 -- Launch day, after all testing: start the campaign from a clean slate. This removes every test player with
--- their plays (scores, taps, device details) and payments, and the sign-in lockouts, so no test score can lead
--- a board or a spot prize; settings, blocked names and the Stripe connection stay. It cannot be undone: run it
--- once, in the Supabase SQL editor, before the link goes out.
+-- their plays (scores, taps, device details), payments and free plays, and the sign-in lockouts, so no test score
+-- can lead a board or a spot prize; settings, blocked names and the Stripe connection stay. It cannot be undone:
+-- run it once, in the Supabase SQL editor, before the link goes out.
 -- delete from public.plays;
 -- delete from public.payments;
+-- delete from public.free_plays;
 -- delete from public.players;
 -- delete from public.auth_attempts;

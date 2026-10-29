@@ -219,8 +219,17 @@
       }
       case 'admin': {
         adminCheck(b.code);
-        // The demo's owner code is OWNER; the committee code alone can only read.
-        if (['void', 'ban', 'block', 'set_code', 'settings', 'reset_name', 'stripe_connect', 'stripe_disconnect', 'set_content', 'upload_image'].includes(b.op) && b.owner_code !== 'OWNER') fail('OWNER_ONLY');
+        // The demo's owner code is OWNER: the site's words and photos, the prizes, the campaign, Stripe and the code.
+        // The committee code alone runs the game: bans, cancelled plays, names, blocked names and free plays.
+        if (['set_code', 'settings', 'stripe_connect', 'stripe_disconnect', 'set_content', 'upload_image'].includes(b.op) && b.owner_code !== 'OWNER') fail('OWNER_ONLY');
+        const FREE_PLAY_LIMIT = 3;
+        const freePlaysOf = (pid) => (db.free_plays || []).filter((x) => x.player_id === pid);
+        const campaign = () => {
+          const e = db.settings.ends_on || '';
+          return { ends_on: e, closes_at: e ? new Date(new Date(e + 'T23:59:59').getTime() + 1000).toISOString() : null, closed: closed(), goal_cents: db.settings.goal_cents,
+            prize_mode: db.settings.prize_mode === 'honours' ? 'honours' : 'prizes', daily_cap_cents: CAPS.daily, campaign_cap_cents: CAPS.campaign, free_play_limit: FREE_PLAY_LIMIT, server_time: new Date().toISOString() };
+        };
+        const tidy = (s) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
         switch (b.op) {
           case 'overview': {
             const wk = b.week || weekStart();
@@ -244,22 +253,70 @@
           case 'player': {
             const [ini, sfx] = String(b.initials).toUpperCase().split('#');
             const p = Object.values(db.players).sort((x, y) => (x.suffix || 1) - (y.suffix || 1)).find((x) => x.initials === ini && (!sfx || (x.suffix || 1) === Number(sfx))); if (!p) fail('PLAYER_NOT_FOUND');
+            const newest = (a, c) => String(c).localeCompare(String(a));
             return { player: { ...p, initials: disp(p), created_at: p.created_at || new Date().toISOString(), last_seen_at: new Date().toISOString() }, others: Object.values(db.players).filter((x) => x.initials === ini && x.id !== p.id).map(disp),
-              plays: db.plays.filter((x) => x.player_id === p.id).map((x) => ({ play_id: x.id, started_at: x.started_at, finished_at: x.finished_at, score: x.score, week_start: x.week_start, voided: x.voided })),
-              payments: db.payments.filter((x) => x.player_id === p.id) };
+              plays: db.plays.filter((x) => x.player_id === p.id).sort((x, y) => newest(x.started_at, y.started_at)).map((x) => ({ play_id: x.id, started_at: x.started_at, finished_at: x.finished_at, score: x.score, best_light: x.score == null ? null : playLight(x), week_start: x.week_start, voided: x.voided, void_reason: x.void_reason || null })),
+              payments: db.payments.filter((x) => x.player_id === p.id).sort((x, y) => newest(x.created_at, y.created_at)).map((x) => ({ created_at: x.created_at, bundle: x.bundle, credits: x.credits, amount_cents: x.amount_cents, refunded_cents: x.refunded_cents || 0, email: x.email || null, source: x.source || 'confirm', stripe_session_id: x.stripe_session_id, stripe_payment_intent: x.stripe_payment_intent || null })),
+              free_plays: freePlaysOf(p.id).sort((x, y) => newest(x.created_at, y.created_at)).map((x) => ({ created_at: x.created_at, reason: x.reason })), free_play_limit: FREE_PLAY_LIMIT };
           }
           case 'reset_name': { const p = db.players[b.player_id]; if (!p) fail('PLAYER_NOT_FOUND'); p.initials = randomInitials(); p.suffix = 1; save(db); return { ok: true, initials: p.initials }; }
-          case 'void': { const pl = db.plays.find((x) => x.id === b.play_id); if (!pl) fail('PLAY_NOT_FOUND'); pl.voided = b.voided !== false; save(db); return { ok: true }; }
+          case 'void': { const pl = db.plays.find((x) => x.id === b.play_id); if (!pl) fail('PLAY_NOT_FOUND'); pl.voided = b.voided !== false; pl.void_reason = pl.voided ? (tidy(b.reason).slice(0, 200) || 'committee') : null; save(db); return { ok: true }; }
           case 'ban': { const p = db.players[b.player_id]; if (!p) fail('PLAYER_NOT_FOUND'); p.banned = b.banned !== false; save(db); return { ok: true }; }
-          case 'block': { const i = String(b.initials).toUpperCase(); if (b.block !== false) { if (!db.blocked.includes(i)) db.blocked.push(i); } else db.blocked = db.blocked.filter((x) => x !== i); save(db); return { ok: true }; }
+          // Blocking adds a name; unblocking reaches only the committee's own, as on the server.
+          case 'block': {
+            const i = String(b.initials || '').toUpperCase().trim(); if (!/^[A-Z]{3}$/.test(i)) fail('BAD_INITIALS');
+            db.blocked_at = db.blocked_at || {};
+            if (b.block !== false) { if (!BLOCKED.includes(i) && !db.blocked.includes(i)) { db.blocked.push(i); db.blocked_at[i] = new Date().toISOString(); } }
+            else { if (BLOCKED.includes(i)) fail('BUILT_IN_NAME'); db.blocked = db.blocked.filter((x) => x !== i); }
+            save(db); return { ok: true };
+          }
+          case 'blocked': return {
+            committee: db.blocked.slice().sort().map((i) => ({ initials: i, created_at: (db.blocked_at || {})[i] || null, players: Object.values(db.players).filter((p) => p.initials === i).length })),
+            built_in: BLOCKED.slice().sort(),
+          };
+          case 'give_play': {
+            const reason = tidy(b.reason); if (reason.length < 3 || reason.length > 200) fail('BAD_REASON');
+            const p = db.players[b.player_id]; if (!p) fail('PLAYER_NOT_FOUND');
+            if (p.banned) fail('BANNED');
+            if (closed()) fail('CLOSED');
+            const given = freePlaysOf(p.id).length;
+            if (given >= FREE_PLAY_LIMIT) fail('FREE_PLAY_LIMIT');
+            (db.free_plays = db.free_plays || []).push({ player_id: p.id, reason, created_at: new Date().toISOString() });
+            p.credits += 1; save(db);
+            return { ok: true, credits: p.credits, given: given + 1, limit: FREE_PLAY_LIMIT };
+          }
+          case 'campaign': return campaign();
+          // The top three of each prize slot as the boards and spotPrizes() rank them, with the codes and emails.
+          case 'winners': {
+            const row = (p, rank, score, at, lights) => ({ rank, player_id: p.id, initials: disp(p), role: p.role || 'everyone', score, achieved_at: at, lights: lights || null, claim_code: p.claim_code, contact_email: p.contact_email || null, school_email: p.school_email || null, banned: !!p.banned });
+            const byTag = {}; Object.values(db.players).forEach((p) => { byTag[tag(p.id)] = p; });
+            const top3 = (role) => board(role).slice(0, 3).map((r) => row(byTag[r.tag], r.rank, r.score, r.achieved_at));
+            const byPlayer = {};
+            db.plays.filter((x) => x.score != null && !x.voided && db.players[x.player_id] && !db.players[x.player_id].banned).forEach((x) => { (byPlayer[x.player_id] = byPlayer[x.player_id] || []).push(x); });
+            const cmpN = (a, c, n) => { for (let i = 0; i < n; i++) { const d = (c[i] ?? -1) - (a[i] ?? -1); if (d) return d; } return 0; };
+            const light = [], first = [];
+            Object.entries(byPlayer).forEach(([pid, plays]) => {
+              const all = plays.flatMap((x) => lightsOf(x).map((l) => ({ l, at: x.finished_at }))).sort((a, c) => c.l - a.l || String(a.at).localeCompare(String(c.at)));
+              light.push({ pid, key: all.slice(0, 3).map((z) => z.l), at: all[0].at });
+              const f = plays.slice().sort((a, c) => String(a.started_at).localeCompare(String(c.started_at)))[0];
+              first.push({ pid, key: [f.score, ...lightsOf(f).sort((a, c) => c - a).slice(0, 3)], at: f.finished_at });
+            });
+            light.sort((a, c) => cmpN(a.key, c.key, 3) || String(a.at).localeCompare(String(c.at)));
+            first.sort((a, c) => cmpN(a.key, c.key, 4) || String(a.at).localeCompare(String(c.at)));
+            const cp = campaign();
+            return { everyone: top3(null), students: top3('student'), teachers: top3('teacher'),
+              best_light: light.slice(0, 3).map((x, i) => row(db.players[x.pid], i + 1, x.key[0], x.at, x.key)),
+              first_play: first.slice(0, 3).map((x, i) => row(db.players[x.pid], i + 1, x.key[0], x.at, x.key.slice(1))),
+              ends_on: cp.ends_on, closes_at: cp.closes_at, prize_mode: cp.prize_mode };
+          }
           case 'set_code': return { ok: true };
           case 'payments': {
             const q = String(b.q || '').trim().toLowerCase();
             const inRange = (p) => (!b.from || p.created_at.slice(0, 10) >= b.from) && (!b.to || p.created_at.slice(0, 10) <= b.to);
-            const rows = db.payments.slice().reverse().map((p, i) => { const pl = db.players[p.player_id] || {}; return { id: p.stripe_session_id || String(i), created_at: p.created_at, initials: pl.initials ? disp(pl) : '???', player_id: p.player_id, role: pl.role || 'everyone', bundle: p.bundle, credits: p.credits, amount_cents: p.amount_cents, email: p.email || null, source: 'confirm', stripe_session_id: p.stripe_session_id || '', stripe_payment_intent: null, contact_email: pl.contact_email || null }; })
-              .filter(inRange).filter((r) => !q || r.initials.toLowerCase().startsWith(q) || String(r.email || '').toLowerCase().includes(q) || String(r.contact_email || '').toLowerCase().includes(q) || r.stripe_session_id.toLowerCase().includes(q) || r.bundle === q || (/^\d+$/.test(q) && r.amount_cents === Number(q) * 100));
+            const rows = db.payments.slice().reverse().map((p, i) => { const pl = db.players[p.player_id] || {}; return { id: p.stripe_session_id || String(i), created_at: p.created_at, initials: pl.initials ? disp(pl) : '???', player_id: p.player_id, role: pl.role || 'everyone', bundle: p.bundle, credits: p.credits, amount_cents: p.amount_cents, refunded_cents: p.refunded_cents || 0, email: p.email || null, source: p.source || 'confirm', stripe_session_id: p.stripe_session_id || '', stripe_payment_intent: p.stripe_payment_intent || null, contact_email: pl.contact_email || null }; })
+              .filter(inRange).filter((r) => !q || r.initials.toLowerCase().startsWith(q) || String(r.email || '').toLowerCase().includes(q) || String(r.contact_email || '').toLowerCase().includes(q) || r.stripe_session_id.toLowerCase().includes(q) || String(r.stripe_payment_intent || '').toLowerCase().includes(q) || r.bundle === q || (/^\d+$/.test(q) && r.amount_cents === Number(q) * 100));
             const off = Math.max(0, Number(b.offset) || 0), lim = Math.min(500, Math.max(1, Number(b.limit) || 50));
-            return { rows: rows.slice(off, off + lim), total: rows.length, sum_cents: rows.reduce((s, r) => s + r.amount_cents, 0) };
+            return { rows: rows.slice(off, off + lim), total: rows.length, sum_cents: rows.reduce((s, r) => s + r.amount_cents, 0), refunded_cents: rows.reduce((s, r) => s + r.refunded_cents, 0) };
           }
           case 'players': {
             const q = String(b.q || '').trim().toLowerCase();
