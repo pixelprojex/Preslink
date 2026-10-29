@@ -403,6 +403,8 @@
   // ---------------------------------------------------------------------------
   const SCREENS = ['home', 'cabinet', 'play', 'board', 'prize', 'about', 'you', 'signin'];
   const TAB_ORDER = { home: 0, cabinet: 0, play: 0, board: 1, prize: 2, about: 3, you: 4, signin: 4 };
+  // Home keeps the page's own title, the one search engines show: the game, the charity and the school.
+  const HOME_TITLE = document.title;
   const screens = $$('.screen');
   let current = 'home';
   function go(name) {
@@ -419,7 +421,7 @@
     const from = current;
     current = name;
     const tname = { board: 'Leaderboard', prize: HONOURS() ? 'Honours' : 'Prizes', about: 'About', you: 'You', play: 'Play', signin: 'Sign in' }[name];
-    document.title = tname ? `${tname} · PresLink Arcade` : 'PresLink Arcade';
+    document.title = tname ? `${tname} · PresLink Arcade` : HOME_TITLE;
     closeSheets(true);
     screens.forEach((s) => { s.hidden = s.dataset.screen !== name; });
     const scr = screens.find((s) => s.dataset.screen === name);
@@ -481,6 +483,7 @@
     btn.disabled = closed;
     btn.classList.toggle('ready', canPlayNow() && !closed);
     $('[data-screen="home"] .bundles-line').hidden = closed;
+    $('.hero-card .fine').hidden = closed; // nothing can be paid for after the close
     if (canPlayNow() && !closed) prefetchPlay();
     renderHomeTop();
   }
@@ -1541,6 +1544,10 @@
     if (lift !== kbLift) { kbLift = lift; document.documentElement.style.setProperty('--kb', lift + 'px'); }
   }
   if (vv) { vv.addEventListener('resize', fitSheets); vv.addEventListener('scroll', fitSheets); }
+  // The app bar gets a hairline once the page has scrolled under it.
+  const appbar = $('.appbar');
+  const edge = () => appbar.classList.toggle('scrolled', window.scrollY > 2);
+  window.addEventListener('scroll', edge, { passive: true });
   const editInitials = initialsField('edit-initials', () => paintSwatches());
   const nameInitials = initialsField('name-initials');
   $('#name-form').addEventListener('submit', async (e) => {

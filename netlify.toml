@@ -127,11 +127,13 @@
   for = "/a3"
   [headers.values]
     Content-Disposition = "inline; filename=\"PresLink-Arcade-A3.pdf\""
+    X-Robots-Tag = "noindex"
 
 [[headers]]
   for = "/a4"
   [headers.values]
     Content-Disposition = "inline; filename=\"PresLink-Arcade-A4.pdf\""
+    X-Robots-Tag = "noindex"
 
 [[headers]]
   for = "/social"
@@ -143,8 +145,54 @@
   [headers.values]
     Content-Disposition = "inline; filename=\"PresLink-Arcade-Message.png\""
 
-# The poster files are re-made rarely; a day, so a new one shows up soon after.
+# The poster files are re-made rarely; a day, so a new one shows up soon after. They stay out of search
+# results (the game's page is what people should find); links in messages still show the Message picture.
 [[headers]]
   for = "/posters/*"
   [headers.values]
     Cache-Control = "public, max-age=86400"
+    X-Robots-Tag = "noindex"
+
+# Search engines: the game's page is what people find. The committee page, the poster tools and the printable
+# posters stay out of the results (robots.txt lets crawlers in, so they can read this).
+[[headers]]
+  for = "/admin.html"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/admin"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/poster.html"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/qr.html"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/A3"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/A4"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+# The sitemap and robots file are read fresh.
+[[headers]]
+  for = "/sitemap.xml"
+  [headers.values]
+    Content-Type = "application/xml; charset=utf-8"
+    Cache-Control = "public, max-age=3600"
+
+[[headers]]
+  for = "/robots.txt"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"

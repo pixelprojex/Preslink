@@ -1,0 +1,6 @@
+# PresLink Arcade: everything public may be crawled. The committee page and the poster tools carry their own
+# "noindex", which crawlers must be able to read, so they are not blocked here.
+User-agent: *
+Allow: /
+
+Sitemap: https://preslink.netlify.app/sitemap.xml

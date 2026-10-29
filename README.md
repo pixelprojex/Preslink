@@ -98,6 +98,8 @@ open Supabase.
 | `site/config.js` | **The only file you must edit**: Supabase URL and publishable key |
 | `site/mock.js` | Demo backend. Active only while `config.js` is empty, so the site works before Supabase is wired |
 | `site/qr.html` | Old poster address; forwards to `poster.html` |
+| `site/robots.txt`, `site/sitemap.xml` | For search engines: everything may be crawled, and the page with its photos (see **Search engines**) |
+| `site/manifest.webmanifest`, `site/assets/icon-*.png` | The name and icons a phone uses when the site is added to the home screen, and Google's logo |
 | `supabase/migrations/0001_init.sql` | Database tables and functions |
 | `supabase/migrations/0002_names_signin_admin.sql` | Unique names, name blocklist, sign back in, bans, goal and prize settings, committee functions |
 | `supabase/migrations/0003_auto_names_admin_v2.sql` | Random names on first tap, name and board changes, richer committee overview, player lookup, name reset |
@@ -215,6 +217,8 @@ the request came from.
    terms link).
 4. Print the posters from `/a3` and `/a4`, and send the link round (see **Posters**).
 5. Make one real €2 payment yourself to be sure, then announce it.
+6. Put it on Google (see **Search engines** below): Search Console, the sitemap, Bing, and a link from the
+   school's website.
 
 ### 6. Prizes at the end
 
@@ -225,6 +229,45 @@ the request came from.
    ranks them, with their codes and emails, and a CSV.
 3. Announce the initials. A winner shows their **You** tab (or the saved code picture): the initials and the
    code must match the Winners page.
+
+## Search engines
+
+The site is built to come up for **PresLink**, **PresLink Arcade** and **Presentation Brothers College
+charity**:
+
+- The page's title is "PresLink Arcade | Presentation Brothers College Charity, Cork", with a matching
+  description, and the app keeps that title on Home.
+- Structured data (JSON-LD in the page head) tells Google the site is called PresLink Arcade (the name it then
+  shows above the result), that it belongs to PresLink, the student-run charity of Presentation Brothers
+  College, Cork, and links the charity to the school's own site (www.pbc-cork.ie) and Wikipedia page.
+- `robots.txt` lets every crawler in and points to `sitemap.xml`, which lists the page and its photos.
+- The committee page, the poster tools and the poster files say `noindex`, so the game's page is the one
+  people find. Deploy previews are kept out of Google by Netlify itself.
+- Icons at 48, 96, 192 and 512 px give Google and phones a sharp logo; the photos have descriptive alt text.
+- Lighthouse (mobile): SEO 100, accessibility 100, performance 98.
+
+Nobody can make Google list a new site the moment it goes up, but these steps get it in within days. Do them
+once, after the site is live on its final address:
+
+1. **Google Search Console.** Go to <https://search.google.com/search-console>, sign in with the account
+   that should own it, choose **Add property → URL prefix**, and enter `https://preslink.netlify.app/`.
+   Pick the **HTML tag** method and copy the tag it shows (`<meta name="google-site-verification" ...>`).
+2. **Netlify.** In the site's dashboard go to **Project configuration → Build & deploy → Post processing →
+   Snippet injection → Add snippet**. Choose **Insert before `</head>`**, name it "Google", paste the tag
+   and save. No code change or redeploy is needed.
+3. Back in Search Console, press **Verify**. Then open **Sitemaps**, type `sitemap.xml` and press
+   **Submit**. Then open **URL inspection**, paste `https://preslink.netlify.app/` and press
+   **Request indexing**.
+4. **Bing** (which also feeds DuckDuckGo, Yahoo and ChatGPT search): go to
+   <https://www.bing.com/webmasters>, sign in and choose **Import from Google Search Console**.
+5. **Links.** Ask the school to link to `https://preslink.netlify.app` from www.pbc-cork.ie (a news item or
+   a PresLink page), and put the link in PresLink's Instagram bio. A link from the school's site is what
+   puts the arcade on the first page for "Presentation Brothers College charity", a phrase the school's own
+   pages and SHARE already use.
+
+"PresLink Arcade" is a name nobody else uses, so it comes up first once Google has the page. If the site
+ever moves to its own domain, change the address in `index.html` (canonical, `og:url`, `og:image`,
+`twitter:image`, the JSON-LD), `robots.txt` and `sitemap.xml`, and add the new address in Search Console.
 
 ## The committee console
 

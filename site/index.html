@@ -1,9 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-IE">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-  <meta name="theme-color" content="#5b3a9a">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="color-scheme" content="light">
   <script>
     // The welcome animation plays once, on a device's very first visit; every later open goes straight in.
     // Decided here, before anything draws, so there is nothing to hide after the fact.
@@ -15,29 +16,119 @@
       } catch (e) { document.documentElement.classList.add('no-splash'); }
     })();
   </script>
-  <title>PresLink Arcade</title>
-  <meta name="description" content="A game of skill for PresLink. Plays are €2, and every euro after card fees goes to the Presentation Brothers' schools in Ghana and Nigeria.">
+  <title>PresLink Arcade | Presentation Brothers College Charity, Cork</title>
+  <meta name="description" content="Play PresLink Arcade, the charity game of PresLink at Presentation Brothers College, Cork. €2 a play raises money for schools in Ghana and Nigeria.">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="application-name" content="PresLink Arcade">
+  <meta name="apple-mobile-web-app-title" content="PresLink Arcade">
   <!-- What a shared link shows in WhatsApp, Messages, Instagram, Facebook and email: the Message poster. Link
        previewers don't run scripts, so these stay in the page itself. After re-rendering the posters, bump ?v=. -->
   <link rel="canonical" href="https://preslink.netlify.app/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PresLink Arcade">
   <meta property="og:url" content="https://preslink.netlify.app/">
-  <meta property="og:title" content="Can you stop the light?">
-  <meta property="og:description" content="A game of skill for PresLink. Plays are €2, and every euro after card fees goes to the Presentation Brothers' schools in Ghana and Nigeria.">
+  <meta property="og:title" content="PresLink Arcade: can you stop the light?">
+  <meta property="og:description" content="Play PresLink Arcade, the charity game of PresLink at Presentation Brothers College, Cork. €2 a play raises money for schools in Ghana and Nigeria.">
   <meta property="og:image" content="https://preslink.netlify.app/posters/preslink-arcade-message.png?v=2">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="PresLink Arcade: Play. Win prizes. Fund a school. €2 a go at preslink.netlify.app.">
   <meta property="og:locale" content="en_IE">
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="PresLink Arcade: can you stop the light?">
+  <meta name="twitter:description" content="Play PresLink Arcade, the charity game of PresLink at Presentation Brothers College, Cork. €2 a play raises money for schools in Ghana and Nigeria.">
+  <meta name="twitter:image" content="https://preslink.netlify.app/posters/preslink-arcade-message.png?v=2">
+  <!-- Who runs the site, for search engines: PresLink, the student charity of Presentation Brothers College, Cork.
+       WebSite gives Google the site's name for its results; Organization and the school say whose it is. -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://preslink.netlify.app/#website",
+        "url": "https://preslink.netlify.app/",
+        "name": "PresLink Arcade",
+        "alternateName": [
+          "PresLink",
+          "Pres Link Arcade"
+        ],
+        "description": "Play PresLink Arcade, the charity game of PresLink at Presentation Brothers College, Cork. €2 a play raises money for schools in Ghana and Nigeria.",
+        "inLanguage": "en-IE",
+        "publisher": {
+          "@id": "https://preslink.netlify.app/#preslink"
+        }
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://preslink.netlify.app/#preslink",
+        "name": "PresLink",
+        "alternateName": [
+          "Pres Link",
+          "PresLink Cork",
+          "PresLink Arcade"
+        ],
+        "url": "https://preslink.netlify.app/",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://preslink.netlify.app/assets/icon-512.png",
+          "width": 512,
+          "height": 512
+        },
+        "description": "PresLink is the student-run charity of Presentation Brothers College, Cork. It raises money for the Presentation Brothers' schools and projects in Ghana and Nigeria; PresLink Arcade is its game of skill.",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "Presentation Brothers College, The Mardyke",
+          "addressLocality": "Cork",
+          "postalCode": "T12 VK49",
+          "addressCountry": "IE"
+        },
+        "areaServed": [
+          {
+            "@type": "Country",
+            "name": "Ghana"
+          },
+          {
+            "@type": "Country",
+            "name": "Nigeria"
+          }
+        ],
+        "parentOrganization": {
+          "@id": "https://www.pbc-cork.ie/#school"
+        }
+      },
+      {
+        "@type": "HighSchool",
+        "@id": "https://www.pbc-cork.ie/#school",
+        "name": "Presentation Brothers College, Cork",
+        "alternateName": [
+          "Presentation Brothers College",
+          "PBC Cork"
+        ],
+        "url": "https://www.pbc-cork.ie/",
+        "sameAs": [
+          "https://en.wikipedia.org/wiki/Presentation_Brothers_College,_Cork"
+        ],
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "The Mardyke",
+          "addressLocality": "Cork",
+          "postalCode": "T12 VK49",
+          "addressCountry": "IE"
+        }
+      }
+    ]
+  }
+  </script>
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
-  <link rel="icon" href="assets/icon-32.png" type="image/png" sizes="32x32">
+  <link rel="icon" href="assets/icon-48.png" type="image/png" sizes="48x48">
+  <link rel="icon" href="assets/icon-96.png" type="image/png" sizes="96x96">
+  <link rel="icon" href="assets/icon-192.png" type="image/png" sizes="192x192">
   <link rel="apple-touch-icon" href="assets/icon-180.png">
   <link rel="manifest" href="manifest.webmanifest">
   <!-- the game's server: connect while the page is still loading -->
   <link rel="preconnect" href="https://bsovummlmfclefdlvsic.supabase.co" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=52">
+  <link rel="stylesheet" href="styles.css?v=53">
 </head>
 <body>
 <div class="splash" id="splash" aria-hidden="true">
@@ -68,7 +159,7 @@
 
 <main class="shell">
   <header class="appbar">
-    <a class="brand" href="#home" aria-label="PresLink Arcade home"><img src="assets/cross.svg?v=10" alt=""><span>PresLink</span></a>
+    <a class="brand" href="#home" aria-label="PresLink Arcade home"><img src="assets/cross.svg?v=10" alt=""><span>PresLink <b>Arcade</b></span></a>
     <div class="raised" id="raised" aria-live="polite">
       <svg class="ring" viewBox="0 0 36 36" aria-hidden="true"><circle class="ring-bg" cx="18" cy="18" r="15.5"/><circle class="ring-fg" id="ring-fg" cx="18" cy="18" r="15.5" stroke-dasharray="0 97.4"/></svg>
       <span class="raised-t"><span class="raised-n odo" id="raised-n" aria-label="€0">€0</span><span class="raised-l">raised</span></span>
@@ -196,23 +287,23 @@
 
   <!-- ================= ABOUT ================= -->
   <section class="screen" data-screen="about" hidden>
-    <div class="title"><h1>About</h1></div>
+    <div class="title"><h1>About PresLink</h1></div>
     <div id="about-stories">
     <div class="card story">
-      <picture><source srcset="assets/photo-classrooms.webp" type="image/webp"><img class="photo" src="assets/photo-classrooms.jpg" alt="Children in a new classroom in Ghana" loading="lazy" decoding="async"></picture>
+      <picture><source srcset="assets/photo-classrooms.webp" type="image/webp"><img class="photo" src="assets/photo-classrooms.jpg" alt="Pupils in the classroom block PresLink funded at Sokabisi, Bolgatanga, Ghana" loading="lazy" decoding="async"></picture>
       <div class="story-body"><h2>Classrooms in Ghana</h2><p>A three-classroom block in Sokabisi, Bolgatanga, funded by PresLink.</p></div>
     </div>
     <div class="card story">
-      <picture><source srcset="assets/photo-bikes.webp" type="image/webp"><img class="photo" src="assets/photo-bikes.jpg" alt="Students with their bicycles outside school" loading="lazy" decoding="async"></picture>
+      <picture><source srcset="assets/photo-bikes.webp" type="image/webp"><img class="photo" src="assets/photo-bikes.jpg" alt="Students in Ghana with bicycles for getting to school" loading="lazy" decoding="async"></picture>
       <div class="story-body"><h2>Bikes to school</h2><p>Bicycles so that students can get to class and stay in education.</p></div>
     </div>
     <div class="card story">
-      <picture><source srcset="assets/photo-babies.webp" type="image/webp"><img class="photo" src="assets/photo-babies.jpg" alt="Mother of Mercy Babies Home" loading="lazy" decoding="async"></picture>
+      <picture><source srcset="assets/photo-babies.webp" type="image/webp"><img class="photo" src="assets/photo-babies.jpg" alt="Mother of Mercy Babies Home, run by the Presentation Brothers in Sirigu, Ghana" loading="lazy" decoding="async"></picture>
       <div class="story-body"><h2>Mother of Mercy Babies Home</h2><p>Support for the babies home run by the Presentation Brothers in Sirigu, Ghana.</p></div>
     </div>
     </div>
     <div class="card story school">
-      <img class="photo" src="assets/photo-school.svg?v=2" alt="The PresLink committee">
+      <img class="photo" src="assets/photo-school.svg?v=2" alt="Photo of the PresLink committee coming soon">
       <div class="story-body"><h2><img src="assets/crest.svg?v=10" alt=""><span id="about-intro-title">Run by students</span></h2><p id="about-intro-text">PresLink is the student-run charity of Presentation Brothers College, Cork. Every cent raised here, after card fees, goes to PresLink.</p></div>
     </div>
     <div class="card" id="about-contact" hidden></div>
@@ -229,7 +320,7 @@
     <div class="title"><h1>You</h1></div>
     <div id="you-empty" hidden>
       <div class="card you-empty">
-        <p>Play once and your name and code appear here.</p>
+        <p>Play once and your initials and code appear here.</p>
         <button class="btn btn-primary btn-xl js-play" type="button">Play · €2</button>
       </div>
       <div class="card">
@@ -283,7 +374,7 @@
       <p class="field-error" id="signin-error" role="alert" hidden></p>
       <button class="btn btn-primary btn-xl page-cta" type="submit" id="signin-submit">Sign in</button>
     </form>
-    <div class="card"><div class="cell quiet"><span>Lost your code? Ask the committee.</span></div></div>
+    <p class="fine">Lost your code? Ask the committee.</p>
   </section>
 
 </main>
@@ -441,6 +532,6 @@
 <script src="config.js"></script>
 <!-- the demo backend loads only when no server is configured -->
 <script>if (!(window.PRESLINK_CONFIG || {}).SUPABASE_URL) document.write('<script src="mock.js?v=43"><\/script>');</script>
-<script src="app.js?v=46"></script>
+<script src="app.js?v=47"></script>
 </body>
 </html>
