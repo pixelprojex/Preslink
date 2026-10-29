@@ -50,20 +50,11 @@
   const playLight = (x) => (x.taps && x.rounds) ? Math.max(...x.taps.map((t, i) => roundScore(t, x.rounds[i].phase, x.rounds[i].target, x.speed_ms))) : (x.score || 0);
   const scoredPlays = (pid) => db.plays.filter((x) => x.player_id === pid && x.score != null && !x.voided);
   const bestLightOf = (pid) => scoredPlays(pid).reduce((m, x) => Math.max(m, playLight(x)), null);
-  // Badges as the database's player_badges: Bullseye = a light of 999; Steady hand = all three lights of a play within 40 ms.
-  const errMs = (t, phase, target, speedMs) => { let x = t / speedMs + phase; x -= 2 * Math.floor(x / 2); const pos = x < 1 ? x : 2 - x; return Math.round(Math.abs(pos - target) * speedMs); };
-  const badgesOf = (pid) => {
-    const ps = scoredPlays(pid).filter((x) => Array.isArray(x.taps) && x.taps.length === 3 && Array.isArray(x.rounds) && x.rounds.length === 3);
-    const out = [];
-    if (ps.some((x) => x.taps.some((t, i) => roundScore(t, x.rounds[i].phase, x.rounds[i].target, x.speed_ms) >= 999))) out.push('bullseye');
-    if (ps.some((x) => x.taps.every((t, i) => errMs(t, x.rounds[i].phase, x.rounds[i].target, x.speed_ms) <= 40))) out.push('steady');
-    return out;
-  };
   const nextSuffix = (initials, exceptId) => Object.values(db.players).filter((x) => x.initials === initials && x.id !== exceptId).reduce((m, x) => Math.max(m, x.suffix || 1), 0) + 1;
   const me = (p) => {
     const open = db.plays.find((x) => x.player_id === p.id && x.score == null && !x.voided);
     const best = scoredPlays(p.id).reduce((m, x) => Math.max(m, x.score), null);
-    return { id: p.id, tag: tag(p.id), initials: p.initials, suffix: p.suffix || 1, display: disp(p), role: p.role || 'everyone', school_email: p.school_email || null, contact_email: p.contact_email || null, claim_code: p.claim_code, credits: p.credits, banned: !!p.banned, colour: p.colour || 0, ...spendOf(p.id), best, best_this_week: best, best_light: bestLightOf(p.id), badges: badgesOf(p.id), open_play: open ? { play_id: open.id, speed_ms: open.speed_ms, rounds: open.rounds } : null };
+    return { id: p.id, tag: tag(p.id), initials: p.initials, suffix: p.suffix || 1, display: disp(p), role: p.role || 'everyone', school_email: p.school_email || null, contact_email: p.contact_email || null, claim_code: p.claim_code, credits: p.credits, banned: !!p.banned, colour: p.colour || 0, ...spendOf(p.id), best, best_this_week: best, best_light: bestLightOf(p.id), open_play: open ? { play_id: open.id, speed_ms: open.speed_ms, rounds: open.rounds } : null };
   };
   const board = (role, week, withIds) => {
     if (role === 'everyone') role = null;

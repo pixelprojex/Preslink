@@ -16,19 +16,19 @@
     })();
   </script>
   <title>PresLink Arcade</title>
-  <meta name="description" content="A game of skill for PresLink. Practice is free, plays are €2, and every euro after card fees goes to the Presentation Brothers' schools in Ghana and Nigeria.">
-  <!-- What a shared link shows in WhatsApp, Messages, Instagram, Facebook and email. Link previewers don't run
-       scripts, so these stay in the page itself. To change the picture, re-render it and bump ?v=. -->
+  <meta name="description" content="A game of skill for PresLink. Plays are €2, and every euro after card fees goes to the Presentation Brothers' schools in Ghana and Nigeria.">
+  <!-- What a shared link shows in WhatsApp, Messages, Instagram, Facebook and email: the Message poster. Link
+       previewers don't run scripts, so these stay in the page itself. After re-rendering the posters, bump ?v=. -->
   <link rel="canonical" href="https://preslink.netlify.app/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PresLink Arcade">
   <meta property="og:url" content="https://preslink.netlify.app/">
   <meta property="og:title" content="Can you stop the light?">
-  <meta property="og:description" content="A game of skill for PresLink. Practice is free, plays are €2, and every euro after card fees goes to the Presentation Brothers' schools in Ghana and Nigeria.">
-  <meta property="og:image" content="https://preslink.netlify.app/share/preslink-arcade-link.jpg?v=1">
+  <meta property="og:description" content="A game of skill for PresLink. Plays are €2, and every euro after card fees goes to the Presentation Brothers' schools in Ghana and Nigeria.">
+  <meta property="og:image" content="https://preslink.netlify.app/posters/preslink-arcade-message.png?v=2">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Can you stop the light? The PresLink Arcade light bar, with the light just short of the mark.">
+  <meta property="og:image:alt" content="PresLink Arcade: Play. Win prizes. Fund a school. €2 a go at preslink.netlify.app.">
   <meta property="og:locale" content="en_IE">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
@@ -37,7 +37,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <!-- the game's server: connect while the page is still loading -->
   <link rel="preconnect" href="https://bsovummlmfclefdlvsic.supabase.co" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=49">
+  <link rel="stylesheet" href="styles.css?v=50">
 </head>
 <body>
 <div class="splash" id="splash" aria-hidden="true">
@@ -63,18 +63,15 @@
     <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M12 2l8 3v6.5c0 4.6-3.3 8.3-8 10.5-4.7-2.2-8-5.9-8-10.5V5z" fill="#ffc800"/><path d="M12 6.4l1.6 3.3 3.6.5-2.6 2.5.6 3.6-3.2-1.7-3.2 1.7.6-3.6-2.6-2.5 3.6-.5z" fill="#fff"/></symbol>
     <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#ff4b4b"/><path d="M2.6 12h18.8M12 2.4c3.2 2.6 3.2 16.6 0 19.2M12 2.4c-3.2 2.6-3.2 16.6 0 19.2" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/></symbol>
     <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#1cb0f6"/><circle cx="12" cy="9.2" r="3.6" fill="#fff"/><path d="M5.2 19a7 7 0 0 1 13.6 0 10 10 0 0 1-13.6 0z" fill="#fff"/></symbol>
-    <symbol id="i-photo" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="4" fill="currentColor"/><circle cx="8.2" cy="9.3" r="1.9" fill="#fff"/><path d="M5 17.2l4.3-5.2 3 3.5 2.7-3.2 4.2 4.9z" fill="#fff"/></symbol>
     <symbol id="i-flash" viewBox="0 0 24 24"><path d="M13.2 2L4.5 13.5h6.1L9.8 22l8.7-11.5h-6.1z" fill="currentColor"/></symbol>
     <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 2.5c.5 4.7 2.8 7 7.5 7.5-4.7.5-7 2.8-7.5 7.5-.5-4.7-2.8-7-7.5-7.5 4.7-.5 7-2.8 7.5-7.5z" fill="currentColor"/><circle cx="18.5" cy="18.5" r="2" fill="currentColor"/></symbol>
     <symbol id="i-cup" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M8 3h8v2h3.5a.5.5 0 0 1 .5.5V8a4 4 0 0 1-3.6 3.98A5 5 0 0 1 13 15.9V18h2.5a1.5 1.5 0 0 1 1.5 1.5V21H7v-1.5A1.5 1.5 0 0 1 8.5 18H11v-2.1a5 5 0 0 1-3.4-3.92A4 4 0 0 1 4 8V5.5a.5.5 0 0 1 .5-.5H8zm0 4H6v1a2 2 0 0 0 2 2zm8 0v3a2 2 0 0 0 2-2V7z" fill="currentColor"/></symbol>
     <symbol id="i-cap" viewBox="0 0 24 24"><path d="M12 3 1.5 8.2 12 13.4l8.5-4.2V15H22V8.2z" fill="currentColor"/><path d="M6 11.6V15c0 1.66 2.69 3 6 3s6-1.34 6-3v-3.4l-6 2.97z" fill="currentColor"/></symbol>
     <symbol id="i-book" viewBox="0 0 24 24"><path d="M3 5.5C5.6 4.3 8.6 4.4 11 6v13c-2.4-1.5-5.4-1.6-8-.5zM21 5.5c-2.6-1.2-5.6-1.1-8 .5v13c2.4-1.5 5.4-1.6 8-.5z" fill="currentColor"/></symbol>
-    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.8" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="12" r="4.8" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/></symbol>
-    <symbol id="i-steady" viewBox="0 0 24 24"><rect x="2" y="11" width="20" height="2" rx="1" fill="currentColor" opacity=".4"/><rect x="5" y="5.5" width="3" height="13" rx="1.5" fill="currentColor"/><rect x="10.5" y="5.5" width="3" height="13" rx="1.5" fill="currentColor"/><rect x="16" y="5.5" width="3" height="13" rx="1.5" fill="currentColor"/></symbol>
+    <symbol id="i-crown" viewBox="0 0 32 24"><path d="M3.2 7.6 9.4 13l6.6-10 6.6 10 6.2-5.4-2.5 13.9H5.7z" fill="currentColor"/><rect x="5.7" y="20.2" width="20.6" height="2.8" rx="1.2" fill="currentColor"/><circle cx="16" cy="2.6" r="2.1" fill="currentColor"/><circle cx="3" cy="7" r="1.8" fill="currentColor"/><circle cx="29" cy="7" r="1.8" fill="currentColor"/></symbol>
     <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2.2a2.8 2.8 0 0 0 0 5.6V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2.2a2.8 2.8 0 0 0 0-5.6z" fill="currentColor"/></symbol>
     <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5" fill="currentColor"/><path d="M14.9 8.4a4.1 4.1 0 1 0 0 7.2" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><path d="M7.4 10.8h5.4M7.4 13.2h5.4" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></symbol>
     <symbol id="i-up" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-    <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z" fill="currentColor"/></symbol>
   </defs>
 </svg>
 
@@ -96,17 +93,12 @@
       <div class="demo-track" aria-hidden="true"><span class="demo-pin"></span><span class="demo-marker"></span></div>
       <button class="btn btn-primary btn-xl" id="home-play" type="button">Play · €2</button>
       <p class="bundles-line"><button class="link" type="button" data-bundle="triple">3 plays · €5</button><button class="link" type="button" data-bundle="seven">7 plays · €10</button></p>
-      <p class="hero-links"><button class="mini-link" type="button" id="home-practice">Practise free</button><button class="mini-link" type="button" data-sheet="how">How to play</button></p>
+      <p class="hero-links"><button class="mini-link" type="button" data-sheet="how">How to play</button></p>
       <p class="fine">Under 18s need a parent's or guardian's permission to pay.</p>
-    </div>
-    <div class="card goal-card" id="goal-card">
-      <div class="goal-top"><strong class="goal-n odo" id="goal-n">€0</strong><span class="goal-of" id="goal-of">raised so far</span></div>
-      <div class="goal-bar" id="goal-bar"><span id="goal-fill"></span></div>
-      <p class="goal-meta" id="goal-meta" hidden></p>
     </div>
     <div class="card home-top" id="home-top">
       <div class="card-row"><h2 class="card-h">Leading now</h2><button class="pill-link" type="button" data-go="prize"><span data-honours="Honours">Prizes</span> <span class="chev">›</span></button></div>
-      <ol class="board podium" id="home-top-list"></ol>
+      <ol class="board mini" id="home-top-list"></ol>
       <p class="empty" id="home-top-empty" hidden>No scores yet. Be the first.</p>
       <button class="cell" type="button" data-go="board"><span>Full leaderboard</span> <span class="chev">›</span></button>
     </div>
@@ -142,15 +134,8 @@
         </div>
         <div class="score" aria-live="polite"><span id="score-value">0</span></div>
         <div class="verdict" id="verdict"></div>
-        <div class="coach" id="coach"></div>
       </div>
       <p class="tap-hint" id="tap-hint">Tap when the light is on the mark</p>
-      <div class="practice-end" id="practice-end" hidden>
-        <div class="og" aria-hidden="true"><span>early</span><span class="og-bar"><i class="og-mid"></i><i class="og-dot" id="og-dot"></i></span><span>late</span></div>
-        <p class="practice-line" id="practice-line"></p>
-        <button class="btn btn-primary btn-xl" type="button" id="practice-go">Done</button>
-        <button class="btn" type="button" id="practice-again">Practise again</button>
-      </div>
     </div>
 
     <div class="result" id="result" hidden>
@@ -160,7 +145,7 @@
           <svg viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="gauge-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd24a"/><stop offset="1" stop-color="#f26a1b"/></linearGradient></defs><circle class="g-bg" cx="60" cy="60" r="52"/><circle class="g-fg" id="gauge-fg" cx="60" cy="60" r="52"/></svg>
           <div class="result-score"><span id="result-score">0</span><small>of 1000</small></div>
         </div>
-        <div class="result-rounds" id="result-rounds"></div>
+        <div class="lights" id="result-rounds"></div>
       </div>
       <div class="stat-row" id="result-stats">
         <div class="stat"><span>Your best</span><strong id="result-best">–</strong></div>
@@ -185,14 +170,15 @@
       <button role="tab" type="button" class="tab" data-role="student" aria-selected="false"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Students</button>
       <button role="tab" type="button" class="tab" data-role="teacher" aria-selected="false"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Teachers</button>
     </div>
-    <div class="card" id="board-single">
+    <div class="card lb" id="board-single">
+      <ol class="podium" id="board-podium" aria-label="Top three"></ol>
       <ol class="board" id="board-list"></ol>
-      <p class="empty" id="board-empty" hidden>No scores yet. Be the first.</p>
+      <div class="lb-empty" id="board-empty" hidden></div>
     </div>
     <div class="boards-wide" id="boards-wide">
-      <div class="card"><h2 class="card-h">Everyone</h2><ol class="board" data-role="everyone"></ol><p class="empty" hidden>No scores yet.</p></div>
-      <div class="card"><h2 class="card-h pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Students</h2><ol class="board" data-role="student"></ol><p class="empty" hidden>No scores yet.</p></div>
-      <div class="card"><h2 class="card-h pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Teachers</h2><ol class="board" data-role="teacher"></ol><p class="empty" hidden>No scores yet.</p></div>
+      <div class="card lb"><h2 class="card-h">Everyone</h2><ol class="podium" data-role="everyone" aria-label="Top three"></ol><ol class="board" data-role="everyone"></ol><div class="lb-empty" hidden></div></div>
+      <div class="card lb"><h2 class="card-h pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Students</h2><ol class="podium" data-role="student" aria-label="Top three"></ol><ol class="board" data-role="student"></ol><div class="lb-empty" hidden></div></div>
+      <div class="card lb"><h2 class="card-h pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Teachers</h2><ol class="podium" data-role="teacher" aria-label="Top three"></ol><ol class="board" data-role="teacher"></ol><div class="lb-empty" hidden></div></div>
     </div>
     <div class="me-bar" id="me-bar" hidden></div>
   </section>
@@ -203,33 +189,28 @@
     <h2 class="sec-h">Top of each board</h2>
     <div class="prize-grid boards">
       <article class="card prize" data-prize="everyone">
-        <div class="prize-band">Everyone</div>
-        <div class="prize-main"><div class="prize-photo"><img alt="" hidden><svg aria-hidden="true"><use href="#i-cup"/></svg></div><div class="prize-body"><p class="prize-what tba" id="prize-everyone">To be announced</p><p class="prize-how">Highest score</p></div><div class="prize-lead" id="lead-everyone"></div></div>
+        <div class="prize-top"><div class="prize-media"><img alt="" hidden><svg aria-hidden="true"><use href="#i-cup"/></svg></div><div class="prize-body"><p class="prize-k">Everyone</p><p class="prize-what tba" id="prize-everyone">To be announced</p><p class="prize-how">Highest score</p></div></div>
+        <div class="prize-lead" id="lead-everyone"></div>
       </article>
       <article class="card prize" data-prize="students">
-        <div class="prize-band">Students</div>
-        <div class="prize-main"><div class="prize-photo"><img alt="" hidden><svg aria-hidden="true"><use href="#i-cap"/></svg></div><div class="prize-body"><p class="prize-what tba" id="prize-students">To be announced</p><p class="prize-how pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Highest score by a student</p></div><div class="prize-lead" id="lead-student"></div></div>
+        <div class="prize-top"><div class="prize-media"><img alt="" hidden><svg aria-hidden="true"><use href="#i-cap"/></svg></div><div class="prize-body"><p class="prize-k">Students</p><p class="prize-what tba" id="prize-students">To be announced</p><p class="prize-how pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Highest score by a student</p></div></div>
+        <div class="prize-lead" id="lead-student"></div>
       </article>
       <article class="card prize" data-prize="teachers">
-        <div class="prize-band">Teachers</div>
-        <div class="prize-main"><div class="prize-photo"><img alt="" hidden><svg aria-hidden="true"><use href="#i-book"/></svg></div><div class="prize-body"><p class="prize-what tba" id="prize-teachers">To be announced</p><p class="prize-how pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Highest score by a teacher</p></div><div class="prize-lead" id="lead-teacher"></div></div>
+        <div class="prize-top"><div class="prize-media"><img alt="" hidden><svg aria-hidden="true"><use href="#i-book"/></svg></div><div class="prize-body"><p class="prize-k">Teachers</p><p class="prize-what tba" id="prize-teachers">To be announced</p><p class="prize-how pres"><img class="crest-ic" src="assets/crest.svg?v=10" alt="">Highest score by a teacher</p></div></div>
+        <div class="prize-lead" id="lead-teacher"></div>
       </article>
     </div>
     <h2 class="sec-h" data-honours="Spot honours">Spot prizes</h2>
     <div class="prize-grid spots">
       <article class="card prize" data-prize="best_light">
-        <div class="prize-band">Best light</div>
-        <div class="prize-main"><div class="prize-photo"><img alt="" hidden><svg aria-hidden="true"><use href="#i-flash"/></svg></div><div class="prize-body"><p class="prize-what tba" id="prize-best-light">To be announced</p><p class="prize-how">One light closest to 1,000</p></div><div class="prize-lead" id="lead-light"></div></div>
+        <div class="prize-top"><div class="prize-media"><img alt="" hidden><svg aria-hidden="true"><use href="#i-flash"/></svg></div><div class="prize-body"><p class="prize-k">Best light</p><p class="prize-what tba" id="prize-best-light">To be announced</p><p class="prize-how">One light closest to 1,000</p></div></div>
+        <div class="prize-lead" id="lead-light"></div>
       </article>
       <article class="card prize" data-prize="first_play">
-        <div class="prize-band">First play</div>
-        <div class="prize-main"><div class="prize-photo"><img alt="" hidden><svg aria-hidden="true"><use href="#i-spark"/></svg></div><div class="prize-body"><p class="prize-what tba" id="prize-first-play">To be announced</p><p class="prize-how">Best score on a first play</p></div><div class="prize-lead" id="lead-first"></div></div>
+        <div class="prize-top"><div class="prize-media"><img alt="" hidden><svg aria-hidden="true"><use href="#i-spark"/></svg></div><div class="prize-body"><p class="prize-k">First play</p><p class="prize-what tba" id="prize-first-play">To be announced</p><p class="prize-how">Best score on a first play</p></div></div>
+        <div class="prize-lead" id="lead-first"></div>
       </article>
-    </div>
-    <h2 class="sec-h">Badges</h2>
-    <div class="card badge-list">
-      <div class="cell"><span>Bullseye<small>A light on the exact millisecond</small></span></div>
-      <div class="cell"><span>Steady hand<small>All three lights of a play within 40 ms</small></span></div>
     </div>
   </section>
 
@@ -256,9 +237,6 @@
     </div>
     <div class="card" id="about-contact" hidden></div>
     <div class="card">
-      <button class="cell" type="button" id="about-share"><span>Share the game</span> <span class="chev">›</span></button>
-    </div>
-    <div class="card">
       <button class="cell" type="button" data-sheet="terms"><span>Terms</span> <span class="chev">›</span></button>
       <button class="cell" type="button" data-sheet="privacy"><span>Privacy</span> <span class="chev">›</span></button>
     </div>
@@ -283,7 +261,6 @@
         <span class="avatar big" id="you-avatar">··</span>
         <span class="profile-name sr-only" id="you-name">···</span>
         <span class="profile-board" id="you-board">Everyone board</span>
-        <div class="swatches" id="you-colours" role="group" aria-label="Tile colour"><button class="sw k1" type="button" data-colour="1" aria-label="Green"></button><button class="sw k2" type="button" data-colour="2" aria-label="Blue"></button><button class="sw k3" type="button" data-colour="3" aria-label="Purple"></button><button class="sw k4" type="button" data-colour="4" aria-label="Orange"></button><button class="sw k5" type="button" data-colour="5" aria-label="Red"></button><button class="sw k6" type="button" data-colour="6" aria-label="Pink"></button><button class="sw k7" type="button" data-colour="7" aria-label="Teal"></button><button class="sw k8" type="button" data-colour="8" aria-label="Indigo"></button></div>
       </div>
       <div class="card code-card">
         <span class="profile-label">Your code</span>
@@ -298,7 +275,6 @@
           <div class="tile t-light"><svg aria-hidden="true"><use href="#i-flash"/></svg><strong id="you-light">–</strong><span>Best light</span></div>
           <div class="tile t-gift"><svg aria-hidden="true"><use href="#i-coin"/></svg><strong id="you-spent">€0</strong><span>Donated</span></div>
         </div>
-        <button class="cell" type="button" id="you-badges" data-go="prize"><span>Badges</span> <span class="bchips"><span class="bchip" data-award="bullseye"><svg aria-hidden="true"><use href="#i-target"/></svg>Bullseye</span><span class="bchip" data-award="steady"><svg aria-hidden="true"><use href="#i-steady"/></svg>Steady hand</span></span></button>
       </div>
       <form id="edit-form" class="card pad stack" autocomplete="off" novalidate hidden>
         <h2 class="card-h">Your initials</h2>
@@ -306,12 +282,14 @@
           <button class="box" type="button" aria-label="Letter 1"></button><button class="box" type="button" aria-label="Letter 2"></button><button class="box opt" type="button" aria-label="Letter 3, optional"></button>
         </div>
         <div class="letterpad" aria-label="Keys"></div>
+        <h2 class="card-h">Colour</h2>
+        <div class="swatches" id="you-colours" role="radiogroup" aria-label="Colour"><button class="sw k1" type="button" role="radio" data-colour="1" aria-label="Green"></button><button class="sw k2" type="button" role="radio" data-colour="2" aria-label="Blue"></button><button class="sw k3" type="button" role="radio" data-colour="3" aria-label="Purple"></button><button class="sw k4" type="button" role="radio" data-colour="4" aria-label="Orange"></button><button class="sw k5" type="button" role="radio" data-colour="5" aria-label="Red"></button><button class="sw k6" type="button" role="radio" data-colour="6" aria-label="Pink"></button><button class="sw k7" type="button" role="radio" data-colour="7" aria-label="Teal"></button><button class="sw k8" type="button" role="radio" data-colour="8" aria-label="Indigo"></button></div>
         <p class="field-error" id="edit-error" role="alert" hidden></p>
         <div class="grid-2"><button class="btn" type="button" id="edit-cancel">Cancel</button><button class="btn btn-primary" type="submit" id="edit-save">Save</button></div>
       </form>
       <div class="card">
         <button class="cell" type="button" id="you-email"><span>Email<small id="you-email-text">Add your email</small></span> <span class="chev">›</span></button>
-        <button class="cell" type="button" id="you-edit"><span>Change my initials</span> <span class="chev">›</span></button>
+        <button class="cell" type="button" id="you-edit"><span>Change initials or colour</span> <span class="chev">›</span></button>
         <button class="cell" type="button" data-go="signin"><span>Sign in as someone else</span> <span class="chev">›</span></button>
         <button class="cell danger" type="button" id="you-signout"><span>Sign out</span></button>
       </div>
@@ -422,21 +400,21 @@
   <div class="sheet-head"><h2 id="terms-title">Terms</h2><button class="close" type="button" data-close aria-label="Close">×</button></div>
   <div class="sheet-body legal">
     <p class="small muted">Last updated 28 October 2026</p>
-    <p class="glance"><strong>In short.</strong> A game of skill. €2 a play, 3 for €5 or 7 for €10, and practice is free. Under 18s need a parent's or guardian's permission to pay. Unused plays can be refunded.</p>
+    <p class="glance"><strong>In short.</strong> A game of skill. €2 a play, 3 for €5 or 7 for €10. Under 18s need a parent's or guardian's permission to pay. Unused plays can be refunded.</p>
     <h3>1. Who runs this</h3>
     <p>PresLink Arcade is run by PresLink, the student charity committee of Presentation Brothers College, The Mardyke, Cork T12 VK49 (“we”), with staff mentors<span class="org-legal"></span>. <span class="org-contact">You can contact us through the school.</span></p>
     <h3>2. What you are buying</h3>
-    <p>A play is three lights, and your score is the average of the three. Plays cost €2 each, €5 for 3 or €10 for 7. They are added to your player straight away and can be used until the game closes. Practice is free and never scored. Everything you pay, less Stripe's card fees, goes to PresLink for the Presentation Brothers' schools and projects in Ghana and Nigeria.</p>
+    <p>A play is three lights, and your score is the average of the three. Plays cost €2 each, €5 for 3 or €10 for 7. They are added to your player straight away and can be used until the game closes. Everything you pay, less Stripe's card fees, goes to PresLink for the Presentation Brothers' schools and projects in Ghana and Nigeria.</p>
     <h3>3. Who can play</h3>
     <p>Anyone. Under 18s need a parent's or guardian's permission before paying. One player per person. <span class="mode-prizes">Committee members and staff mentors can play but can't win prizes.</span></p>
     <h3>4. Your initials, code and boards</h3>
     <p>You play under two or three initials of your choice. If someone already has them you are shown with a number, for example JAK#2. Offensive names are blocked or removed. Your four-digit code proves a score is yours and signs you in on another device: keep it private. Everyone is on the Everyone board. Students and teachers of Presentation Brothers College can also join the Students or Teachers board with their school email address, which we may check.</p>
     <h3 class="mode-prizes">5. Prizes</h3>
-    <p class="mode-prizes">Prizes are awarded once, when the game closes (the date is on the Prizes page): for the highest score on the Everyone, Students and Teachers boards, the best single light, and the best score on a player's first play. The prizes are described on the Prizes page and have no cash alternative. No prize counts spending; more plays give more chances at a best score, which is why spending is capped. Equal scores on a board: the earlier one wins. Equal best lights are split by each player's next-best light, then the one after; equal first plays by that play's best light, then the next. Only a person's first player counts for the First play prize. Winners are told by email, or in school, within 14 days of the close, collect by showing their initials and code, and receive their prizes within six weeks. Winners' initials and scores stay on the boards. Badges are for fun and carry no prize.</p>
+    <p class="mode-prizes">Prizes are awarded once, when the game closes (the date is on the Prizes page): for the highest score on the Everyone, Students and Teachers boards, the best single light, and the best score on a player's first play. The prizes are described on the Prizes page and have no cash alternative. No prize counts spending; more plays give more chances at a best score, which is why spending is capped. Equal scores on a board: the earlier one wins. Equal best lights are split by each player's next-best light, then the one after; equal first plays by that play's best light, then the next. Only a person's first player counts for the First play prize. Winners are told by email, or in school, within 14 days of the close, collect by showing their initials and code, and receive their prizes within six weeks. Winners' initials and scores stay on the boards.</p>
     <h3 class="mode-honours" hidden>5. Honours</h3>
-    <p class="mode-honours" hidden>When the game closes, the top of the Everyone, Students and Teachers boards, the best single light and the best first play are honoured, as described on the Honours page. There are no prizes of money or money's worth. Equal scores are split as on the boards: the earlier one wins, and equal best lights go to the better next-best light. Badges are for fun.</p>
+    <p class="mode-honours" hidden>When the game closes, the top of the Everyone, Students and Teachers boards, the best single light and the best first play are honoured, as described on the Honours page. There are no prizes of money or money's worth. Equal scores are split as on the boards: the earlier one wins, and equal best lights go to the better next-best light.</p>
     <h3>6. Fair play</h3>
-    <p>Each light scores up to 999 by how close to the mark you stop it, timed to the millisecond from the moment your finger touches the screen. Everyone plays the same three lights on a given day, and nothing in a score is random. Phones differ by up to about a tenth of a second in how fast they show the light and register a tap, so free practice measures yours and scored plays allow for it, by up to 80 ms. Our server checks every score. We may cancel scores or remove a player for cheating or tampering, and we will say why. If you disagree with a decision, email us: we will look again and reply.</p>
+    <p>Each light scores up to 999 by how close to the mark you stop it, timed to the millisecond from the moment your finger touches the screen, which keeps differences between phones small. Everyone plays the same three lights on a given day, and nothing in a score is random. Our server checks every score. We may cancel scores or remove a player for cheating or tampering, and we will say why. If you disagree with a decision, email us: we will look again and reply.</p>
     <h3>7. Refunds and problems</h3>
     <p>Unused plays can be refunded if you ask within 14 days of buying them, or if the game ends before you can use them. A play can't be refunded once it has been used. If a play fails because of a fault on our side (it freezes, or the score is not saved), we will give you a new play or a refund. Each player can spend at most €20 a day and €100 in all; the You tab shows what you have donated. Payments are processed by Stripe, and we never see your card number. Your rights under Irish consumer law are not affected.</p>
     <h3>8. Changes</h3>
@@ -457,7 +435,7 @@
     <p>PresLink, the student charity committee of Presentation Brothers College, The Mardyke, Cork T12 VK49, with staff mentors<span class="org-legal"></span>, is responsible for your data. <span class="org-contact">You can contact us through the school.</span></p>
     <h3>What we keep, and why</h3>
     <p><b>Your initials, code, board, scores, taps and play times:</b> to run the game and the boards, and to check that scores are fair (our legitimate interest in running a fair game).</p>
-    <p><b>The kind of device you play on</b> (for example “iOS Safari”) <b>and your phone's timing offset:</b> to check that no kind of phone has an advantage (the same interest). Nothing that identifies your phone is kept.</p>
+    <p><b>The kind of device you play on</b> (for example “iOS Safari”): to check that no kind of phone has an advantage (the same interest). Nothing that identifies your phone is kept.</p>
     <p><b>Payments</b> (amount, time, Stripe's reference, the email you give Stripe for your receipt, and which poster or post the visit came from): to take payment and keep accounts (our contract with you, and the law on charity accounts).</p>
     <p><b>Your email, if you give it</b> (it is optional): only to tell you if you <span data-honours="top a board">win</span> (your consent). If you are under 16, give a parent's or guardian's email instead. <b>Your school email, if you give it:</b> to put you on the Students or Teachers board (your consent).</p>
     <h3>Who sees it</h3>
@@ -465,7 +443,7 @@
     <h3>How long we keep it</h3>
     <p>Game data and emails are deleted within 30 days of the end of the game. Payment records are kept for as long as the school's accounting rules require.</p>
     <h3>On your device</h3>
-    <p>Your browser's own storage remembers your player, your phone's timing and your settings, so the game works when you come back. We use no cookies, analytics or ads. Clearing your browser's data signs you out: sign back in with your initials and code.</p>
+    <p>Your browser's own storage remembers your player and your settings, so the game works when you come back. We use no cookies, analytics or ads. Clearing your browser's data signs you out: sign back in with your initials and code.</p>
     <h3>Your rights</h3>
     <p>You can ask to see, correct or delete your data, withdraw your consent, or object, by emailing us with your initials and code. You can also complain to the Data Protection Commission at dataprotection.ie.</p>
   </div>
@@ -486,7 +464,7 @@
 
 <script src="config.js"></script>
 <!-- the demo backend loads only when no server is configured -->
-<script>if (!(window.PRESLINK_CONFIG || {}).SUPABASE_URL) document.write('<script src="mock.js?v=41"><\/script>');</script>
-<script src="app.js?v=43"></script>
+<script>if (!(window.PRESLINK_CONFIG || {}).SUPABASE_URL) document.write('<script src="mock.js?v=42"><\/script>');</script>
+<script src="app.js?v=44"></script>
 </body>
 </html>

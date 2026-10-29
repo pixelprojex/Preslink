@@ -67,52 +67,84 @@
     Content-Type = "application/manifest+json"
     Cache-Control = "public, max-age=0, must-revalidate"
 
-# Short links for each place the game is shared. Each opens the game with a tag (?r=ig) that rides along with a
-# payment, so Stripe shows which posts and posters bring plays. Nothing about the person is recorded.
+# The posters, each at its own short address: /a3 and /a4 to print, /social for posts, /message to send or
+# attach. They are made by tools/posters.cjs from poster.html. The QR codes carry a tag (?r=a3) that rides along
+# with a payment, so Stripe shows which poster brought a play; nothing about the person is recorded.
 [[redirects]]
-  from = "/ig"
-  to = "/?r=ig"
-  status = 302
-
-[[redirects]]
-  from = "/wa"
-  to = "/?r=wa"
-  status = 302
-
-[[redirects]]
-  from = "/snap"
-  to = "/?r=snap"
-  status = 302
-
-[[redirects]]
-  from = "/fb"
-  to = "/?r=fb"
-  status = 302
-
-[[redirects]]
-  from = "/news"
-  to = "/?r=news"
-  status = 302
-
-# The share kit, for the committee and anyone spreading the word.
-[[redirects]]
-  from = "/share"
-  to = "/share.html"
+  from = "/a3"
+  to = "/posters/preslink-arcade-a3.pdf"
   status = 200
 
-# The posters: the old addresses still work.
+[[redirects]]
+  from = "/a4"
+  to = "/posters/preslink-arcade-a4.pdf"
+  status = 200
+
+[[redirects]]
+  from = "/social"
+  to = "/posters/preslink-arcade-social.png"
+  status = 200
+
+[[redirects]]
+  from = "/message"
+  to = "/posters/preslink-arcade-message.png"
+  status = 200
+
+# Addresses are matched exactly, so the capitals people write on paper work too.
+[[redirects]]
+  from = "/A3"
+  to = "/posters/preslink-arcade-a3.pdf"
+  status = 200
+
+[[redirects]]
+  from = "/A4"
+  to = "/posters/preslink-arcade-a4.pdf"
+  status = 200
+
+[[redirects]]
+  from = "/Social"
+  to = "/posters/preslink-arcade-social.png"
+  status = 200
+
+[[redirects]]
+  from = "/Message"
+  to = "/posters/preslink-arcade-message.png"
+  status = 200
+
+# The old poster addresses still work.
 [[redirects]]
   from = "/posters"
-  to = "/poster.html"
+  to = "/a3"
   status = 302
 
 [[redirects]]
   from = "/poster.pdf"
-  to = "/posters/preslink-arcade-a3.pdf"
+  to = "/a3"
   status = 302
 
-# The share pictures are re-rendered rarely; a day, so a new one shows up soon after.
+# Saved files get proper names.
 [[headers]]
-  for = "/share/*"
+  for = "/a3"
+  [headers.values]
+    Content-Disposition = "inline; filename=\"PresLink-Arcade-A3.pdf\""
+
+[[headers]]
+  for = "/a4"
+  [headers.values]
+    Content-Disposition = "inline; filename=\"PresLink-Arcade-A4.pdf\""
+
+[[headers]]
+  for = "/social"
+  [headers.values]
+    Content-Disposition = "inline; filename=\"PresLink-Arcade-Social.png\""
+
+[[headers]]
+  for = "/message"
+  [headers.values]
+    Content-Disposition = "inline; filename=\"PresLink-Arcade-Message.png\""
+
+# The poster files are re-made rarely; a day, so a new one shows up soon after.
+[[headers]]
+  for = "/posters/*"
   [headers.values]
     Cache-Control = "public, max-age=86400"

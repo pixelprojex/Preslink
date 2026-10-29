@@ -4,7 +4,7 @@ A web app, opened from a QR code on any device with a browser, for the PresLink 
 Scan a QR code, tap **Play · €2**, pay with Apple Pay, Google Pay or a card, and
 **stop the light on the mark**: three lights a play, the score is the average, out of 1,000.
 One campaign, three boards (Everyone, Students, Teachers) and prizes at the end, plus two spot prizes
-(best single light, most plays). Every payment goes to PresLink.
+(the best single light and the best first play). Every payment goes to PresLink.
 
 There is no sign-up. On the first tap a small sheet asks for two or three letters (your initials),
 picked on an on-screen letter pad (tap a box to clear that letter), so the phone keyboard never covers
@@ -24,7 +24,10 @@ The look follows the conventions of native apps (grouped white cards on a soft g
 segmented controls, initials tiles in one of eight muted pastel colours that the player can change on the You tab, a progress ring) in PresLink's colours: green for actions, orange for the
 light and the ring, the yellow of the Presentation Brothers cross for the logo. The logo and the running
 total raised sit at the top of every screen; there is a tab bar (Play, Board, About, You), a Prizes page
-of boxed colour cards with a photo slot each, and very little text. The same pages lay themselves out for
+with a white card per prize (a tinted picture tile, or the prize's photo), and very little text. The
+leaderboard opens on a podium: the top three under a warm light, first in the middle under a crown, each tile
+ringed in gold, silver or bronze with its place on a medal; every row below carries a bar for its score against
+the top score, and your own row is green. The same pages lay themselves out for
 an iPad (a 640 px column with the tab bar underneath; About and You share rows, Home gets a top-three
 card) and for a desktop (the tab bar becomes a sidebar with the school at its foot, sheets become centred
 modals, Home puts the hero beside the links and the top three, the leaderboard shows all three boards at
@@ -59,8 +62,8 @@ step at the end of `docs/admin.sql`), or test scores will lead the boards and sp
    **Preslink** repository. Choose the branch **claude/trusting-goodall-qzegrn**. In
    **Publish directory** type `site`. Leave **Build command** empty. Click **Deploy**.
 3. Wait about a minute. Netlify shows a link like `https://something.netlify.app`. Open it on
-   your device. That is the site. The posters and share pictures are at `/share` (see **Posters and
-   sharing** below).
+   your device. That is the site. The posters are at `/a3`, `/a4`, `/social` and `/message` (see
+   **Posters** below).
 
 Optional: in Netlify, **Site configuration → Site details → Change site name** lets you pick a
 nicer address, for example `preslink-arcade`.
@@ -106,7 +109,7 @@ server can read them. The free plays switch off by themselves the moment Stripe 
 | `supabase/migrations/0018_first_curve.sql` | The first game's curve back: the cube of the closeness over the whole bar, 999 ceiling, cusp at the top |
 | `supabase/migrations/0019_any_school_email.sql` | Any local part on a school email; the general email check only asks for something@something.tld |
 | `supabase/migrations/0023_admin_console.sql` | The console: the site content document (home words, notice, About stories and photos, contact details) carried by `stats()`, payment and player search with paging, a public `site` bucket for photos |
-| `supabase/migrations/0027_badges.sql` | Badges, for the record and never a prize: Bullseye (a light of 999) and Steady hand (all three lights of a play within 40 ms), worked out from the plays (`player_badges`, `round_error_ms`) and carried by `me_player` |
+| `supabase/migrations/0027_badges.sql` | Badges (Bullseye, Steady hand) worked out from the plays and carried by `me_player`; the app no longer shows them |
 | `supabase/migrations/0026_skill_tiebreaks.sql` | Spot prizes split by skill: equal best lights by the next-best lights, equal first plays by that play's lights |
 | `supabase/migrations/0025_safeguards.sql` | Safeguards: the same three lights for everyone each day on the 1 ms grid (`day_rounds`), spending limits per player checked before every checkout (`spend_check`, settings `daily_cap_cents` 2000 and `campaign_cap_cents` 10000) with the total on the player's record, and the first-play spot prize in place of most plays |
 | `supabase/migrations/0024_tile_colours.sql` | A colour for every initials tile: `players.colour` (0 means one picked from the letters, 1 to 8 the player's choice on the You tab), `set_colour`, and `board()`, `spot_prizes()` and `me_player()` carrying it |
@@ -116,9 +119,9 @@ server can read them. The free plays switch off by themselves the moment Stripe 
 | `supabase/migrations/0028_prize_mode.sql` | The prize switch: setting `prize_mode` ('prizes' or 'honours'), carried by `stats()`; in 'honours' the site talks of honours instead of prizes |
 | `supabase/migrations/0029_public_reads_no_play_counts.sql` | The public board no longer carries play counts (paid plays measure spending); the unused `leaderboard()` and `past_winners()` closed to the public |
 | `supabase/migrations/0030_integrity.sql` | The closing date enforced, taps checked against the real time, sign-in lockouts that grow, demo checkouts granted once, Stripe refunds (`refund_payment`, `payments.refunded_cents`) taken off the total and the plays |
-| `site/poster.html` | The poster in five formats: `?f=a3` and `?f=a4` to print (QR from the vendored encoder in `site/vendor/`), `?f=og`, `?f=post` and `?f=story` for the share pictures |
-| `site/posters/` | The print files: `preslink-arcade-a3.pdf` and `preslink-arcade-a4.pdf` |
-| `site/share.html`, `site/share/` | The share kit at `/share`: the link, the share pictures with one-tap sharing, ready-made words and the posters |
+| `site/poster.html` | The poster in four formats, `?f=a3`, `a4`, `social` and `message` (QR from the vendored encoder in `site/vendor/`) |
+| `site/posters/` | The four poster files, served at `/a3`, `/a4`, `/social` and `/message` |
+| `tools/posters.cjs` | Saves the four poster files from `poster.html` (Playwright) |
 | `site/fonts/` | Inter (OFL): the app's variable font, and static weights in `fonts/static/` that the posters use so PDFs embed ordinary TrueType |
 | `site/assets/` | The PresLink cross (`cross.svg`), the school crest, icons, the project photos (JPEG and WebP) and the committee-photo placeholder `photo-school.svg` |
 | `supabase/functions/api/index.ts` | Register, checkout, confirm payment, start play, submit score, committee actions (including Stripe connect) |
@@ -199,7 +202,7 @@ the request came from.
    secrets for you; the card should now say Live.
 3. Work through **Before taking real money** below (the organiser's details, the prize decision, Stripe's
    terms link).
-4. Print the posters from `/share` and send the link round (see **Posters and sharing**).
+4. Print the posters from `/a3` and `/a4`, and send the link round (see **Posters**).
 5. Make one real €2 payment yourself to be sure, then announce it.
 
 ### 6. Prizes at the end
@@ -283,9 +286,8 @@ The content document (`set_content`) holds: `hero.title`, `hero.subtitle`, `noti
   per pass. The light is drawn by the first game's frame loop: each light notes the moment it starts and every frame
   places the light at the position for the time since then. A tap counts at the moment the finger touched the glass
   (the event's own timestamp, where the browser gives a sane one; on a phone the page hears about a touch 20 to 50 ms
-  after it happened), less one refresh for what was on the glass and, in a scored play, the phone's offset measured in
-  free practice (capped at 80 ms). It is not snapped to a frame, so a screen's refresh rate cannot add luck to the top
-  scores. The light stops where it was at that moment. The play itself (its marks and starting points) is fetched before the tap on Play or Start,
+  after it happened), less one refresh for what was on the glass. It is not snapped to a frame, so a screen's refresh
+  rate cannot add luck to the top scores. The light stops where it was at that moment. The play itself (its marks and starting points) is fetched before the tap on Play or Start,
   so the light is already moving in the first frame of the game screen. After each light the number sits under the
   bar with how many milliseconds early or late it was, for about a second, then the next light starts. The
   server recomputes every light from the taps and stores its own number; the browser's score is only what it shows
@@ -308,7 +310,7 @@ The content document (`set_content`) holds: `hero.title`, `hero.subtitle`, `noti
 All the words are in `site/index.html`. The About page was written from the school's newsletters and the
 Presentation Brothers' website; the committee should check it. Three photos are real (`photo-classrooms.jpg`,
 `photo-bikes.jpg`, `photo-babies.jpg`); `photo-school.svg` (the committee card) is a placeholder until a photo
-is chosen in the console, and each prize card shows a tinted placeholder until the committee adds its photo.
+is chosen, and each prize card shows a tinted picture until its photo is added.
 Prices live in
 three places that must agree: the bundle buttons in `index.html`, `BUNDLES` in
 `supabase/functions/api/index.ts` and `BUNDLES` in `supabase/functions/stripe-webhook/index.ts`.
@@ -356,31 +358,33 @@ With `config.js` empty the site runs in demo mode: payments and scores are simul
 few example players are on the leaderboard. The demo committee code is `PRESLINK`. Fill in `config.js` to
 talk to the real backend.
 
-## Posters and sharing
+## Posters
 
-Everything is on one page, `/share` (for the committee, and for anyone helping spread the word).
+The poster is the original A3 design, in four formats, each at its own address on the site:
 
-- **Print:** `posters/preslink-arcade-a3.pdf` (corridors, the canteen, shop windows) and
-  `posters/preslink-arcade-a4.pdf` (noticeboards, doors, handouts). Print at actual size. The QR codes open
-  the site with a tag (`?r=a3`, `?r=a4`), and the tag goes with any payment that follows, so Stripe's payment
-  details (metadata, `source`) show which posters bring plays. Nothing about the person is recorded.
-- **Online, send the link, not a picture.** `preslink.netlify.app` carries link-preview tags, so in WhatsApp,
-  Messages, Instagram, Snapchat, Facebook and most email the link shows up as the poster, and one tap opens the
-  game. A picture sent on its own can't be tapped.
-- **Short links per channel:** `/ig`, `/wa`, `/snap`, `/fb` and `/news` open the game with that tag (set in
-  `netlify.toml`). In an Instagram bio use `preslink.netlify.app/ig`; on a story use the link sticker.
-- **Pictures:** `share/preslink-arcade-link.jpg` (1200 x 630, the link preview), `share/preslink-arcade-post.jpg`
-  (1080 x 1350, feeds) and `share/preslink-arcade-story.jpg` (1080 x 1920, stories; leave the gap under the address
-  for the link sticker).
+| Address | What | Use |
+|---|---|---|
+| `preslink.netlify.app/a3` | A3 PDF | Corridors, the canteen, shop windows. Print at actual size. |
+| `preslink.netlify.app/a4` | A4 PDF | Noticeboards, doors, handouts. The A3 shrunk exactly, as the paper is. |
+| `preslink.netlify.app/social` | 1080 x 1350 picture | Instagram and Facebook posts, WhatsApp status. The web address takes the code's place. |
+| `preslink.netlify.app/message` | 1200 x 630 picture | To attach to a message or an email; it is also the picture a shared link shows. |
 
-All of them are drawn by `site/poster.html`, so the wording lives in one place. To change one, edit that page, then
-render the files again with Playwright (save each format's `#sheet`: `page.pdf` for A3 and A4, a JPEG screenshot
-for the rest) and bump `?v=` on the link picture in `index.html`, because WhatsApp and Facebook keep an old
-preview for days. If the site's address changes, change `SITE` in `poster.html` and `share.html` and the
-`og:` tags in `index.html`.
+The addresses work in capitals too (`/A3`). The QR codes open the site with a tag (`?r=a3`, `?r=a4`, `?r=msg`), and
+the tag goes with any payment that follows, so Stripe's payment details (metadata, `source`) show which posters
+bring plays. Nothing about the person is recorded. Online, send the link itself where you can:
+`preslink.netlify.app` shows the Message poster as its preview in WhatsApp, Messages, Instagram, Facebook and most
+email, and one tap opens the game.
 
-The posters make no prize claims, so they need no closing date and stay right whichever way the prize decision
-goes. They say what it costs, who runs it, that under-18s need permission to pay, and where the terms are.
+All four are drawn by `site/poster.html` (open it to see them on screen), so the wording lives in one place. To
+change one, edit that page and run `node tools/posters.cjs` (it needs Playwright: `npm install playwright` and
+`npx playwright install chromium` once), commit the files in `site/posters/`, and bump `?v=` on the link picture in
+`index.html`, because WhatsApp and Facebook keep an old preview for days. `--closes "12 December"` adds the closing
+date to the small print, `--org "NAME OF THE CHARITY (RCN 20000000)"` adds the organiser, and `--honours` swaps
+"Win prizes" for "Top the board" if the game runs for honours. If the site's address changes, change `SITE` in
+`poster.html` and the `og:` tags in `index.html`.
+
+The small print on the print and social formats says how the prizes are won, that under-18s need a parent's or
+guardian's permission to pay, who runs it, and where the terms are.
 
 ## Before taking real money
 
@@ -404,7 +408,7 @@ None of this is legal advice. The research behind it, and what the site already 
      || '{"org": {"name": "NAME OF THE CHARITY", "rcn": "20000000", "email": "preslink@pbc-cork.ie"}}'::jsonb)::text
    where key = 'site_content';
    ```
-   Then re-render the posters (above), or print them from `/poster.html` with the browser's Print.
+   Then re-render the posters with `--org` (see **Posters**).
 3. **Stripe's terms box.** In the Stripe Dashboard, **Settings → Business → Public details**
    (<https://dashboard.stripe.com/settings/public>), set the terms of service URL to `https://preslink.netlify.app/#terms` (and the privacy policy to `/#privacy`). Checkout then asks
    every payer to tick a box agreeing to the terms, which link to the site. Until then Checkout shows the same link
@@ -426,7 +430,7 @@ real money):
 
 - **No chance in who wins.** Everyone plays the same three lights on a given day, and every mark sits on the
   same 1 ms grid as taps, so a perfect tap is possible on every light. Nothing in a score is random.
-- **No prize, badge or figure tied to spending.** The spot prizes are the best single light and the best
+- **No prize or figure tied to spending.** The spot prizes are the best single light and the best
   score on a first play; the public boards show scores, not how many plays anyone has bought, and stop at
   the top 20 (a player further down sees their own row).
 - **Spending limits.** €20 a day and €100 in the campaign per player, checked by the server before every
@@ -436,20 +440,12 @@ real money):
 - **Children's data.** The email is optional, used only to tell winners, seen only by the committee and
   deleted within 30 days of the end (as the privacy notice says); under-16s are asked for a parent's email. After
   the prizes: `update public.players set contact_email = null;`
-- **Practice and calibration.** "Practise free" on Home plays three unscored lights that show only how many
-  milliseconds early or late each tap was, and a phone's first paid play is preceded by them automatically. The
-  median error of a phone's last ten practice taps, capped at 80 ms, is taken off its scored taps and recorded with
-  each play (`client.offset`), so slower phones are not at a disadvantage and no paid play is spent learning.
 - **Skill tie-breaks.** Equal best lights are split by the second-best and third-best lights, and equal first plays
   by that play's lights (migration 0026), so an exact-millisecond 999 is not decided by who got there first.
 - **One player per person.** Only a person's first player counts for the first-play prize and the limits are per
   person; check each winner's code and emails when prizes are collected.
-- **Badges, not prizes.** Bullseye (a light of 999) and Steady hand (all three lights of a play within 40 ms) are
-  announced on the Prizes page, shown on the You tab and announced once with a small note when earned. They
-  reward what a play did, never how often anyone plays, and the terms say they carry no prize.
 - **Calm celebrations.** Confetti only for a play of 700 or more that is a new personal best, a first 900 or a first
-  entry into the top 10; it lasts about a second and a tap clears it. On the last light, a player with a best sees
-  the score that light needs to beat it ("Light 3 · 131 for a new best"), and only when that is within reach.
+  entry into the top 10; it lasts about a second and a tap clears it.
 - **Device data.** Each score keeps only the kind of device, such as "iOS Safari" (`client.device`), so a pilot can
   check that no kind of phone dominates the winners; the full browser string is not kept. Plays saved before this
   change still hold it and go with the test data before launch.
