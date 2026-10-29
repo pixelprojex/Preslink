@@ -11,30 +11,195 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(self \"https://checkout.stripe.com\")"
 
-# Config and app code change between deploys: never cache them for long.
-[[headers]]
-  for = "/*.js"
-  [headers.values]
-    Cache-Control = "public, max-age=0, must-revalidate"
-
-[[headers]]
-  for = "/*.css"
-  [headers.values]
-    Cache-Control = "public, max-age=0, must-revalidate"
-
+# The pages and config.js are checked on every load. The app's code and styles are always asked for with a
+# version (app.js?v=40), and the version changes whenever the file does, so a phone keeps each version for a
+# year and opens the app without asking again. The font never changes.
 [[headers]]
   for = "/*.html"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
-# Icons have unique names, so they may be cached for a long time; the manifest must be served with its type.
 [[headers]]
-  for = "/assets/icon*"
+  for = "/config.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/app.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/mock.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/styles.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/admin.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/admin.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/fonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Photos and logos change rarely: a week.
+[[headers]]
+  for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=604800"
 
+# The manifest must be served with its type.
 [[headers]]
   for = "/manifest.webmanifest"
   [headers.values]
     Content-Type = "application/manifest+json"
     Cache-Control = "public, max-age=0, must-revalidate"
+
+# The posters, each at its own short address: /a3 and /a4 to print, /social for posts, /message to send or
+# attach. They are made by tools/posters.cjs from poster.html. The QR codes carry a tag (?r=a3) that rides along
+# with a payment, so Stripe shows which poster brought a play; nothing about the person is recorded.
+[[redirects]]
+  from = "/a3"
+  to = "/posters/preslink-arcade-a3.pdf"
+  status = 200
+
+[[redirects]]
+  from = "/a4"
+  to = "/posters/preslink-arcade-a4.pdf"
+  status = 200
+
+[[redirects]]
+  from = "/social"
+  to = "/posters/preslink-arcade-social.png"
+  status = 200
+
+[[redirects]]
+  from = "/message"
+  to = "/posters/preslink-arcade-message.png"
+  status = 200
+
+# Addresses are matched exactly, so the capitals people write on paper work too.
+[[redirects]]
+  from = "/A3"
+  to = "/posters/preslink-arcade-a3.pdf"
+  status = 200
+
+[[redirects]]
+  from = "/A4"
+  to = "/posters/preslink-arcade-a4.pdf"
+  status = 200
+
+[[redirects]]
+  from = "/Social"
+  to = "/posters/preslink-arcade-social.png"
+  status = 200
+
+[[redirects]]
+  from = "/Message"
+  to = "/posters/preslink-arcade-message.png"
+  status = 200
+
+# The old poster addresses still work.
+[[redirects]]
+  from = "/posters"
+  to = "/a3"
+  status = 302
+
+[[redirects]]
+  from = "/poster.pdf"
+  to = "/a3"
+  status = 302
+
+# Saved files get proper names.
+[[headers]]
+  for = "/a3"
+  [headers.values]
+    Content-Disposition = "inline; filename=\"PresLink-Arcade-A3.pdf\""
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/a4"
+  [headers.values]
+    Content-Disposition = "inline; filename=\"PresLink-Arcade-A4.pdf\""
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/social"
+  [headers.values]
+    Content-Disposition = "inline; filename=\"PresLink-Arcade-Social.png\""
+
+[[headers]]
+  for = "/message"
+  [headers.values]
+    Content-Disposition = "inline; filename=\"PresLink-Arcade-Message.png\""
+
+# The poster files are re-made rarely; a day, so a new one shows up soon after. They stay out of search
+# results (the game's page is what people should find); links in messages still show the Message picture.
+[[headers]]
+  for = "/posters/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+    X-Robots-Tag = "noindex"
+
+# Search engines: the game's page is what people find. The committee page, the poster tools and the printable
+# posters stay out of the results (robots.txt lets crawlers in, so they can read this).
+[[headers]]
+  for = "/admin.html"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/admin"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/poster.html"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/qr.html"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/A3"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/A4"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+# The IndexNow key (see .github/workflows/indexnow.yml): search engines read it, but it is not a page to list.
+[[headers]]
+  for = "/2bd96824e96199e73fa1d53b924ff191.txt"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+    Cache-Control = "public, max-age=3600"
+
+# The sitemap and robots file are read fresh.
+[[headers]]
+  for = "/sitemap.xml"
+  [headers.values]
+    Content-Type = "application/xml; charset=utf-8"
+    Cache-Control = "public, max-age=3600"
+
+[[headers]]
+  for = "/robots.txt"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"

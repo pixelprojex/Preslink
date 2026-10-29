@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Committee · PresLink Arcade</title>
+  <link rel="icon" href="assets/cross.svg?v=10">
+  <link rel="stylesheet" href="admin.css?v=4">
+</head>
+<body>
+
+<div id="login" class="login" hidden>
+  <form id="login-form" class="login-card" autocomplete="off" novalidate>
+    <h1>Committee</h1>
+    <p class="muted">PresLink Arcade console</p>
+    <label class="lbl" for="login-code">Committee code</label>
+    <div class="pw">
+      <input id="login-code" type="password" autocomplete="current-password" spellcheck="false" autocapitalize="none" autocorrect="off">
+      <button type="button" class="eye" data-eye="login-code" aria-label="Show code" title="Show code"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="e" d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12z"/><circle class="e" cx="12" cy="12" r="3"/><path class="x" d="M4 4l16 16"/></svg></button>
+    </div>
+    <p class="err" id="login-error" hidden></p>
+    <button class="btn primary wide" type="submit" id="login-submit">Sign in</button>
+    <p class="muted small" id="login-hint" hidden></p>
+  </form>
+</div>
+
+<div id="shell" class="shell" hidden>
+  <header class="top">
+    <div class="brand">PresLink Arcade <span>Committee</span></div>
+    <div class="top-right"><span class="pill" id="top-stripe"></span><a class="btn small" href="index.html" target="_blank" rel="noopener">Open the site</a><button class="btn small" type="button" id="signout">Sign out</button></div>
+  </header>
+  <nav class="menu" id="menu" aria-label="Console">
+    <a href="#overview" data-page="overview">Overview</a>
+    <a href="#payments" data-page="payments">Payments</a>
+    <a href="#players" data-page="players">Players</a>
+    <a href="#winners" data-page="winners">Winners</a>
+    <a href="#blocked" data-page="blocked">Blocked names</a>
+  </nav>
+  <main class="main">
+
+    <section data-page="overview" hidden>
+      <h2>Overview</h2>
+      <div id="ov-campaign" hidden>
+        <dl class="campaign" aria-label="The campaign">
+          <div><dt>Closes</dt><dd id="cp-close"></dd></div>
+          <div><dt>Goal</dt><dd id="cp-goal"></dd></div>
+          <div><dt>Spending limits</dt><dd id="cp-limits"></dd></div>
+          <div><dt>Prizes</dt><dd id="cp-mode"></dd></div>
+          <div><dt>Payments</dt><dd id="cp-pay"></dd></div>
+        </dl>
+        <p class="muted small campaign-note">Set by the site's owner. To change any of these, ask them.</p>
+      </div>
+      <div class="figures">
+        <div class="fig"><span>Raised</span><strong id="ov-raised">€0</strong><small id="ov-goal"></small></div>
+        <div class="fig"><span>Payments</span><strong id="ov-payments">0</strong><small id="ov-today"></small></div>
+        <div class="fig"><span>Plays</span><strong id="ov-plays">0</strong></div>
+        <div class="fig"><span>Players</span><strong id="ov-players">0</strong><small id="ov-roles"></small></div>
+      </div>
+      <div class="head sub"><h3>Leaders</h3><a href="#winners" class="small">Top three of each</a></div>
+      <div class="tbl-wrap"><table class="tbl" id="ov-leaders"><thead><tr><th>Prize</th><th>Name</th><th>Score</th><th>Code</th><th>Email</th></tr></thead><tbody></tbody></table></div>
+      <div class="head sub"><h3>Latest payments</h3><a href="#payments" class="small">All payments</a></div>
+      <div class="tbl-wrap"><table class="tbl" id="ov-recent"><thead><tr><th>When</th><th>Name</th><th>Plays</th><th>Amount</th><th>Email</th></tr></thead><tbody></tbody></table></div>
+      <h3>Money by day</h3>
+      <div class="tbl-wrap"><table class="tbl" id="ov-days"><thead><tr><th>Day</th><th>Payments</th><th>Amount</th></tr></thead><tbody></tbody></table></div>
+    </section>
+
+    <section data-page="payments" hidden>
+      <div class="head"><h2>Payments</h2><button class="btn small" type="button" id="pay-csv">Download CSV</button></div>
+      <form class="filters" id="pay-filters" autocomplete="off">
+        <input type="search" id="pay-q" placeholder="Name, email, Stripe id, bundle or amount" aria-label="Search payments">
+        <input type="date" id="pay-from" aria-label="From"><input type="date" id="pay-to" aria-label="To">
+        <button class="btn" type="submit">Search</button>
+      </form>
+      <div class="quick" id="pay-quick"><span class="muted small">Show</span><button type="button" class="mini" data-range="today">Today</button><button type="button" class="mini" data-range="7">Last 7 days</button><button type="button" class="mini" data-range="30">Last 30 days</button><button type="button" class="mini on" data-range="all">Everything</button></div>
+      <p class="muted" id="pay-summary"></p>
+      <div class="tbl-wrap"><table class="tbl" id="pay-table"><thead><tr><th>When</th><th>Name</th><th>Board</th><th>Plays</th><th>Amount</th><th>Refunded</th><th>Email</th><th>Source</th><th>Stripe</th></tr></thead><tbody></tbody></table></div>
+      <div class="pager"><button class="btn small" id="pay-prev" type="button">Previous</button><span id="pay-page" class="muted small"></span><button class="btn small" id="pay-next" type="button">Next</button></div>
+      <p class="muted small">Refunds are made in Stripe and show here once Stripe reports them.</p>
+    </section>
+
+    <section data-page="players" hidden>
+      <div class="head"><h2>Players</h2><button class="btn small" type="button" id="pl-csv">Download CSV</button></div>
+      <form class="filters" id="pl-filters" autocomplete="off">
+        <input type="search" id="pl-q" placeholder="Name, email or code" aria-label="Search players">
+        <select id="pl-role" aria-label="Board"><option value="">All boards</option><option value="everyone">Everyone</option><option value="student">Students</option><option value="teacher">Teachers</option></select>
+        <label class="chk"><input type="checkbox" id="pl-banned"> Banned only</label>
+        <button class="btn" type="submit">Search</button>
+      </form>
+      <p class="muted" id="pl-summary"></p>
+      <div class="tbl-wrap"><table class="tbl" id="pl-table"><thead><tr><th>Name</th><th>Board</th><th>Code</th><th>Email</th><th>School email</th><th>Plays</th><th>Best</th><th>Paid</th><th>Last seen</th><th></th></tr></thead><tbody></tbody></table></div>
+      <div class="pager"><button class="btn small" id="pl-prev" type="button">Previous</button><span id="pl-page" class="muted small"></span><button class="btn small" id="pl-next" type="button">Next</button></div>
+      <div class="detail" id="pl-detail" hidden></div>
+    </section>
+
+    <section data-page="winners" hidden>
+      <div class="head"><h2>Winners</h2><button class="btn small" type="button" id="win-csv">Download CSV</button></div>
+      <p class="muted" id="win-sub"></p>
+      <p class="muted small">Ties are split as the Terms say: on a board the earlier score wins; for best light, the next-best light; for first play, that play's lights.</p>
+      <p class="muted small">Committee members and staff mentors can play but can't win prizes. If one is placed, the next player takes the place.</p>
+      <div id="win-slots"></div>
+    </section>
+
+    <section data-page="blocked" hidden>
+      <h2>Blocked names</h2>
+      <p class="muted">Blocked initials can't be chosen for a new name.</p>
+      <form class="filters" id="bl-form" autocomplete="off" novalidate>
+        <input type="text" id="bl-initials" maxlength="3" placeholder="ABC" aria-label="Initials to block" autocapitalize="characters" autocorrect="off" spellcheck="false">
+        <button class="btn" type="submit">Block</button>
+      </form>
+      <p class="status" id="bl-note" role="status"></p>
+      <div class="tbl-wrap"><table class="tbl" id="bl-table"><thead><tr><th>Initials</th><th>Blocked</th><th>Players with them</th><th></th></tr></thead><tbody></tbody></table></div>
+      <p class="muted small" id="bl-builtin"></p>
+    </section>
+
+  </main>
+</div>
+<div class="toast" id="toast" hidden></div>
+<script src="config.js"></script>
+<script>if (!(window.PRESLINK_CONFIG || {}).SUPABASE_URL) document.write('<script src="mock.js?v=43"><\/script>');</script>
+<script src="admin.js?v=6"></script>
+</body>
+</html>

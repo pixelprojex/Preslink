@@ -2,15 +2,16 @@
 //
 // Dependency-free on purpose: Postgres is reached through PostgREST RPC with the
 // service-role key, Stripe through its REST API. Every action is a POST with a
-// JSON body: { action: "register" | "update" | "school" | "contact" | "signin" | "me" | "checkout" | "confirm" | "start" | "submit" | "admin", ... }.
+// JSON body: { action: "register" | "update" | "contact" | "signin" | "colour" | "me" | "checkout" | "confirm" | "start" | "submit" | "admin", ... }.
 // "register" needs no name: the database assigns a random three-letter one. New players start on the
-// Everyone board (role "everyone"); "school" moves a player onto the Students or Teachers board by
-// checking the shape of a school email address (students @pbccork.ie, teachers @pbc-cork.ie; nothing is sent).
-// One campaign, no weeks: boards and spot prizes run until the committee's end date.
+// Everyone board (role "everyone"); a school email given with "contact" moves a player onto the Students or
+// Teachers board by the shape of the address (students @pbccork.ie, teachers @pbc-cork.ie; nothing is sent).
+// One campaign, no weeks: boards and spot prizes run until the end date.
 // Admin calls carry the committee code; the database verifies it (SHA-256 hash in settings) and
-// locks the admin scope after repeated failures.
+// locks the admin scope after repeated failures. The committee runs the game with it; changing the
+// site itself also needs the owner's code (OWNER_OPS below).
 //
-// Stripe: the committee connects it from the Committee page (admin op "stripe_connect"): the key is
+// Stripe: the owner connects it (admin op "stripe_connect", with the owner code): the key is
 // checked with Stripe, the webhook endpoint is created, and both secrets are kept in app_secrets,
 // which only the service role can read. A STRIPE_SECRET_KEY environment secret, if set, wins.
 //   SITE_URL            optional, e.g. https://preslink.netlify.app (used for Stripe return URLs;
@@ -19,7 +20,7 @@
 const SUPABASE_URL = (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, "");
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const STRIPE_ENV_KEY = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
-// The key the committee saved from the Committee page, cached for a minute. Empty means demo mode.
+// The key saved with stripe_connect, cached for a minute. Empty means demo mode.
 let keyCache: { value: string; at: number } | null = null;
 export async function stripeKey(): Promise<string> {
   if (STRIPE_ENV_KEY) return STRIPE_ENV_KEY;
@@ -50,9 +51,11 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export class HttpError extends Error {
   status: number;
-  constructor(status: number, code: string) {
+  detail: string; // for the logs and for retries; never sent to the browser
+  constructor(status: number, code: string, detail = "") {
     super(code);
     this.status = status;
+    this.detail = detail;
   }
 }
 
@@ -117,7 +120,7 @@ export async function stripe(method: "GET" | "POST" | "DELETE", path: string, pa
   const data = await res.json();
   if (!res.ok) {
     console.error("stripe error", path, res.status, JSON.stringify(data));
-    throw new HttpError(502, "STRIPE_ERROR");
+    throw new HttpError(502, "STRIPE_ERROR", String(data?.error?.message ?? ""));
   }
   return data;
 }
@@ -131,6 +134,11 @@ function siteOrigin(req: Request): string {
   throw new HttpError(400, "NO_SITE_URL");
 }
 
+function clampInt(v: unknown, lo: number, hi: number, dflt: number): number {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return dflt;
+  return Math.max(lo, Math.min(hi, Math.round(n)));
+}
 function requireUuid(v: unknown, code: string): string {
   if (typeof v !== "string" || !UUID.test(v)) throw new HttpError(400, code);
   return v.toLowerCase();
@@ -143,8 +151,8 @@ type Body = Record<string, unknown>;
 
 const ROLES = new Set(["student", "teacher", "everyone"]);
 // Students end with @pbccork.ie, teachers with @pbc-cork.ie. The database applies the same rule
-// (set_school raises BAD_SCHOOL_EMAIL); checking here first saves a round trip.
-const SCHOOL_EMAIL = /^[a-z0-9._%+'-]+@(pbccork\.ie|pbc-cork\.ie)$/;
+// (set_contact raises BAD_SCHOOL_EMAIL); checking here first saves a round trip.
+const SCHOOL_EMAIL = /^[^\s@]+@(pbccork\.ie|pbc-cork\.ie)$/; // anything before the @
 
 async function register(body: Body) {
   const role = String(body.role ?? "everyone");
@@ -166,25 +174,15 @@ async function update(body: Body) {
   return await rpc("update_player", { p_id: playerId, p_initials: initials, p_role: role });
 }
 
-// Joins the Students or Teachers board. Format check only: no mail is sent.
-async function school(body: Body) {
-  const playerId = requireUuid(body.player_id, "BAD_PLAYER");
-  if (typeof body.email !== "string") throw new HttpError(400, "BAD_SCHOOL_EMAIL");
-  const email = body.email.trim().toLowerCase();
-  if (email.length < 6 || email.length > 120 || email.split("@").length !== 2) throw new HttpError(400, "BAD_SCHOOL_EMAIL");
-  if (!SCHOOL_EMAIL.test(email)) throw new HttpError(400, "BAD_SCHOOL_EMAIL");
-  return await rpc("set_school", { p_id: playerId, p_email: email });
-}
-
 // Where to send the news if they win, plus an optional school email that joins a board. A school
 // address in the first field counts too. Format checks only; the database applies the same rules.
-const ANY_EMAIL = /^[a-z0-9._%+'-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+const ANY_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 async function contact(body: Body) {
   const playerId = requireUuid(body.player_id, "BAD_PLAYER");
   if (typeof body.email !== "string") throw new HttpError(400, "BAD_EMAIL");
-  const email = body.email.trim().toLowerCase();
+  const email = body.email.replace(/\s+/g, "").toLowerCase();
   if (email.length < 6 || email.length > 120 || !ANY_EMAIL.test(email)) throw new HttpError(400, "BAD_EMAIL");
-  const school = body.school_email == null ? "" : String(body.school_email).trim().toLowerCase();
+  const school = body.school_email == null ? "" : String(body.school_email).replace(/\s+/g, "").toLowerCase();
   if (school !== "" && !SCHOOL_EMAIL.test(school)) throw new HttpError(400, "BAD_SCHOOL_EMAIL");
   return await rpc("set_contact", { p_id: playerId, p_email: email, p_school_email: school === "" ? null : school });
 }
@@ -200,8 +198,11 @@ async function checkout(req: Request, body: Body) {
   const b = BUNDLES[bundle];
   if (!b) throw new HttpError(400, "BAD_BUNDLE");
 
-  const player = await rpc<{ initials: string }>("me_player", { p_id: playerId });
+  const player = await rpc<{ initials: string; banned?: boolean }>("me_player", { p_id: playerId });
+  if (player.banned) throw new HttpError(403, "BANNED");
   const origin = siteOrigin(req);
+  // The spending limits (a day's and the campaign's): DAILY_LIMIT or SPEND_LIMIT before any checkout opens.
+  await rpc("spend_check", { p_player_id: playerId, p_amount_cents: b.amount });
 
   // Demo mode: with no Stripe key configured, plays are free and clearly labelled as such.
   if (!(await stripeKey())) {
@@ -209,14 +210,16 @@ async function checkout(req: Request, body: Body) {
     return { url: `${origin}/?session_id=${id}`, session_id: id, demo: true };
   }
 
-  const session = await stripe("POST", "/v1/checkout/sessions", {
+  // Where the player came from (a poster or a channel link, ?r=a3), kept short and plain.
+  const source = typeof body.source === "string" && /^[a-z0-9-]{1,16}$/.test(body.source) ? body.source : "";
+  const params: Record<string, string> = {
     mode: "payment",
     "line_items[0][quantity]": "1",
     "line_items[0][price_data][currency]": "eur",
     "line_items[0][price_data][unit_amount]": String(b.amount),
     "line_items[0][price_data][product_data][name]": `PresLink Arcade: ${b.label}`,
     "line_items[0][price_data][product_data][description]":
-      "Every play supports Presentation Brothers schools in Ghana and Nigeria.",
+      "Every play supports Presentation Brothers schools in Ghana and Nigeria. Unused plays can be refunded within 14 days.",
     success_url: `${origin}/?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/?cancelled=1`,
     client_reference_id: playerId,
@@ -226,7 +229,29 @@ async function checkout(req: Request, body: Body) {
     "payment_intent_data[description]": `PresLink Arcade: ${b.label} (${player.initials})`,
     "payment_intent_data[metadata][player_id]": playerId,
     submit_type: "pay",
-  });
+  };
+  if (source) params["metadata[source]"] = source;
+
+  // The payer ticks a box that links to our terms. Stripe allows that box only once a terms URL is
+  // saved in the Stripe Dashboard (Settings, Public details); until then the same link sits beside
+  // the Pay button instead.
+  const terms = `[terms](${origin}/#terms)`;
+  let session: { url: string; id: string };
+  try {
+    session = await stripe("POST", "/v1/checkout/sessions", {
+      ...params,
+      "consent_collection[terms_of_service]": "required",
+      "custom_text[terms_of_service_acceptance][message]":
+        `I agree to the PresLink Arcade ${terms}. If I am under 18, a parent or guardian has said I can pay.`,
+    });
+  } catch (e) {
+    if (!(e instanceof HttpError) || !/terms|consent/i.test(e.detail)) throw e;
+    session = await stripe("POST", "/v1/checkout/sessions", {
+      ...params,
+      "custom_text[submit][message]":
+        `By paying you agree to the PresLink Arcade ${terms}. Under 18s need a parent's or guardian's permission.`,
+    });
+  }
 
   return { url: session.url, session_id: session.id };
 }
@@ -237,9 +262,10 @@ async function confirm(body: Body) {
   const demo = sessionId.match(/^cs_demo_(single|triple|seven)_([0-9a-f-]{36})_[0-9a-f]{32}$/);
   if (demo && !(await stripeKey())) {
     const b = BUNDLES[demo[1]];
-    const grant = await rpc<{ credits: number }>("grant_demo_credits", { p_player_id: demo[2], p_credits: b.credits });
+    // Recorded under its session id, so coming back to the same link never adds the plays twice.
+    const grant = await rpc<{ credits: number; granted: boolean }>("grant_demo_credits", { p_player_id: demo[2], p_credits: b.credits, p_session_id: sessionId });
     const player = await rpc("me_player", { p_id: demo[2] });
-    return { paid: true, granted: true, demo: true, credits_added: b.credits, bundle: demo[1], credits: grant.credits, player };
+    return { paid: true, granted: !!grant.granted, demo: true, credits_added: b.credits, bundle: demo[1], credits: grant.credits, player };
   }
   if (!/^cs_(test|live)_[A-Za-z0-9]+$/.test(sessionId)) throw new HttpError(400, "BAD_SESSION");
 
@@ -287,8 +313,37 @@ async function submit(req: Request, body: Body) {
     p_play_id: playId,
     p_score: score,
     p_taps: taps,
-    p_client: { ua: ua.slice(0, 200) },
+    // Kept with the score for checking: the kind of device only (so no one kind of phone can be seen to dominate
+    // the winners, without keeping anything that could pick out a child's phone). An older page's practice offset
+    // is not kept.
+    p_client: { device: deviceFamily(ua) },
   });
+}
+
+// "iOS Safari", "Android Chrome" and the like: the system and the browser family, nothing finer.
+export function deviceFamily(ua: string): string {
+  const os = /iPhone|iPad|iPod/.test(ua) ? "iOS"
+    : /Android/.test(ua) ? "Android"
+    : /CrOS/.test(ua) ? "ChromeOS"
+    : /Macintosh|Mac OS X/.test(ua) ? "Mac"
+    : /Windows/.test(ua) ? "Windows"
+    : /Linux/.test(ua) ? "Linux"
+    : "Other";
+  const browser = /EdgA?\/|EdgiOS\//.test(ua) ? "Edge"
+    : /SamsungBrowser\//.test(ua) ? "Samsung"
+    : /FxiOS\/|Firefox\//.test(ua) ? "Firefox"
+    : /CriOS\/|Chrome\//.test(ua) ? "Chrome"
+    : /Safari\//.test(ua) ? "Safari"
+    : "Other";
+  return `${os} ${browser}`;
+}
+
+// The tile colour: 0 means the one the site picks from the letters, 1 to 8 a chosen one.
+async function colour(body: Body) {
+  const playerId = requireUuid(body.player_id, "BAD_PLAYER");
+  const c = Number(body.colour);
+  if (!Number.isInteger(c) || c < 0 || c > 8) throw new HttpError(400, "BAD_COLOUR");
+  return await rpc("set_colour", { p_id: playerId, p_colour: c });
 }
 
 async function signin(body: Body) {
@@ -299,12 +354,33 @@ async function signin(body: Body) {
   return await rpc("signin_player", { p_initials: initials, p_code: code });
 }
 
-const ADMIN_OPS = new Set(["overview", "emails", "void", "ban", "block", "set_code", "settings", "player", "reset_name", "stripe_status", "stripe_connect", "stripe_disconnect"]);
+const ADMIN_OPS = new Set(["overview", "emails", "void", "ban", "block", "set_code", "settings", "player", "reset_name", "stripe_status", "stripe_connect", "stripe_disconnect", "payments", "players", "set_content", "upload_image", "give_play", "winners", "blocked", "campaign"]);
+// The operations that change the site itself (its words and photos, the prizes, the campaign, Stripe, the
+// committee code) belong to the site's owner, not the committee: they need the OWNER_CODE secret as well as the
+// committee code. With no OWNER_CODE configured, none of them can be used. Running the game (bans, cancelled
+// plays, offensive names, blocked names, free plays) needs the committee code alone.
+const OWNER_OPS = new Set(["set_code", "settings", "stripe_connect", "stripe_disconnect", "set_content", "upload_image"]);
 
 // The committee code is checked by the database (same lockout as every admin call).
 async function adminVerify(code: string) {
   const err = await rpc<string | null>("admin_verify", { p_code: code });
   if (err) throw new HttpError(403, String(err));
+}
+// The owner code is only looked at after a right committee code, compared in constant time, and five wrong ones
+// lock it for 15 minutes, so it can't be guessed by trying.
+function sameText(a: string, b: string): boolean {
+  const x = new TextEncoder().encode(a), y = new TextEncoder().encode(b);
+  let d = x.length ^ y.length;
+  for (let i = 0; i < Math.max(x.length, y.length); i++) d |= (x[i] ?? 0) ^ (y[i] ?? 0);
+  return d === 0;
+}
+async function ownerVerify(code: string, ownerCode: string) {
+  await adminVerify(code);
+  const owner = Deno.env.get("OWNER_CODE") ?? "";
+  await rpc("check_locked", { p_scope: "owner" });
+  const ok = !!owner && sameText(ownerCode, owner);
+  await rpc("note_attempt", { p_scope: "owner", p_ok: ok, p_max: 5, p_lock: "15 minutes" });
+  if (!ok) throw new HttpError(403, "OWNER_ONLY");
 }
 function accountName(a: Record<string, unknown>): string {
   const bp = (a.business_profile ?? {}) as Record<string, unknown>;
@@ -320,7 +396,7 @@ async function stripeStatus() {
   return { connected: true, mode: key.startsWith("sk_live_") ? "live" : "test", account, webhook, from_env: fromEnv };
 }
 const SECRET_KEYS = ["stripe_secret_key", "stripe_webhook_secret", "stripe_webhook_id", "stripe_account"];
-const PRIZE_KEYS = new Set(["students", "teachers", "everyone", "best_light", "most_plays"]);
+const PRIZE_KEYS = new Set(["students", "teachers", "everyone", "best_light", "first_play"]);
 
 // body.prizes: null (leave alone) or an object whose keys are the five prize slots; each value is
 // stored as settings.prize_<key>, cut to 200 characters.
@@ -340,6 +416,7 @@ async function admin(body: Body) {
   const op = String(body.op ?? "");
   if (!code || code.length > 200) throw new HttpError(400, "BAD_ADMIN");
   if (!ADMIN_OPS.has(op)) throw new HttpError(400, "BAD_ADMIN_OP");
+  if (OWNER_OPS.has(op)) await ownerVerify(code, String(body.owner_code ?? ""));
 
   switch (op) {
     case "overview": {
@@ -358,8 +435,10 @@ async function admin(body: Body) {
       return await rpc("admin_reset_name", { p_code: code, p_player_id: playerId });
     }
     case "void": {
+      // Cancel a play's score (voided true) or restore it (voided false); the reason is kept with a cancelled play.
       const playId = requireUuid(body.play_id, "BAD_PLAY");
-      await rpc("admin_void_play", { p_code: code, p_play_id: playId, p_voided: body.voided !== false, p_reason: String(body.reason ?? "committee").slice(0, 200) });
+      const reason = String(body.reason ?? "").replace(/\s+/g, " ").trim().slice(0, 200) || "committee";
+      await rpc("admin_void_play", { p_code: code, p_play_id: playId, p_voided: body.voided !== false, p_reason: reason });
       return { ok: true };
     }
     case "ban": {
@@ -370,9 +449,23 @@ async function admin(body: Body) {
     case "block": {
       const initials = String(body.initials ?? "").toUpperCase().trim();
       if (!/^[A-Z]{3}$/.test(initials)) throw new HttpError(400, "BAD_INITIALS");
-      await rpc("admin_block_initials", { p_code: code, p_initials: initials, p_block: body.block !== false });
+      // Unblocking reaches only the names the committee blocked; the site's own list stays (BUILT_IN_NAME).
+      if (body.block === false) await rpc("admin_unblock_initials", { p_code: code, p_initials: initials });
+      else await rpc("admin_block_initials", { p_code: code, p_initials: initials, p_block: true });
       return { ok: true };
     }
+    case "blocked": return await rpc("admin_blocked", { p_code: code });
+    case "give_play": {
+      // A new play for one that failed through a fault on our side (Terms, 7), with a short reason. Not a payment.
+      const playerId = requireUuid(body.player_id, "BAD_PLAYER");
+      const reason = String(body.reason ?? "").replace(/\s+/g, " ").trim();
+      if (reason.length < 3 || reason.length > 200) throw new HttpError(400, "BAD_REASON");
+      return await rpc("admin_give_play", { p_code: code, p_player_id: playerId, p_reason: reason });
+    }
+    // The top three of each prize slot, ranked as the public site ranks them, with codes and emails.
+    case "winners": return await rpc("admin_winners", { p_code: code });
+    // The closing date, goal, spending limits and prize mode, read only.
+    case "campaign": return await rpc("admin_campaign", { p_code: code });
     case "set_code": {
       const newCode = String(body.new_code ?? "");
       if (newCode.length < 6 || newCode.length > 200) throw new HttpError(400, "CODE_TOO_SHORT");
@@ -398,6 +491,7 @@ async function admin(body: Body) {
         url: `${SUPABASE_URL}/functions/v1/stripe-webhook`,
         "enabled_events[0]": "checkout.session.completed",
         "enabled_events[1]": "checkout.session.async_payment_succeeded",
+        "enabled_events[2]": "charge.refunded",
         description: "PresLink Arcade",
       }, key);
       // 3. Keep both secrets where only the service role can read them.
@@ -428,6 +522,49 @@ async function admin(body: Body) {
       await rpc("admin_set_settings", { p_code: code, p_goal_cents: goal, p_prize_text: prize, p_ends_on: endsOn, p_prizes: prizes });
       return { ok: true };
     }
+    case "payments": {
+      // Search over name, emails, Stripe ids, bundle and euro amount; optional Dublin date range; paging.
+      const q = body.q == null ? null : String(body.q).slice(0, 80);
+      const from = body.from == null || body.from === "" ? null : String(body.from);
+      const to = body.to == null || body.to === "" ? null : String(body.to);
+      for (const d of [from, to]) if (d !== null && !/^\d{4}-\d{2}-\d{2}$/.test(d)) throw new HttpError(400, "BAD_DATE");
+      return await rpc("admin_payments", { p_code: code, p_q: q, p_from: from, p_to: to, p_limit: clampInt(body.limit, 1, 500, 50), p_offset: clampInt(body.offset, 0, 1_000_000, 0) });
+    }
+    case "players": {
+      const q = body.q == null ? null : String(body.q).slice(0, 80);
+      const role = body.role == null || body.role === "" ? null : String(body.role);
+      if (role !== null && !ROLES.has(role)) throw new HttpError(400, "BAD_ROLE");
+      const banned = body.banned == null ? null : !!body.banned;
+      return await rpc("admin_players", { p_code: code, p_q: q, p_role: role, p_banned: banned, p_limit: clampInt(body.limit, 1, 500, 50), p_offset: clampInt(body.offset, 0, 1_000_000, 0) });
+    }
+    case "set_content": {
+      // The site's words and photos, one JSON document the public stats() carries.
+      const content = body.content;
+      if (!content || typeof content !== "object" || Array.isArray(content)) throw new HttpError(400, "BAD_CONTENT");
+      if (JSON.stringify(content).length > 400_000) throw new HttpError(400, "CONTENT_TOO_BIG");
+      return await rpc("admin_set_content", { p_code: code, p_content: content });
+    }
+    case "upload_image": {
+      // A photo for the About page: base64 in, a public URL out. Stored with the service role in the
+      // public "site" bucket; the browser resizes before sending, so the limit is generous.
+      await adminVerify(code);
+      const type = String(body.type ?? "");
+      const ext = ({ "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" } as Record<string, string>)[type];
+      if (!ext) throw new HttpError(400, "BAD_IMAGE");
+      const data = String(body.data ?? "");
+      if (!data || data.length > 4_200_000) throw new HttpError(400, "IMAGE_TOO_BIG");
+      let bytes: Uint8Array;
+      try { bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0)); } catch { throw new HttpError(400, "BAD_IMAGE"); }
+      if (bytes.length < 100 || bytes.length > 3_145_728) throw new HttpError(400, "IMAGE_TOO_BIG");
+      const path = `about/${Date.now().toString(36)}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
+      const res = await fetch(`${SUPABASE_URL}/storage/v1/object/site/${path}`, {
+        method: "POST",
+        headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": type, "x-upsert": "true" },
+        body: bytes,
+      });
+      if (!res.ok) { console.error("upload failed", res.status, await res.text()); throw new HttpError(502, "UPLOAD_FAILED"); }
+      return { url: `${SUPABASE_URL}/storage/v1/object/public/site/${path}` };
+    }
   }
   throw new HttpError(400, "BAD_ADMIN_OP");
 }
@@ -447,9 +584,9 @@ export async function handler(req: Request): Promise<Response> {
     switch (body.action) {
       case "register": return json(await register(body));
       case "update": return json(await update(body));
-      case "school": return json(await school(body));
       case "contact": return json(await contact(body));
       case "signin": return json(await signin(body));
+      case "colour": return json(await colour(body));
       case "admin": return json(await admin(body));
       case "me": return json(await me(body));
       case "checkout": return json(await checkout(req, body));

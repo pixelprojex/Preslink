@@ -5,272 +5,177 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
   <title>PresLink Arcade poster</title>
-  <meta name="description" content="A3 poster with a QR code for PresLink Arcade. Save as PDF downloads the print file.">
+  <meta name="description" content="The PresLink Arcade poster: A3 and A4 for printing, a picture for social media and one for messages.">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    /* Four type tiers: 22 mm headline, 11 mm wordmark / scan label / URL, 5.5 mm pill and photo
-       titles, 4.3 mm captions, school name and footer. White is the dominant colour; green is kept
-       for the three things that matter (Arcade, Fund a school, SCAN TO PLAY); yellow marks the price;
-       purple is the school's alone. */
+    /* The poster in four formats, all drawn from this page (tools/posters.cjs saves them to posters/):
+       ?f=a3 and ?f=a4 to print, ?f=social (1080 × 1350) for posts, ?f=message (1200 × 630) for messages and
+       link previews. A3 is the original design. A4 is the same sheet shrunk by 1/√2, as the paper is: every
+       print size is in "u", a millimetre on A3. &mode=honours swaps the prize words for the honours ones;
+       &closes=12 December and &org=NAME (RCN 20000000) add the closing date and the organiser to the small print. */
+    /* Static weights: PDF printers embed them as ordinary TrueType. */
+    @font-face { font-family: 'Inter'; font-weight: 500; font-display: block; src: url('fonts/static/inter-latin-500-normal.woff2') format('woff2'); }
+    @font-face { font-family: 'Inter'; font-weight: 600; font-display: block; src: url('fonts/static/inter-latin-600-normal.woff2') format('woff2'); }
+    @font-face { font-family: 'Inter'; font-weight: 700; font-display: block; src: url('fonts/static/inter-latin-700-normal.woff2') format('woff2'); }
+    @font-face { font-family: 'Inter'; font-weight: 800; font-display: block; src: url('fonts/static/inter-latin-800-normal.woff2') format('woff2'); }
+    @font-face { font-family: 'Inter'; font-weight: 900; font-display: block; src: url('fonts/static/inter-latin-900-normal.woff2') format('woff2'); }
+    /* White leads; green is kept for the three things that matter (Arcade, Fund a school, the call to play);
+       yellow marks the price; purple is the school's alone. */
     :root {
       --ink: #1c1c1e;
       --muted: #6e6e73;
       --green: #1f9d5a;
       --yellow: #f6c21f;
-      --orange: #f26a1b;
       --purple: #5b3a9a;
       --rule: #e3e3e8;
-      --paper: #ffffff;
-      --bg: #ededf0;
     }
-
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }
-    body {
-      background: var(--bg);
-      color: var(--ink);
-      font-family: Inter, -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      -webkit-font-smoothing: antialiased;
-      text-rendering: optimizeLegibility;
-    }
+    body { background: #ededf0; color: var(--ink); font-family: Inter, -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+    p, h1, figure { margin: 0; }
 
-    /* ---------- Screen stage ---------- */
-    .stage {
-      padding: 40px 16px 64px;
-      display: flex;
-      justify-content: center;
-      overflow: hidden;
-    }
-    .frame { flex: none; }
-
-    /* ---------- The A3 sheet ---------- */
-    .sheet {
-      width: 297mm;
-      height: 420mm;
-      padding: 14mm 18mm 12mm;
-      background: var(--paper);
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      transform-origin: top left;
-      overflow: hidden;
-      flex: none;
-    }
-
-    /* a. Header: identification only, the quietest band */
-    .top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 20mm;
-    }
-    .brand { display: flex; align-items: center; gap: 5mm; }
-    .mark { width: 18mm; height: 18mm; display: block; }
-    .wordmark {
-      font-weight: 800;
-      font-size: 11mm;
-      letter-spacing: -0.025em;
-      line-height: 1;
-      white-space: nowrap;
-    }
+    /* ---------- The pieces, the same in every format ---------- */
+    .sheet { position: relative; display: flex; flex-direction: column; overflow: hidden; background: #fff; transform-origin: top left; flex: none; }
+    .sheet > * { flex-shrink: 0; }
+    .top { display: flex; align-items: center; justify-content: space-between; }
+    .brand { display: flex; align-items: center; }
+    .mark { display: block; }
+    .wordmark { font-weight: 800; letter-spacing: -.025em; line-height: 1; white-space: nowrap; }
     .wordmark span { color: var(--green); }
-    .school { display: flex; align-items: center; gap: 5mm; }
-    .school-name {
-      color: var(--purple);
-      font-weight: 600;
-      font-size: 4.3mm;
-      letter-spacing: 0.005em;
-      line-height: 1;
-      padding-bottom: 1.8mm;
-      border-bottom: 0.45mm solid var(--purple);
-      white-space: nowrap;
-    }
-    .crest { height: 20mm; width: auto; display: block; }
-
-    /* b. Price, headline, the light bar */
-    .hero { text-align: center; margin-top: 7mm; }
-    .kicker {
-      margin: 0 0 4mm;
-      display: inline-flex;
-      align-items: center;
-      gap: 3.5mm;
-      padding: 2.2mm 7mm;
-      border-radius: 99mm;
-      background: var(--yellow);
-      color: var(--ink);
-      font-weight: 700;
-      font-size: 5.5mm;
-      letter-spacing: 0.01em;
-      line-height: 1;
-    }
+    .school { display: flex; align-items: center; }
+    .school-name { color: var(--purple); font-weight: 600; letter-spacing: .005em; line-height: 1; white-space: nowrap; border-bottom-style: solid; border-bottom-color: var(--purple); }
+    .crest { display: block; width: auto; }
+    .hero { text-align: center; }
+    .kicker { display: inline-flex; align-items: center; border-radius: 999px; background: var(--yellow); color: var(--ink); font-weight: 700; letter-spacing: .01em; line-height: 1; }
     .kicker strong { font-weight: 900; font-size: 1.15em; }
-    .kicker i { font-style: normal; opacity: .4; font-weight: 600; }
-    .hero h1 {
-      margin: 0;
-      font-weight: 900;
-      font-size: 22mm;
-      line-height: 0.95;
-      letter-spacing: -0.04em;
-    }
-    .hero h1 span { color: var(--green); }
-
-    /* the light bar: the game's own mark, with the pin on the page's centre axis pointing at the code */
-    .bar {
-      position: relative;
-      width: 150mm;
-      height: 10mm;
-      margin: 6mm auto 0;
-      border-radius: 99mm;
-      background: linear-gradient(90deg, #f6c21f 0%, #ffab45 60%, #f26a1b 100%);
-      box-shadow: inset 0 0 0 0.4mm var(--ink);
-    }
-    .bar .pin {
-      position: absolute;
-      left: 50%;
-      top: -4mm;
-      width: 1.7mm;
-      height: 22mm;
-      margin-left: -0.85mm;
-      border-radius: 1mm;
-      background: var(--ink);
-    }
-    .bar .light {
-      position: absolute;
-      left: 50%;
-      top: -3mm;
-      width: 7.2mm;
-      height: 16mm;
-      margin-left: -3.6mm;
-      border-radius: 99mm;
-      background: #fff;
-      border: 1.1mm solid var(--ink);
-    }
-
-    /* c. Scan: label, code with its own four-module quiet zone, typed fallback */
-    .scan { display: flex; flex-direction: column; align-items: center; margin-top: 10mm; }
-    .scan-label {
-      margin: 0;
-      font-weight: 800;
-      font-size: 11mm;
-      line-height: 1;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--green);
-    }
-    .qr { width: 156mm; height: 156mm; }
-    .qr svg { width: 100%; height: 100%; display: block; }
-    .url {
-      margin: 0;
-      font-weight: 800;
-      font-size: 11mm;
-      line-height: 1.1;
-      letter-spacing: 0;
-      word-break: break-all;
-      text-align: center;
-    }
-
-    /* d. Photos: one dominant face-first photo, equal heights, titles that say the outcome */
-    .stories {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 7mm;
-      margin-top: 14mm;
-    }
-    .stories figure { margin: 0; min-width: 0; }
-    .stories img {
-      width: 100%;
-      height: 60mm;
-      object-fit: cover;
-      display: block;
-      border-radius: 6mm;
-      background: #f2f2f4;
-    }
-    .stories figcaption { margin-top: 3.6mm; text-align: center; }
-    .stories b {
-      display: block;
-      font-weight: 800;
-      font-size: 6mm;
-      line-height: 1.15;
-      letter-spacing: -0.02em;
-    }
-
-    /* e. Footer: the promise sits where the eye leaves the page */
-    .foot {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 12mm;
-      margin-top: 4mm;
-      padding-top: 4mm;
-      border-top: 0.3mm solid var(--rule);
-      color: var(--muted);
-      font-weight: 600;
-      font-size: 4.3mm;
-      line-height: 1.3;
-    }
-    .foot p { margin: 0; }
+    .kicker i { font-style: normal; font-weight: 600; opacity: .4; }
+    h1 { font-weight: 900; line-height: .95; letter-spacing: -.04em; }
+    h1 .g { color: var(--green); }
+    /* the light bar: the game's own mark, the pin on the page's centre line */
+    .bar { position: relative; margin-left: auto; margin-right: auto; border-radius: 999px; background: linear-gradient(90deg, #f6c21f 0%, #ffab45 60%, #f26a1b 100%); }
+    .bar .pin { position: absolute; left: 50%; background: var(--ink); }
+    .bar .light { position: absolute; left: 50%; border-radius: 999px; background: #fff; border-style: solid; border-color: var(--ink); }
+    .scan { display: flex; flex-direction: column; align-items: center; }
+    .scan-label { font-weight: 800; line-height: 1; letter-spacing: .06em; text-transform: uppercase; color: var(--green); }
+    .qr svg { display: block; width: 100%; height: 100%; }
+    .url { font-weight: 800; line-height: 1.1; text-align: center; white-space: nowrap; }
+    .stories { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .stories figure { min-width: 0; }
+    .stories img { display: block; width: 100%; object-fit: cover; background: #f2f2f4; }
+    .stories figcaption { text-align: center; }
+    .stories b { display: block; font-weight: 800; line-height: 1.15; letter-spacing: -.02em; }
+    /* the promise sits where the eye leaves the page, the conditions under it */
+    .foot { display: flex; justify-content: space-between; align-items: baseline; color: var(--muted); font-weight: 600; line-height: 1.3; border-top-style: solid; border-top-color: var(--rule); }
     .foot p:first-child { white-space: nowrap; }
     .foot .promise { color: var(--ink); font-weight: 700; text-align: right; }
+    .terms { color: var(--muted); font-weight: 500; line-height: 1.35; text-wrap: balance; }
 
-    /* ---------- Screen-only controls ---------- */
-    .tools {
-      position: fixed;
-      top: 16px;
-      right: 16px;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      max-width: calc(100vw - 32px);
-    }
-    .tools .save {
-      text-decoration: none;
-      display: inline-block;
-      font: inherit;
-      font-weight: 700;
-      font-size: 14px;
-      line-height: 1;
-      padding: 12px 18px;
-      border: 0;
-      border-radius: 999px;
-      background: var(--ink);
-      color: #fff;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    .tools .save:hover { background: #000; }
-    .tools .hint {
-      font-size: 12px;
-      font-weight: 600;
-      line-height: 1.3;
-      color: var(--muted);
-      background: #fff;
-      border: 1px solid var(--rule);
-      border-radius: 14px;
-      padding: 8px 12px;
-    }
-    @media (max-width: 640px) { .tools .hint { display: none; } }
+    /* ---------- A3 and A4: the original sheet, in u ---------- */
+    .print { --u: 1mm; }
+    .print.a4 { --u: .70711mm; }
+    .print .sheet { width: calc(297 * var(--u)); height: calc(420 * var(--u)); padding: calc(14 * var(--u)) calc(18 * var(--u)) calc(11 * var(--u)); }
+    .print .top { height: calc(20 * var(--u)); }
+    .print .brand { gap: calc(5 * var(--u)); }
+    .print .mark { width: calc(18 * var(--u)); height: calc(18 * var(--u)); }
+    .print .wordmark { font-size: calc(11 * var(--u)); }
+    .print .school { gap: calc(5 * var(--u)); }
+    .print .school-name { font-size: calc(4.3 * var(--u)); padding-bottom: calc(1.8 * var(--u)); border-bottom-width: calc(.45 * var(--u)); }
+    .print .crest { height: calc(20 * var(--u)); }
+    .print .hero { margin-top: calc(7 * var(--u)); }
+    .print .kicker { margin-bottom: calc(4 * var(--u)); gap: calc(3.5 * var(--u)); padding: calc(2.2 * var(--u)) calc(7 * var(--u)); font-size: calc(5.5 * var(--u)); }
+    .print h1 { font-size: calc(22 * var(--u)); }
+    .print .bar { width: calc(150 * var(--u)); height: calc(10 * var(--u)); margin-top: calc(6 * var(--u)); box-shadow: inset 0 0 0 calc(.4 * var(--u)) var(--ink); }
+    .print .bar .pin { top: calc(-4 * var(--u)); width: calc(1.7 * var(--u)); height: calc(22 * var(--u)); margin-left: calc(-.85 * var(--u)); border-radius: var(--u); }
+    .print .bar .light { top: calc(-3 * var(--u)); width: calc(7.2 * var(--u)); height: calc(16 * var(--u)); margin-left: calc(-3.6 * var(--u)); border-width: calc(1.1 * var(--u)); }
+    .print .scan { margin-top: calc(10 * var(--u)); }
+    .print .scan-label { font-size: calc(11 * var(--u)); }
+    .print .qr { width: calc(152 * var(--u)); height: calc(152 * var(--u)); }
+    .print .url { font-size: calc(11 * var(--u)); }
+    .print .stories { gap: calc(7 * var(--u)); margin-top: calc(13 * var(--u)); }
+    .print .stories img { height: calc(58 * var(--u)); border-radius: calc(6 * var(--u)); }
+    .print .stories figcaption { margin-top: calc(3.6 * var(--u)); }
+    .print .stories b { font-size: calc(6 * var(--u)); }
+    .print .foot { gap: calc(12 * var(--u)); margin-top: calc(4 * var(--u)); padding-top: calc(4 * var(--u)); border-top-width: calc(.3 * var(--u)); font-size: calc(4.3 * var(--u)); }
+    .print .terms { margin-top: calc(2.6 * var(--u)); font-size: calc(3.2 * var(--u)); }
 
-    /* ---------- Print ---------- */
+    /* ---------- Social: 1080 × 1350, the web address in the place of the code ---------- */
+    .social .sheet { width: 1080px; height: 1350px; padding: 72px 78px 56px; }
+    .social .top { height: 86px; }
+    .social .brand { gap: 22px; }
+    .social .mark { width: 74px; height: 74px; }
+    .social .wordmark { font-size: 46px; }
+    .social .school { gap: 20px; }
+    .social .school-name { font-size: 19px; padding-bottom: 8px; border-bottom-width: 2px; }
+    .social .crest { height: 86px; }
+    .social .hero { margin-top: 62px; }
+    .social .kicker { margin-bottom: 22px; gap: 15px; padding: 11px 32px; font-size: 27px; }
+    .social h1 { font-size: 100px; }
+    .social .bar { width: 680px; height: 46px; margin-top: 40px; box-shadow: inset 0 0 0 2px var(--ink); }
+    .social .bar .pin { top: -18px; width: 8px; height: 100px; margin-left: -4px; border-radius: 4px; }
+    .social .bar .light { top: -14px; width: 34px; height: 74px; margin-left: -17px; border-width: 5px; }
+    .social .scan { margin-top: 92px; }
+    .social .scan-label { font-size: 32px; }
+    .social .url { margin-top: 18px; font-size: 76px; font-weight: 900; letter-spacing: -.03em; }
+    .social .stories { gap: 24px; margin-top: 84px; }
+    .social .stories img { height: 270px; border-radius: 28px; }
+    .social .stories figcaption { margin-top: 15px; }
+    .social .stories b { font-size: 27px; }
+    .social footer, .message footer { margin-top: auto; }
+    .social .foot { gap: 40px; padding-top: 20px; border-top-width: 2px; font-size: 19px; }
+    .social .terms { margin-top: 10px; font-size: 15px; }
+
+    /* ---------- Message: 1200 × 630, for chats, emails and the link's preview ---------- */
+    .message .sheet { width: 1200px; height: 630px; padding: 42px 56px 34px; }
+    .message .top { height: 58px; }
+    .message .brand { gap: 16px; }
+    .message .mark { width: 52px; height: 52px; }
+    .message .wordmark { font-size: 34px; }
+    .message .school { gap: 14px; }
+    .message .school-name { font-size: 15px; padding-bottom: 6px; border-bottom-width: 2px; }
+    .message .crest { height: 58px; }
+    .message .body { flex: 1 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) 344px; align-items: center; gap: 40px; padding: 8px 0 14px; }
+    .message .hero { text-align: left; }
+    .message .kicker { margin-bottom: 18px; gap: 11px; padding: 9px 24px; font-size: 21px; }
+    .message h1 { font-size: 84px; }
+    .message .bar { width: 540px; height: 32px; margin: 32px 0 0; box-shadow: inset 0 0 0 1.5px var(--ink); }
+    .message .bar .pin { top: -12px; width: 6px; height: 68px; margin-left: -3px; border-radius: 3px; }
+    .message .bar .light { top: -9px; width: 24px; height: 50px; margin-left: -12px; border-width: 4px; }
+    .message .url { margin-top: 42px; font-size: 40px; text-align: left; }
+    .message .scan .qr { width: 336px; height: 336px; margin-top: 8px; }
+    .message .scan-label { font-size: 25px; }
+    .message .foot { gap: 24px; padding-top: 14px; border-top-width: 1.5px; font-size: 16px; }
+
+    /* ---------- On screen: the sheet scaled to fit, a switch between formats and the file to download ---------- */
+    .tools { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; background: rgba(237, 237, 240, .92); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+    .seg { display: inline-flex; padding: 3px; border-radius: 10px; background: #dcdce3; }
+    .seg a { padding: 7px 12px; border-radius: 8px; color: var(--ink); font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+    .seg a[aria-current="page"] { background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+    .tools .save { padding: 10px 16px; border-radius: 999px; background: var(--ink); color: #fff; font-size: 13px; font-weight: 700; line-height: 1; text-decoration: none; white-space: nowrap; }
+    .stage { display: flex; justify-content: center; overflow: hidden; padding: 20px 16px 56px; }
+    .frame { flex: none; }
+    .stage .sheet { box-shadow: 0 10px 40px rgba(0, 0, 0, .12); }
+    body.render { background: #fff; }
+    body.render .tools { display: none; }
+    body.render .stage { display: block; padding: 0; }
+    body.render .sheet { box-shadow: none; }
+
     @page { size: A3; margin: 0; }
     @media print {
-      html, body { background: #fff; width: 297mm; height: 420mm; overflow: hidden; }
-      .stage { padding: 0; display: block; overflow: visible; }
-      .frame { width: auto !important; height: auto !important; }
-      .sheet { transform: none !important; margin: 0; page-break-after: avoid; break-after: avoid; }
+      html, body { background: #fff; }
       .tools { display: none !important; }
+      .stage { display: block; padding: 0; overflow: visible; }
+      .frame { width: auto !important; height: auto !important; }
+      .sheet { transform: none !important; box-shadow: none !important; break-after: avoid; }
       * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
   </style>
+  <style id="page-size"></style>
 </head>
 <body>
-  <div class="tools">
-    <span class="hint">Print at 100%, not “fit to page”. Do not fold. Hang with the top edge about 1.6 m from the floor.</span>
-    <a class="save" href="poster.pdf" download="PresLink-Arcade-poster-A3.pdf">Save as PDF</a>
-  </div>
+  <nav class="tools" aria-label="Formats">
+    <span class="seg"><a href="?f=a3">A3</a><a href="?f=a4">A4</a><a href="?f=social">Social</a><a href="?f=message">Message</a></span>
+    <a class="save" id="save" href="/a3">Download</a>
+  </nav>
 
   <div class="stage">
     <div class="frame">
@@ -278,7 +183,7 @@
 
         <header class="top">
           <div class="brand">
-            <img class="mark" src="assets/cross.svg" alt="">
+            <img class="mark" src="assets/cross.svg?v=10" alt="">
             <div class="wordmark">PresLink <span>Arcade</span></div>
           </div>
           <div class="school">
@@ -287,17 +192,20 @@
           </div>
         </header>
 
-        <section class="hero">
-          <p class="kicker"><strong>€2 a go</strong> <i>·</i> 3 for €5 <i>·</i> 7 for €10</p>
-          <h1>Play. Win prizes.<br><span>Fund a school.</span></h1>
-          <div class="bar" aria-hidden="true"><span class="pin"></span><span class="light"></span></div>
-        </section>
+        <div class="body">
+          <section class="hero">
+            <p class="kicker"><strong>€2 a go</strong> <i>·</i> 3 for €5 <i>·</i> 7 for €10</p>
+            <h1><span id="h1a">Play. Win prizes.</span><br><span class="g">Fund a school.</span></h1>
+            <div class="bar" aria-hidden="true"><span class="pin"></span><span class="light"></span></div>
+            <p class="url only-message">preslink.netlify.app</p>
+          </section>
 
-        <section class="scan">
-          <p class="scan-label">Scan to play</p>
-          <div class="qr" id="qr" role="img" aria-label="QR code for PresLink Arcade"></div>
-          <p class="url" id="url"></p>
-        </section>
+          <section class="scan">
+            <p class="scan-label" id="scan-label">Scan to play</p>
+            <div class="qr" id="qr" role="img" aria-label="QR code for PresLink Arcade"></div>
+            <p class="url only-print">preslink.netlify.app</p>
+          </section>
+        </div>
 
         <section class="stories">
           <figure>
@@ -305,7 +213,7 @@
             <figcaption><b>Bikes to school</b></figcaption>
           </figure>
           <figure>
-            <img src="assets/photo-babies.jpg" alt="Mother of Mercy Home" style="object-position: 50% 55%">
+            <img src="assets/photo-babies.jpg" alt="Mother of Mercy Babies Home" style="object-position: 50% 55%">
             <figcaption><b>Care for babies</b></figcaption>
           </figure>
           <figure>
@@ -314,9 +222,12 @@
           </figure>
         </section>
 
-        <footer class="foot">
-          <p>Student-run since 2005</p>
-          <p class="promise">Every cent after card fees goes to schools in Ghana and Nigeria.</p>
+        <footer>
+          <div class="foot">
+            <p>Student-run since 2005</p>
+            <p class="promise">Every cent after card fees goes to schools in Ghana and Nigeria.</p>
+          </div>
+          <p class="terms" id="terms"></p>
         </footer>
 
       </div>
@@ -327,89 +238,97 @@
   <script>
     (function () {
       'use strict';
-
-      // ---- The address the poster points at ----
+      var SITE = 'https://preslink.netlify.app/';
+      var FORMATS = {
+        a3: { cls: 'print', tag: 'a3', page: 'A3' },
+        a4: { cls: 'print a4', tag: 'a4', page: 'A4' },
+        social: { cls: 'social', tag: 'social' },
+        message: { cls: 'message', tag: 'msg' },
+      };
       var params = new URLSearchParams(location.search);
-      var url = (params.get('url') || '').trim() || (location.origin + '/');
-      document.getElementById('url').textContent = url.replace(/^https?:\/\//i, '').replace(/\/$/, '');
+      var f = FORMATS[params.get('f')] ? params.get('f') : 'a3';
+      var fmt = FORMATS[f];
+      var honours = params.get('mode') === 'honours';
+      var closes = (params.get('closes') || '').trim().slice(0, 40);
+      var org = (params.get('org') || '').trim().slice(0, 120);
+      document.body.className = fmt.cls + (params.has('render') ? ' render' : '');
+      document.getElementById('page-size').textContent = fmt.page ? '@page { size: ' + fmt.page + '; margin: 0; }' : '';
+      Array.prototype.forEach.call(document.querySelectorAll('.seg a'), function (a) { if (a.getAttribute('href') === '?f=' + f) a.setAttribute('aria-current', 'page'); });
+      var save = document.getElementById('save'), label = { a3: 'A3', a4: 'A4', social: 'Social', message: 'Message' }[f];
+      save.href = '/' + f;
+      save.setAttribute('download', 'PresLink-Arcade-' + label + (fmt.page ? '.pdf' : '.png'));
+      document.title = 'PresLink Arcade poster · ' + label;
 
-      // ---- QR code as inline SVG ----
-      // Error correction H (30 %) so the centre tile and rounded data modules stay well inside the
-      // tolerance. The SVG carries its own four-module quiet zone (ISO/IEC 18004), so nothing printed
-      // next to the code can crowd it. Finder patterns are only lightly rounded so the 1:1:3:1:1
-      // ratio detectors look for survives on the diagonals.
-      var INK = '#1c1c1e';
-      var qr = qrcode(0, 'H');
-      qr.addData(url);
-      qr.make();
+      // Each format keeps only its own pieces: the code is for paper and messages, the photos for paper and posts.
+      var drop = function (sel) { Array.prototype.forEach.call(document.querySelectorAll(sel), function (el) { el.remove(); }); };
+      if (f === 'social') { drop('.qr, .only-message'); document.getElementById('scan-label').textContent = 'Play now at'; document.querySelector('.scan').appendChild(document.querySelector('.only-print')); }
+      else if (f === 'message') drop('.stories, .terms, .only-print');
+      else drop('.only-message');
+      // The print sheets and posts keep the stories in the main column; the message sets the words beside the code.
+      if (f !== 'message') { var body = document.querySelector('.body'); while (body.firstChild) body.parentNode.insertBefore(body.firstChild, body); body.remove(); }
 
-      var n = qr.getModuleCount();
-      var quiet = 4;                 // four modules of white on every side, inside the SVG
-      var size = n + quiet * 2;
-      var f = function (v) { return (Math.round(v * 1000) / 1000).toString(); };
-
-      // Centre tile: about a fifth of the code width, snapped to whole modules and centred on
-      // the grid so the cleared block is a clean square (7 x 7 for a 33-module code).
-      var k = Math.round(n * 0.21);
-      if ((k % 2) !== (n % 2)) k += 1;
-      var first = (n - k) / 2;            // first module row/column under the tile
-      var tile = k;
-      var tx = first + quiet;
-
-      var inFinder = function (r, c) {
-        return (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7);
-      };
-      var underTile = function (r, c) {
-        return r >= first && r < first + k && c >= first && c < first + k;
-      };
-
-      var out = [];
-      out.push('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + ' ' + size + '" shape-rendering="geometricPrecision">');
-      out.push('<rect width="' + size + '" height="' + size + '" fill="#fff"/>');
-      out.push('<g fill="' + INK + '">');
-
-      // Data, timing and alignment modules as rounded squares (rx = 30 % of a module).
-      for (var r = 0; r < n; r++) {
-        for (var c = 0; c < n; c++) {
-          if (!qr.isDark(r, c) || inFinder(r, c)) continue;
-          if (underTile(r, c)) continue;
-          out.push('<rect x="' + (c + quiet) + '" y="' + (r + quiet) + '" width="1" height="1" rx="0.3"/>');
-        }
+      if (honours) document.getElementById('h1a').textContent = 'Play. Top the board.';
+      var terms = document.getElementById('terms');
+      if (terms) {
+        terms.textContent = (honours ? 'The top scores are honoured when the game closes' : 'Prizes for the top scores when the game closes')
+          + (closes ? ' on ' + closes : '') + '. Under 18s need a parent’s or guardian’s permission to pay. '
+          + 'Run by PresLink, Presentation Brothers College, Cork' + (org ? ', under ' + org : '') + '. Terms at preslink.netlify.app';
       }
 
-      // Finder patterns: outer square, white ring, inner square, each only lightly rounded.
-      var finder = function (x, y) {
-        out.push('<rect x="' + x + '" y="' + y + '" width="7" height="7" rx="1.2" fill="' + INK + '"/>');
-        out.push('<rect x="' + (x + 1) + '" y="' + (y + 1) + '" width="5" height="5" rx="0.9" fill="#fff"/>');
-        out.push('<rect x="' + (x + 2) + '" y="' + (y + 2) + '" width="3" height="3" rx="0.5" fill="' + INK + '"/>');
-      };
-      finder(quiet, quiet);
-      finder(quiet + n - 7, quiet);
-      finder(quiet, quiet + n - 7);
-      out.push('</g>');
+      // ---- The QR code, as inline SVG ----
+      // Error correction H (30 %), so the centre tile and the rounded modules stay well inside what a reader can
+      // repair. The SVG carries its own four-module quiet zone (ISO/IEC 18004), so nothing printed beside the code
+      // can crowd it. The finder patterns are only lightly rounded, so the 1:1:3:1:1 ratio readers look for survives.
+      var box = document.getElementById('qr');
+      if (box) {
+        var url = SITE + '?r=' + fmt.tag;
+        var INK = '#1c1c1e';
+        var qr = qrcode(0, 'H');
+        qr.addData(url);
+        qr.make();
+        var n = qr.getModuleCount(), quiet = 4, size = n + quiet * 2;
+        var num = function (v) { return (Math.round(v * 1000) / 1000).toString(); };
+        // The centre tile: about a fifth of the code, whole modules, centred on the grid.
+        var k = Math.round(n * 0.21);
+        if ((k % 2) !== (n % 2)) k += 1;
+        var first = (n - k) / 2, tx = first + quiet;
+        var inFinder = function (r, c) { return (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7); };
+        var underTile = function (r, c) { return r >= first && r < first + k && c >= first && c < first + k; };
+        var out = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + ' ' + size + '" shape-rendering="geometricPrecision">', '<rect width="' + size + '" height="' + size + '" fill="#fff"/>', '<g fill="' + INK + '">'];
+        for (var r = 0; r < n; r++) {
+          for (var c = 0; c < n; c++) {
+            if (!qr.isDark(r, c) || inFinder(r, c) || underTile(r, c)) continue;
+            out.push('<rect x="' + (c + quiet) + '" y="' + (r + quiet) + '" width="1" height="1" rx="0.3"/>');
+          }
+        }
+        var finder = function (x, y) {
+          out.push('<rect x="' + x + '" y="' + y + '" width="7" height="7" rx="1.2" fill="' + INK + '"/>');
+          out.push('<rect x="' + (x + 1) + '" y="' + (y + 1) + '" width="5" height="5" rx="0.9" fill="#fff"/>');
+          out.push('<rect x="' + (x + 2) + '" y="' + (y + 2) + '" width="3" height="3" rx="0.5" fill="' + INK + '"/>');
+        };
+        finder(quiet, quiet); finder(quiet + n - 7, quiet); finder(quiet, quiet + n - 7);
+        out.push('</g>');
+        // the centre tile with the cross (the artwork of assets/cross.svg, inline so it always prints)
+        out.push('<rect x="' + num(tx) + '" y="' + num(tx) + '" width="' + num(k) + '" height="' + num(k) + '" rx="' + num(k * 0.18) + '" fill="#fff"/>');
+        var cw = k * 0.82, cx = tx + (k - cw) / 2;
+        out.push('<g transform="translate(' + num(cx) + ' ' + num(cx) + ') scale(' + num(cw / 100) + ')">'
+          + '<path fill="#F6C21F" stroke="#F6C21F" stroke-width="3" stroke-linejoin="round" d="M45 50h10l12-43H33zM50 45v10l43 12V33zM55 50H45L33 93h34zM50 55V45L7 33v34z"/>'
+          + '<g fill="#F26A1B" fill-opacity=".85"><circle cx="50" cy="41" r="8.5"/><circle cx="59" cy="50" r="8.5"/><circle cx="50" cy="59" r="8.5"/><circle cx="41" cy="50" r="8.5"/></g></g>');
+        out.push('</svg>');
+        box.innerHTML = out.join('');
+        box.setAttribute('data-url', url);
+      }
 
-      // Centre tile with the cross (same artwork as assets/cross.svg, inlined so it prints reliably).
-      out.push('<rect x="' + f(tx) + '" y="' + f(tx) + '" width="' + f(tile) + '" height="' + f(tile) + '" rx="' + f(tile * 0.18) + '" fill="#fff"/>');
-      var cw = tile * 0.82;
-      var cx = tx + (tile - cw) / 2;
-      out.push('<g transform="translate(' + f(cx) + ' ' + f(cx) + ') scale(' + f(cw / 100) + ')">' +
-        '<path fill="#F6C21F" stroke="#F6C21F" stroke-width="3" stroke-linejoin="round" d="M45 50h10l12-43H33zM50 45v10l43 12V33zM55 50H45L33 93h34zM50 55V45L7 33v34z"/>' +
-        '<g fill="#F26A1B" fill-opacity=".85"><circle cx="50" cy="41" r="8.5"/><circle cx="59" cy="50" r="8.5"/><circle cx="50" cy="59" r="8.5"/><circle cx="41" cy="50" r="8.5"/></g>' +
-        '</g>');
-      out.push('</svg>');
-
-      document.getElementById('qr').innerHTML = out.join('');
-
-      // ---- Screen: scale the sheet down when the window is narrower than A3 ----
-      var sheet = document.querySelector('.sheet');
-      var frame = document.querySelector('.frame');
+      // ---- On screen: shrink the sheet to the window ----
+      var sheet = document.querySelector('.sheet'), frame = document.querySelector('.frame');
       function fit() {
+        if (document.body.classList.contains('render')) return;
+        sheet.style.transform = '';
         var w = sheet.offsetWidth, h = sheet.offsetHeight;
-        var avail = document.documentElement.clientWidth - 32;
-        var k = Math.min(1, avail / w);
-        sheet.style.transform = k < 1 ? 'scale(' + k + ')' : '';
-        frame.style.width = Math.round(w * k) + 'px';
-        frame.style.height = Math.round(h * k) + 'px';
+        var s = Math.min(1, (document.documentElement.clientWidth - 32) / w);
+        sheet.style.transform = s < 1 ? 'scale(' + s + ')' : '';
+        frame.style.width = Math.round(w * s) + 'px';
+        frame.style.height = Math.round(h * s) + 'px';
       }
       fit();
       window.addEventListener('resize', fit);
