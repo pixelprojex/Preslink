@@ -481,7 +481,6 @@
     const closed = isClosed();
     setText(btn, closed ? 'The game has closed' : playLabel());
     btn.disabled = closed;
-    btn.classList.toggle('ready', canPlayNow() && !closed);
     $('[data-screen="home"] .bundles-line').hidden = closed;
     $('.hero-card .fine').hidden = closed; // nothing can be paid for after the close
     if (canPlayNow() && !closed) prefetchPlay();
@@ -717,7 +716,7 @@
     }
     if (result.player) adoptPlayer(result.player);
     const n = result.credits_added || 1;
-    $('#cab-title').textContent = result.demo ? 'Demo plays added' : 'Thank you';
+    $('#cab-title').textContent = result.demo ? 'Demo payment' : 'Thank you';
     $('#cab-text').textContent = '';
     cabinetBusy = true;
     $('#cab-play').hidden = true;
@@ -726,7 +725,8 @@
     refreshStats();
     await wait(120);
     prefetchPlay(); // ready before the Start button is
-    await countIn(n);
+    await coinDrop(n);
+    $('#cab-text').textContent = n === 1 ? '1 play added' : `${n} plays added`;
     // The player starts the play themselves: the button pops in and waits.
     const btn = $('#cab-play');
     btn.hidden = false; btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop');
@@ -734,22 +734,31 @@
   }
   $('#cab-play').addEventListener('click', () => startPlay());
 
-  // The tick draws itself and the count rolls up to the plays now ready.
-  async function countIn(n) {
-    const val = $('#cab-credits'), card = $('#success-card');
+  // A coin goes into the slot at the top, and a play token drops into the tray at the bottom for each play.
+  async function coinDrop(n) {
+    const coin = $('#coin'), slot = $('#cab-slot'), panel = $('#cab-panel'), token = $('#token'), val = $('#cab-credits');
     const target = playsLeft(), from = Math.max(0, target - n);
-    val.textContent = from;
-    $('#cab-text').textContent = target === 1 ? 'play ready' : 'plays ready';
-    card.classList.remove('go'); void card.offsetWidth; card.classList.add('go');
-    await wait(reduceMotion() ? 0 : 380);
+    const show = (k) => { val.textContent = k; $('#cab-unit').textContent = k === 1 ? 'play' : 'plays'; };
+    show(from);
+    token.classList.remove('out');
+    coin.classList.remove('drop'); void coin.offsetWidth; coin.classList.add('drop');
+    await wait(760);
+    slot.classList.add('glow');
+    panel.classList.remove('hit'); void panel.offsetWidth; panel.classList.add('hit');
     vibrate(30);
+    await wait(280);
+    slot.classList.remove('glow');
+    coin.classList.remove('drop');
+    const step = n > 3 ? 240 : 420;
     for (let i = 0; i < n; i++) {
-      await wait(reduceMotion() ? 0 : n > 3 ? 70 : 120);
-      val.textContent = from + i + 1;
+      token.textContent = String(from + i + 1);
+      token.classList.remove('out'); void token.offsetWidth; token.classList.add('out');
+      await wait(step);
+      show(from + i + 1);
       val.classList.remove('bump'); void val.offsetWidth; val.classList.add('bump');
-      vibrate(12);
+      vibrate(15);
     }
-    await wait(60);
+    await wait(150);
   }
 
   // ---------------------------------------------------------------------------
@@ -804,7 +813,8 @@
   function measure() { game.trackW = track.clientWidth; }
   window.addEventListener('resize', measure);
   // The home preview light sweeps the width of its bar by a transform, whatever the screen width.
-  function sizeDemo() { $$('.demo-track').forEach((d) => { if (d.clientWidth) d.style.setProperty('--sweep', (d.clientWidth - 10) + 'px'); }); }
+  // the light's 2px edge stays 2px inside each end of the bar
+  function sizeDemo() { $$('.demo-track').forEach((d) => { if (d.clientWidth) d.style.setProperty('--sweep', (d.clientWidth - 14) + 'px'); }); }
   window.addEventListener('resize', sizeDemo);
 
   function renderDots() {
@@ -1006,16 +1016,24 @@
     if (game.state === 'sweeping' || game.state === 'between') onTap(e);
   });
   // A keyboard plays the whole game: Space or Enter starts from Home or the cabinet, stops the light
-  // (above), and plays again from the result. Buttons and fields keep their own keys.
+  // (above), goes on from the practice boxes and plays again from the result. Buttons and fields on screen
+  // keep their own keys.
   document.addEventListener('keydown', (e) => {
     if (e.code !== 'Space' && e.code !== 'Enter') return;
-    if (e.metaKey || e.ctrlKey || e.altKey || /^(input|textarea|select|button|a)$/i.test(e.target.tagName)) return;
+    const t = e.target, onScreen = !!t.getClientRects && t.getClientRects().length > 0;
+    if (e.metaKey || e.ctrlKey || e.altKey || (onScreen && /^(input|textarea|select|button|a)$/i.test(t.tagName))) return;
     if ($$('.sheet').some((s) => !s.hidden)) return;
     if (e.repeat) return;
+    const box = current === 'play' && game.state === 'practice' && $$('.practice-box').find((b) => !b.hidden);
     if (current === 'home' && player && (credits > 0 || openPlay) && !isClosed()) { e.preventDefault(); playOrBuy(); }
     else if (current === 'cabinet' && !$('#cab-play').hidden) { e.preventDefault(); startPlay(); }
+    else if (box) { e.preventDefault(); box.querySelector('.btn').click(); }
     else if (current === 'play' && game.state === 'done' && !$('#result').hidden) { e.preventDefault(); $('#result-again').click(); }
   });
+  // The button just pressed (Start, Start practice) is hidden with its screen but can keep the focus, and
+  // with it the keys. Letting it go sends Enter and Space to the keys above, and no button is given a focus
+  // ring the player never asked for.
+  function dropHiddenFocus() { const a = document.activeElement; if (a && a !== document.body && a.blur && !a.getClientRects().length) a.blur(); }
   const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
   const tapWord = () => (finePointer.matches ? 'Click or press Space when the light is on the mark' : 'Tap when the light is on the mark');
   if (finePointer.matches) {
@@ -1088,7 +1106,7 @@
     $('#game').hidden = true;
     $('#result').hidden = true;
     sizeDemo();
-    if (finePointer.matches) $(`#${id} .btn`).focus({ preventScroll: true }); // Enter or Space goes on
+    dropHiddenFocus(); // Enter or Space goes on (see the keys above)
   }
   function openPractice() {
     game.state = 'practice';
@@ -1211,7 +1229,7 @@
     $('#result').hidden = false;
     // First scored play: ask where to send the news if they win, and nothing on top of it.
     const firstAsk = !!r && !!player && !player.contact_email && !store.get(CONTACT_ASKED_KEY);
-    if (finePointer.matches && !firstAsk) again.focus({ preventScroll: true }); // Enter or Space plays again
+    if (!firstAsk) dropHiddenFocus(); // Enter or Space plays again (see the keys above)
     if (r && rank === 1 && prevRank !== 1 && !firstAsk) toast('You are top of the board');
     if (firstAsk) openContact(true);
   }
