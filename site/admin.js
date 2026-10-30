@@ -232,7 +232,8 @@
     $('#ov-plays').textContent = s.plays || 0;
     $('#ov-players').textContent = s.players || 0;
     const r = d.players_by_role || {};
-    $('#ov-roles').textContent = `${r.student || 0} students · ${r.teacher || 0} teachers · ${r.everyone || 0} everyone`;
+    const many = (k, one, more) => `${k} ${k === 1 ? one : more}`;
+    $('#ov-roles').textContent = `${many(r.student || 0, 'student', 'students')} · ${many(r.teacher || 0, 'teacher', 'teachers')} · ${r.everyone || 0} everyone`;
     const tb = $('#ov-leaders tbody'); tb.innerHTML = '';
     const board = d.board || [];
     const emailOf = (id) => { const e = (d.emails || []).find((x) => x.player_id === id); return e ? (e.contact_email || e.school_email || '') : ''; };
@@ -421,11 +422,11 @@
       ${noteAt('top')}
       <h4>Plays</h4>
       ${noteAt('plays')}
-      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Started</th><th>Score</th><th>Best light</th><th></th></tr></thead><tbody>${plays.map(playRow).join('') || '<tr><td colspan="4" class="muted">No plays.</td></tr>'}</tbody></table></div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Started</th><th class="num">Score</th><th class="num">Best light</th><th></th></tr></thead><tbody>${plays.map(playRow).join('') || '<tr><td colspan="4" class="muted">No plays.</td></tr>'}</tbody></table></div>
       <h4>Free plays</h4>
       <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Given</th><th>Reason</th></tr></thead><tbody>${free.map((x) => `<tr><td>${esc(when(x.created_at))}</td><td class="wrap">${esc(x.reason)}</td></tr>`).join('') || '<tr><td colspan="2" class="muted">None given.</td></tr>'}</tbody></table></div>
       <h4>Payments</h4>
-      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>When</th><th>Bundle</th><th>Plays</th><th>Amount</th><th>Refunded</th><th>Stripe</th></tr></thead><tbody>${pays.map((x) => `<tr><td>${esc(when(x.created_at))}</td><td>${esc(x.bundle)}</td><td class="num">${x.credits}</td><td class="num">${euro(x.amount_cents)}</td><td class="num">${refundCell(x)}</td><td>${stripeCell(x)}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">No payments.</td></tr>'}</tbody></table></div>`;
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>When</th><th>Bundle</th><th class="num">Plays</th><th class="num">Amount</th><th class="num">Refunded</th><th>Stripe</th></tr></thead><tbody>${pays.map((x) => `<tr><td>${esc(when(x.created_at))}</td><td>${esc(x.bundle)}</td><td class="num">${x.credits}</td><td class="num">${euro(x.amount_cents)}</td><td class="num">${refundCell(x)}</td><td>${stripeCell(x)}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">No payments.</td></tr>'}</tbody></table></div>`;
     box.hidden = false;
     const status = $('.status', box);
     if (scroll) box.scrollIntoView({ block: 'nearest' });
@@ -517,7 +518,7 @@
     };
     $('#win-slots').innerHTML = SLOTS.map(([k, label]) => {
       const rows = (res[k] || []).map((w) => `<tr><td class="num">${w.rank}</td><td><a href="#players" data-player="${esc(w.initials)}">${esc(w.initials)}</a>${w.banned ? ' <span class="muted">(banned)</span>' : ''}</td><td class="num">${w.score}${lights(k, w)}</td><td><strong class="code">${esc(w.claim_code)}</strong></td><td>${esc(w.contact_email || '–')}</td><td>${esc(w.school_email || '–')}</td><td>${esc(when(w.achieved_at))}</td></tr>`).join('');
-      return `<h3>${label}</h3><div class="tbl-wrap"><table class="tbl" data-slot="${k}"><thead><tr><th>Place</th><th>Name</th><th>${k === 'best_light' ? 'Light' : 'Score'}</th><th>Code</th><th>Email</th><th>School email</th><th>When</th></tr></thead><tbody>${rows || '<tr><td colspan="7" class="muted">Nobody yet.</td></tr>'}</tbody></table></div>`;
+      return `<h3>${label}</h3><div class="tbl-wrap"><table class="tbl" data-slot="${k}"><thead><tr><th class="num">Place</th><th>Name</th><th class="num">${k === 'best_light' ? 'Light' : 'Score'}</th><th>Code</th><th>Email</th><th>School email</th><th>When</th></tr></thead><tbody>${rows || '<tr><td colspan="7" class="muted">Nobody yet.</td></tr>'}</tbody></table></div>`;
     }).join('');
   };
   // The places as they stand when the button is pressed.

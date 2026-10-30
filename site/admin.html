@@ -58,11 +58,11 @@
         <div class="fig"><span>Players</span><strong id="ov-players">0</strong><small id="ov-roles"></small></div>
       </div>
       <div class="head sub"><h3>Leaders</h3><a href="#winners" class="small">Top three of each</a></div>
-      <div class="tbl-wrap"><table class="tbl" id="ov-leaders"><thead><tr><th>Prize</th><th>Name</th><th>Score</th><th>Code</th><th>Email</th></tr></thead><tbody></tbody></table></div>
+      <div class="tbl-wrap"><table class="tbl" id="ov-leaders"><thead><tr><th>Prize</th><th>Name</th><th class="num">Score</th><th>Code</th><th>Email</th></tr></thead><tbody></tbody></table></div>
       <div class="head sub"><h3>Latest payments</h3><a href="#payments" class="small">All payments</a></div>
-      <div class="tbl-wrap"><table class="tbl" id="ov-recent"><thead><tr><th>When</th><th>Name</th><th>Plays</th><th>Amount</th><th>Email</th></tr></thead><tbody></tbody></table></div>
+      <div class="tbl-wrap"><table class="tbl" id="ov-recent"><thead><tr><th>When</th><th>Name</th><th class="num">Plays</th><th class="num">Amount</th><th>Email</th></tr></thead><tbody></tbody></table></div>
       <h3>Money by day</h3>
-      <div class="tbl-wrap"><table class="tbl" id="ov-days"><thead><tr><th>Day</th><th>Payments</th><th>Amount</th></tr></thead><tbody></tbody></table></div>
+      <div class="tbl-wrap"><table class="tbl" id="ov-days"><thead><tr><th>Day</th><th class="num">Payments</th><th class="num">Amount</th></tr></thead><tbody></tbody></table></div>
     </section>
 
     <section data-page="payments" hidden>
@@ -74,7 +74,7 @@
       </form>
       <div class="quick" id="pay-quick"><span class="muted small">Show</span><button type="button" class="mini" data-range="today">Today</button><button type="button" class="mini" data-range="7">Last 7 days</button><button type="button" class="mini" data-range="30">Last 30 days</button><button type="button" class="mini on" data-range="all">Everything</button></div>
       <p class="muted" id="pay-summary"></p>
-      <div class="tbl-wrap"><table class="tbl" id="pay-table"><thead><tr><th>When</th><th>Name</th><th>Board</th><th>Plays</th><th>Amount</th><th>Refunded</th><th>Email</th><th>Source</th><th>Stripe</th></tr></thead><tbody></tbody></table></div>
+      <div class="tbl-wrap"><table class="tbl" id="pay-table"><thead><tr><th>When</th><th>Name</th><th>Board</th><th class="num">Plays</th><th class="num">Amount</th><th class="num">Refunded</th><th>Email</th><th>Source</th><th>Stripe</th></tr></thead><tbody></tbody></table></div>
       <div class="pager"><button class="btn small" id="pay-prev" type="button">Previous</button><span id="pay-page" class="muted small"></span><button class="btn small" id="pay-next" type="button">Next</button></div>
       <p class="muted small">Refunds are made in Stripe and show here once Stripe reports them.</p>
     </section>
@@ -88,7 +88,7 @@
         <button class="btn" type="submit">Search</button>
       </form>
       <p class="muted" id="pl-summary"></p>
-      <div class="tbl-wrap"><table class="tbl" id="pl-table"><thead><tr><th>Name</th><th>Board</th><th>Code</th><th>Email</th><th>School email</th><th>Plays</th><th>Best</th><th>Paid</th><th>Last seen</th><th></th></tr></thead><tbody></tbody></table></div>
+      <div class="tbl-wrap"><table class="tbl" id="pl-table"><thead><tr><th>Name</th><th>Board</th><th>Code</th><th>Email</th><th>School email</th><th class="num">Plays</th><th class="num">Best</th><th class="num">Paid</th><th>Last seen</th><th></th></tr></thead><tbody></tbody></table></div>
       <div class="pager"><button class="btn small" id="pl-prev" type="button">Previous</button><span id="pl-page" class="muted small"></span><button class="btn small" id="pl-next" type="button">Next</button></div>
       <div class="detail" id="pl-detail" hidden></div>
     </section>
@@ -109,7 +109,7 @@
         <button class="btn" type="submit">Block</button>
       </form>
       <p class="status" id="bl-note" role="status"></p>
-      <div class="tbl-wrap"><table class="tbl" id="bl-table"><thead><tr><th>Initials</th><th>Blocked</th><th>Players with them</th><th></th></tr></thead><tbody></tbody></table></div>
+      <div class="tbl-wrap"><table class="tbl" id="bl-table"><thead><tr><th>Initials</th><th>Blocked</th><th class="num">Players with them</th><th></th></tr></thead><tbody></tbody></table></div>
       <p class="muted small" id="bl-builtin"></p>
     </section>
 
@@ -118,6 +118,6 @@
 <div class="toast" id="toast" hidden></div>
 <script src="config.js"></script>
 <script>if (!(window.PRESLINK_CONFIG || {}).SUPABASE_URL) document.write('<script src="mock.js?v=43"><\/script>');</script>
-<script src="admin.js?v=6"></script>
+<script src="admin.js?v=7"></script>
 </body>
 </html>

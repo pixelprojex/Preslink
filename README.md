@@ -204,7 +204,7 @@ the request came from.
 
 1. Open the site on your device. Tap **Play · €2**. Stripe's test page opens.
 2. Pay with card number `4242 4242 4242 4242`, any future expiry, any CVC, any postcode.
-3. You land back in the coin cabinet, see the coin go in and a token come out, and tap Start: three lights, then the result, then the If you win sheet asking for an email (a school email joins the Students or Teachers board on its own). Check the leaderboard after.
+3. You land back in the coin cabinet: the coin goes into the slot and a token drops into the tray for each play. Tap Start. A new player first gets the practice (three free lights, then **Play for real**). Then three lights, the result, and the If you win sheet asking for an email (a school email joins the Students or Teachers board on its own). Check the leaderboard after.
 4. In Supabase → **Table Editor** you will see the player, the payment and the play.
 5. In Stripe → **Developers → Webhooks** the endpoint should show a successful delivery.
 

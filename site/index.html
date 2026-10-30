@@ -130,7 +130,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <!-- the game's server: connect while the page is still loading -->
   <link rel="preconnect" href="https://bsovummlmfclefdlvsic.supabase.co" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=53">
+  <link rel="stylesheet" href="styles.css?v=54">
 </head>
 <body>
 <div class="splash" id="splash" aria-hidden="true">
@@ -190,11 +190,19 @@
 
   <!-- ================= CABINET (after a payment) ================= -->
   <section class="screen" data-screen="cabinet" hidden>
-    <div class="card success-card" id="success-card">
-      <div class="tick" aria-hidden="true"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="23"/><path d="M15.5 27.5l7 7 14.5-15"/></svg></div>
-      <h2 id="cab-title">Thank you</h2>
-      <p class="cab-count"><strong id="cab-credits">0</strong><span id="cab-text"></span></p>
-      <button class="btn btn-primary btn-xl" id="cab-play" type="button" hidden>Start</button>
+    <div class="cabinet" aria-hidden="true">
+      <div class="cab-panel" id="cab-panel">
+        <div class="cab-slot-wrap"><div class="cab-coin" id="coin">€</div><div class="cab-slot" id="cab-slot"></div></div>
+        <div class="cab-led"><strong id="cab-credits">0</strong><span id="cab-unit">plays</span></div>
+      </div>
+      <div class="cab-tray-wrap"><div class="cab-tray"></div><div class="cab-token" id="token">1</div></div>
+    </div>
+    <div class="cab-foot">
+      <div class="card pad cab-text">
+        <h2 id="cab-title">Thank you</h2>
+        <p id="cab-text"></p>
+        <button class="btn btn-primary btn-xl" id="cab-play" type="button" hidden>Start</button>
+      </div>
     </div>
   </section>
 
@@ -534,6 +542,6 @@
 <script src="config.js"></script>
 <!-- the demo backend loads only when no server is configured -->
 <script>if (!(window.PRESLINK_CONFIG || {}).SUPABASE_URL) document.write('<script src="mock.js?v=43"><\/script>');</script>
-<script src="app.js?v=47"></script>
+<script src="app.js?v=48"></script>
 </body>
 </html>
