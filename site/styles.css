@@ -371,6 +371,8 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
 .splash.gone { opacity: 0; visibility: hidden; pointer-events: none; }
 .no-splash .splash { display: none; }
 .splash-mark { width: 180px; height: 238px; transform-origin: center; animation: marklock .55s cubic-bezier(.3, 1.5, .5, 1) .66s both; }
+/* at the hand-off the words vanish at once; only the mark flies */
+.splash.gone .splash-word, .splash.gone .splash-sub, .splash.gone .splash-credit { opacity: 0; transition: opacity .12s; animation: none; }
 /* the lock animation would otherwise hold the mark's transform, so the flight is an animation too */
 .splash.gone .splash-mark { animation: markfly .5s cubic-bezier(.4, 0, .2, 1) both; }
 @keyframes markfly { to { transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(var(--s, .2)); } }
