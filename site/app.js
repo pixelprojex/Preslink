@@ -589,7 +589,7 @@
     c = c || {};
     const hero = c.hero || {}, about = c.about || {}, contact = c.contact || {};
     $('.hero-h').textContent = hero.title || 'Stop the light on the line.';
-    $('.hero-cause').textContent = hero.subtitle || "Every cent after card fees goes to PresLink, the school's charity for schools in Ghana and Nigeria.";
+    if (hero.subtitle) $('.hero-cause').textContent = hero.subtitle; // otherwise the page's own line, with its About link
     const notice = $('#home-notice');
     notice.textContent = c.notice || ''; notice.hidden = !c.notice;
     $('#about-intro-title').textContent = about.intro_title || 'Run by students';
@@ -1263,7 +1263,7 @@
   function roundRect(ctx, x, y, w, h, r) {
     ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
   }
-  const markImage = new Promise((resolve) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => resolve(null); img.src = 'assets/preslink-mark.svg?v=2'; });
+  const markImage = new Promise((resolve) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => resolve(null); img.src = 'assets/preslink-mark.svg?v=3'; });
   async function renderTicket() {
     const W = 1080, H = 1350;
     const c = document.createElement('canvas');
@@ -1723,10 +1723,23 @@
   const splashDone = new Promise((resolve) => {
     const el = $('#splash');
     if (!el) { resolve(); return; }
-    const finish = () => { el.classList.add('gone'); resolve(); };
+    // At the end the mark flies to where the logo sits in the top bar, as the page shows through.
+    const finish = () => {
+      try {
+        const mark = $('.splash-mark'), brand = $('.brand img');
+        if (mark && brand && !reduceMotion()) {
+          const m = mark.getBoundingClientRect(), t = brand.getBoundingClientRect();
+          const s = t.height / m.height;
+          mark.style.setProperty('--s', s.toFixed(3));
+          mark.style.setProperty('--dx', ((t.left + t.width / 2) - (m.left + m.width / 2)).toFixed(1) + 'px');
+          mark.style.setProperty('--dy', ((t.top + t.height / 2) - (m.top + m.height / 2)).toFixed(1) + 'px');
+        }
+      } catch (_) { /* no hand-off, just the fade */ }
+      el.classList.add('gone'); resolve();
+    };
     const returning = /session_id=|cancelled=/.test(location.search) || document.documentElement.classList.contains('no-splash');
     if (returning) { finish(); return; }
-    setTimeout(finish, reduceMotion() ? 600 : 1800);
+    setTimeout(finish, reduceMotion() ? 600 : 1750);
     el.addEventListener('click', finish);
   });
   // Back from another page (the back-forward cache): the page is as it was; only the numbers are refreshed.
