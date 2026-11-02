@@ -1282,7 +1282,9 @@
     ctx.font = font(50, 800); { const a = 'PresLink ', b = 'Arcade', wa = ctx.measureText(a).width, wb = ctx.measureText(b).width, x0 = W / 2 - (wa + wb) / 2; ctx.textAlign = 'left'; ctx.fillStyle = '#8a219d'; ctx.fillText(a, x0, 356); ctx.fillStyle = '#2e8520'; ctx.fillText(b, x0 + wa, 356); ctx.textAlign = 'center'; }
     // the light bar: the game's own mark
     const bx = 240, by = 396, bw = 600, bh = 34;
-    ctx.fillStyle = '#f2ea5f'; roundRect(ctx, bx, by, bw, bh, bh / 2); ctx.fill();
+    const g = ctx.createLinearGradient(bx, 0, bx + bw, 0); // the game's own bar, its gradient too
+    g.addColorStop(0, '#fff4c2'); g.addColorStop(.24, '#ffe27c'); g.addColorStop(.5, '#ffc94e'); g.addColorStop(.76, '#ffa63a'); g.addColorStop(1, '#f26a1b');
+    ctx.fillStyle = g; roundRect(ctx, bx, by, bw, bh, bh / 2); ctx.fill();
     ctx.fillStyle = '#1c1c1e'; roundRect(ctx, bx + bw * 0.62 - 3, by - 10, 6, bh + 20, 3); ctx.fill();
     ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#1c1c1e'; ctx.lineWidth = 4; roundRect(ctx, bx + bw * 0.62 - 13, by - 6, 26, bh + 12, 13); ctx.fill(); ctx.stroke();
     // name
@@ -1734,7 +1736,7 @@
     };
     const returning = /session_id=|cancelled=/.test(location.search) || document.documentElement.classList.contains('no-splash');
     if (returning) { finish(); return; }
-    setTimeout(() => finish(true), reduceMotion() ? 500 : 1900);
+    setTimeout(() => finish(true), reduceMotion() ? 500 : 2000);
     el.addEventListener('click', () => finish(true));
   });
   // Back from another page (the back-forward cache): the page is as it was; only the numbers are refreshed.

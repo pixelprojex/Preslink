@@ -45,6 +45,7 @@ input[readonly] { background: var(--panel); }
 .login { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
 .login-card { width: 100%; max-width: 360px; border: 1px solid var(--line); border-radius: 8px; padding: 28px; }
 .login-card h1 { font-size: 22px; }
+.login-mark { display: block; width: 46px; height: 60px; margin: 0 0 14px; }
 
 /* shell */
 .shell { display: grid; grid-template-columns: 220px 1fr; grid-template-rows: 56px 1fr; min-height: 100vh; }
