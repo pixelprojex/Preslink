@@ -6,15 +6,18 @@
   <meta name="robots" content="noindex">
   <title>PresLink Arcade poster</title>
   <meta name="description" content="The PresLink Arcade poster: A3 and A4 for printing, a picture for social media and one for messages.">
-  <link rel="icon" href="assets/icon.svg?v=5" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" href="assets/icon.svg?v=6" type="image/svg+xml">
   <style>
     /* The poster in four formats, all drawn from this page (tools/posters.cjs saves them to posters/):
        ?f=a3 and ?f=a4 to print, ?f=social (1080 × 1350) for posts, ?f=message (1200 × 630) for messages and
        link previews. A3 is the original design. A4 is the same sheet shrunk by 1/√2, as the paper is: every
        print size is in "u", a millimetre on A3. &mode=honours swaps the prize words for the honours ones;
        &closes=12 December and &org=NAME (RCN 20000000) add the closing date and the organiser to the small print.
-       The sheet is white and says little: the name, the headline, the price, the code, three photos, the promise.
-       Purple marks PresLink and the school; nothing else is coloured. */
+       The printed sheets are white and say little: the name, the headline, the price, the code, three photos (on
+       the A3 each with a line on what it is), the promise; purple marks PresLink and the school. The post and the
+       message are for screens: on deep purple, with a photo and no code, since they are seen on the phone that
+       would have to scan it. */
     /* Static weights: PDF printers embed them as ordinary TrueType. */
     @font-face { font-family: 'Inter'; font-weight: 500; font-display: block; src: url('fonts/static/inter-latin-500-normal.woff2') format('woff2'); }
     @font-face { font-family: 'Inter'; font-weight: 600; font-display: block; src: url('fonts/static/inter-latin-600-normal.woff2') format('woff2'); }
@@ -24,8 +27,10 @@
     :root {
       --ink: #1c1c1e;
       --muted: #6e6e73;
-      --green: #1f9d5a;
-      --purple: #5b3a9a;
+      --green: #2e8520;
+      --purple: #8a219d;
+      --yellow: #f2ea5f;
+      --plum: #4e1759; /* the logo's purple, deepened: the ground of the post and the message */
     }
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }
@@ -37,6 +42,7 @@
     .sheet > * { flex-shrink: 0; }
     .top { display: flex; align-items: center; justify-content: space-between; }
     .brand { display: flex; align-items: center; }
+    .mark-tile { display: contents; }
     .mark { display: block; width: auto; }
     .wordmark { color: var(--purple); font-weight: 800; letter-spacing: -.025em; line-height: 1; white-space: nowrap; }
     .wordmark span { color: var(--green); }
@@ -56,6 +62,11 @@
     .stories img { display: block; width: 100%; object-fit: cover; background: #f2f2f4; }
     .stories figcaption { text-align: center; }
     .stories b { display: block; font-weight: 700; line-height: 1.15; letter-spacing: -.01em; }
+    .stories .sub { display: none; }
+    .hero-photo { margin: 0; }
+    .hero-photo img { display: block; width: 100%; object-fit: cover; }
+    .tile { display: grid; place-items: center; background: #fff; flex: none; }
+    .price { display: inline-block; }
     .foot { text-align: center; }
     .promise { font-weight: 700; line-height: 1.3; text-wrap: balance; }
     .terms { color: var(--muted); font-weight: 500; line-height: 1.35; text-wrap: balance; }
@@ -83,49 +94,66 @@
     .print .stories figcaption { margin-top: calc(3 * var(--u)); }
     .print .stories b { font-size: calc(5.5 * var(--u)); color: var(--muted); }
     .print footer { margin-top: auto; }
+    .print:not(.a4) .stories .sub { display: block; margin: calc(1.6 * var(--u)) auto 0; max-width: calc(80 * var(--u)); color: var(--muted); font-size: calc(3.9 * var(--u)); font-weight: 500; line-height: 1.35; text-wrap: balance; }
+    .print:not(.a4) .stories b { color: var(--ink); font-size: calc(5.8 * var(--u)); }
+    .print:not(.a4) .qr { width: calc(136 * var(--u)); height: calc(136 * var(--u)); }
+    .print:not(.a4) .hero { margin-top: calc(14 * var(--u)); }
+    .print:not(.a4) .stories { margin-top: calc(10 * var(--u)); }
+    .print.a4 .stories img { height: calc(50 * var(--u)); }
+    .print.a4 .qr { width: calc(146 * var(--u)); height: calc(146 * var(--u)); }
     .print .promise { font-size: calc(4.8 * var(--u)); }
     .print .terms { margin-top: calc(2.5 * var(--u)); font-size: calc(3.2 * var(--u)); }
 
-    /* ---------- Social: 1080 × 1350, the web address in the place of the code ---------- */
-    .social .sheet { width: 1080px; height: 1350px; padding: 72px 78px 60px; }
-    .social .top { height: 96px; }
+    /* ---------- Social: 1080 × 1350, on deep purple, a photo, the web address in the place of the code ---------- */
+    .social .sheet, .message .sheet { background: var(--plum); color: #fff; }
+    .social .wordmark, .message .wordmark, .social .school-name, .message .school-name, .social h1, .message h1, .social .url, .message .url { color: #fff; }
+    .social .wordmark span, .message .wordmark span, .social h1 .g, .message h1 .g { color: var(--yellow); }
+    .social .mark-tile, .message .mark-tile { background: #fff; display: grid; place-items: center; flex: none; }
+    .social .crest, .message .crest { background: #fff; border-radius: 999px; }
+    .social .price, .message .price { background: var(--yellow); color: var(--plum); border-radius: 999px; }
+    .social .scan-label, .message .scan-label { color: var(--yellow); }
+    .social .promise, .message .promise { color: rgba(255, 255, 255, .92); }
+    .social .terms { color: rgba(255, 255, 255, .62); }
+    .social .hero-photo figcaption, .message .hero-photo figcaption { color: rgba(255, 255, 255, .7); }
+
+    .social .sheet { width: 1080px; height: 1350px; padding: 64px 72px 52px; }
+    .social .top { height: 104px; }
     .social .brand { gap: 22px; }
-    .social .mark { height: 96px; }
+    .social .mark-tile { width: 104px; height: 104px; border-radius: 26px; }
+    .social .mark { height: 80px; }
     .social .wordmark { font-size: 46px; }
-    .social .school { gap: 20px; }
+    .social .school { gap: 18px; }
     .social .school-name { font-size: 19px; }
-    .social .crest { height: 86px; }
-    .social .hero { margin-top: 88px; }
-    .social h1 { font-size: 108px; }
-    .social .price { margin-top: 30px; font-size: 44px; }
-    .social .scan { margin-top: 68px; }
-    .social .scan-label { font-size: 30px; }
-    .social .url { margin-top: 14px; font-size: 78px; font-weight: 900; letter-spacing: -.03em; color: var(--purple); }
-    .social .stories { gap: 24px; margin-top: 88px; }
-    .social .stories img { height: 270px; border-radius: 28px; }
-    .social .stories figcaption { margin-top: 14px; }
-    .social .stories b { font-size: 26px; color: var(--muted); }
+    .social .crest { height: 84px; padding: 6px; }
+    .social .hero { margin-top: 56px; }
+    .social h1 { font-size: 104px; }
+    .social .price { margin-top: 30px; padding: 12px 32px; font-size: 36px; }
+    .social .hero-photo { margin-top: 44px; }
+    .social .hero-photo img { height: 430px; border-radius: 30px; }
+    .social .hero-photo figcaption { margin-top: 14px; text-align: center; font-size: 22px; font-weight: 600; }
+    .social .scan { margin-top: 40px; }
+    .social .scan-label { font-size: 26px; }
+    .social .url { margin-top: 12px; font-size: 72px; font-weight: 900; letter-spacing: -.03em; }
     .social footer, .message footer { margin-top: auto; }
     .social .promise { font-size: 22px; }
     .social .terms { margin-top: 10px; font-size: 15px; }
 
-    /* ---------- Message: 1200 × 630, for chats, emails and the link's preview ---------- */
-    .message .sheet { width: 1200px; height: 630px; padding: 42px 56px 36px; }
-    .message .top { height: 66px; }
+    /* ---------- Message: 1200 × 630, for chats, emails and the link's preview: the words beside a photo ---------- */
+    .message .sheet { width: 1200px; height: 630px; padding: 40px 48px 32px 56px; }
+    .message .top { height: 64px; }
     .message .brand { gap: 16px; }
-    .message .mark { height: 66px; }
-    .message .wordmark { font-size: 34px; }
-    .message .school { gap: 14px; }
-    .message .school-name { font-size: 15px; }
-    .message .crest { height: 58px; }
-    .message .body { flex: 1 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) 330px; align-items: center; gap: 40px; padding: 10px 0; }
-    .message .hero { text-align: left; }
-    .message h1 { font-size: 86px; }
-    .message .price { margin-top: 22px; font-size: 34px; }
-    .message .url { margin-top: 26px; font-size: 40px; text-align: left; color: var(--purple); }
-    .message .scan-label { font-size: 22px; margin-bottom: 8px; }
-    .message .scan .qr { width: 330px; height: 330px; }
-    .message .promise { font-size: 18px; }
+    .message .mark-tile { width: 64px; height: 64px; border-radius: 17px; }
+    .message .mark { height: 50px; }
+    .message .wordmark { font-size: 32px; }
+    .message .school { display: none; }
+    .message .body { flex: 1 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) 452px; align-items: center; gap: 44px; margin-top: -64px; }
+    .message .hero { text-align: left; padding-top: 64px; }
+    .message h1 { font-size: 74px; }
+    .message .price { margin-top: 24px; padding: 9px 24px; font-size: 26px; }
+    .message .url { margin-top: 22px; font-size: 36px; text-align: left; }
+    .message .hero-photo img { height: 558px; border-radius: 26px; }
+    .message footer { margin-top: 0; }
+    .message .promise { position: absolute; left: 56px; bottom: 34px; width: 560px; text-align: left; font-size: 17px; }
 
     /* ---------- On screen: the sheet scaled to fit, a switch between formats and the file to download ---------- */
     .tools { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; background: rgba(237, 237, 240, .92); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
@@ -165,7 +193,7 @@
 
         <header class="top">
           <div class="brand">
-            <img class="mark" src="assets/preslink-mark.svg?v=4" alt="">
+            <span class="mark-tile"><img class="mark" src="assets/preslink-mark.svg?v=5" alt=""></span>
             <div class="wordmark">PresLink <span>Arcade</span></div>
           </div>
           <div class="school">
@@ -181,6 +209,11 @@
             <p class="url only-message">preslink.netlify.app</p>
           </section>
 
+          <figure class="hero-photo">
+            <img src="assets/photo-bikes.jpg" alt="Students in Ghana with the bicycles PresLink bought them for getting to school" style="object-position: 50% 30%">
+            <figcaption>Bikes to school, from PresLink</figcaption>
+          </figure>
+
           <section class="scan">
             <p class="scan-label" id="scan-label">Scan to play</p>
             <div class="qr" id="qr" role="img" aria-label="QR code for PresLink Arcade"></div>
@@ -191,15 +224,15 @@
         <section class="stories">
           <figure>
             <img src="assets/photo-bikes.jpg" alt="Students with bicycles" style="object-position: 50% 25%">
-            <figcaption><b>Bikes to school</b></figcaption>
+            <figcaption><b>Bikes to school</b><span class="sub">Bicycles so students can get to class and stay in school.</span></figcaption>
           </figure>
           <figure>
             <img src="assets/photo-babies.jpg" alt="Mother of Mercy Babies Home" style="object-position: 50% 55%">
-            <figcaption><b>Care for babies</b></figcaption>
+            <figcaption><b>Care for babies</b><span class="sub">For the Mother of Mercy Babies Home in Sirigu, Ghana.</span></figcaption>
           </figure>
           <figure>
             <img src="assets/photo-classrooms.jpg" alt="A new classroom in Ghana" style="object-position: 62% 50%">
-            <figcaption><b>New classrooms</b></figcaption>
+            <figcaption><b>New classrooms</b><span class="sub">A three-classroom block in Sokabisi, Bolgatanga.</span></figcaption>
           </figure>
         </section>
 
@@ -240,10 +273,12 @@
 
       // Each format keeps only its own pieces: the code is for paper and messages, the photos for paper and posts.
       var drop = function (sel) { Array.prototype.forEach.call(document.querySelectorAll(sel), function (el) { el.remove(); }); };
-      if (f === 'social') { drop('.qr, .only-message'); document.getElementById('scan-label').textContent = 'Play now at'; document.querySelector('.scan').appendChild(document.querySelector('.only-print')); }
-      else if (f === 'message') drop('.stories, .terms, .only-print');
-      else drop('.only-message');
-      // The print sheets and posts keep the code in the main column; the message sets the words beside it.
+      // The code is for paper only: the post and the message are read on the phone that would have to scan it, so
+      // they carry the address and a photo instead.
+      if (f === 'social') { drop('.qr, .only-message, .stories'); document.getElementById('scan-label').textContent = 'Play now at'; document.querySelector('.scan').appendChild(document.querySelector('.only-print')); }
+      else if (f === 'message') drop('.stories, .terms, .only-print, .scan, .hero-photo figcaption');
+      else drop('.only-message, .hero-photo');
+      // The print sheets and posts run top to bottom; the message sets the words beside its photo.
       if (f !== 'message') { var body = document.querySelector('.body'); while (body.firstChild) body.parentNode.insertBefore(body.firstChild, body); body.remove(); }
 
       if (honours) document.getElementById('h1a').textContent = 'Play. Top the board.';
