@@ -70,7 +70,7 @@ h1, h2, h3 { margin: 0; line-height: 1.15; color: var(--ink); font-weight: 700; 
 /* The two bundles are tiles: what you get and what it costs. */
 .bundles-line { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0 0; }
 .bundles-line > span { display: none; }
-.bundles-line .link { display: grid; justify-items: center; gap: 2px; font-size: 14px; color: var(--ink); font-weight: 700; background: var(--surface); border-radius: 12px; padding: 9px 12px; transition: transform .08s ease; }
+.bundles-line .link { display: grid; justify-items: center; gap: 2px; font-size: 14px; color: var(--ink); font-weight: 700; background: var(--fill); border-radius: 12px; padding: 9px 12px; transition: transform .08s ease; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .card-h { font-size: 11px; font-weight: 700; color: var(--muted-d); text-transform: uppercase; letter-spacing: .08em; margin: 0; padding: 14px 16px 0; }
 .card.pad > .card-h { padding: 0 2px 0; }
@@ -126,10 +126,10 @@ button.cell:active { background: var(--fill); }
 
 /* Buttons */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 46px; padding: 10px 16px; border-radius: 14px; border: 0; background: var(--fill); color: var(--ink); font-weight: 700; font-size: 16px; cursor: pointer; text-decoration: none; user-select: none; transition: transform .08s ease, background .15s ease, opacity .15s; letter-spacing: -.01em; }
-.btn { background: var(--surface); }
+.btn { background: var(--fill); }
 /* Lipped controls (buttons, the bundle links, the letter keys): a face and a lip under it that shrinks while
    pressed. --face is drawn inside the edge, --lip-c is the lip's colour. */
-.btn, .key, .bundles-line .link { --face: inset 0 0 0 2px var(--line); --lip-c: var(--line); --lip: 3px; box-shadow: var(--face), 0 var(--lip) 0 var(--lip-c); }
+.btn, .key, .bundles-line .link { --face: 0 0 #0000; --lip-c: var(--fill-2); --lip: 3px; box-shadow: var(--face), 0 var(--lip) 0 var(--lip-c); }
 .btn:active, .key:active, .bundles-line .link:active { --lip: 1px; transform: translateY(2px); }
 /* Keyboard focus on them: one even ring, 2px clear of the face and of the lip. */
 .btn:focus-visible, .key:focus-visible, .bundles-line .link:focus-visible { outline: none; box-shadow: var(--face), 0 var(--lip) 0 var(--lip-c), 0 0 0 2px var(--surface), 0 var(--lip) 0 2px var(--surface), 0 0 0 5px var(--green), 0 var(--lip) 0 5px var(--green); }
@@ -167,7 +167,7 @@ button.cell:active { background: var(--fill); }
 .box.filled::after { content: ''; position: absolute; top: -9px; right: -9px; width: 24px; height: 24px; border-radius: 50%; background: var(--red) linear-gradient(#fff, #fff) center / 11px 2.5px no-repeat; box-shadow: 0 0 0 2.5px #fff; animation: pop .25s cubic-bezier(.2, .9, .3, 1.3) both; }
 .letterpad { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 14px; }
 .key { min-height: 48px; padding: 0; border: 0; border-radius: 11px; background: var(--bg); color: var(--ink); font: inherit; font-size: 18px; font-weight: 700; cursor: pointer; display: grid; place-items: center; transition: transform .08s, background .12s, opacity .2s; }
-.key { background: var(--surface); }
+.key { background: var(--fill); }
 .key.back { grid-column: span 2; color: var(--muted); }
 .letterpad.full .key:not(.back) { opacity: .45; }
 #edit-form .letterpad { margin-left: -6px; margin-right: -6px; }
@@ -201,17 +201,18 @@ button.cell:active { background: var(--fill); }
 .sheet .demo-track { margin: 8px 6px 22px; }
 
 /* Home */
-.hero-card { padding: 18px 16px 14px; margin-top: 8px; }
-.hero-h { font-size: 24px; font-weight: 800; letter-spacing: -.03em; margin: 0 0 4px; }
+.hero-card { padding: 12px 2px 0; }
+.hero-h { font-size: 26px; font-weight: 800; letter-spacing: -.03em; margin: 0 0 6px; }
 .hero-p { margin: 0 0 16px; color: var(--muted); font-size: 14px; font-weight: 500; line-height: 1.45; }
 /* the charity first: who the money goes to, in one quiet line, with the way to read more */
-.hero-cause { margin: 0 0 4px; color: var(--muted); font-size: 14px; font-weight: 500; line-height: 1.45; text-wrap: pretty; }
-.hero-cause .inline-link { white-space: nowrap; }
-/* How to play: a proper button, as easy to find as Play */
-.hero-how { margin-top: 10px; }
-.hero-card .bundles-line { margin-top: 12px; }
-/* The home preview is the game's bar in miniature: the same gradient, mark and white light, sweeping by a transform. */
-.demo-track { position: relative; height: 40px; border-radius: 20px; background: linear-gradient(90deg, #fff4c2 0%, #ffe27c 24%, #ffc94e 50%, #ffa63a 76%, #f26a1b 100%); margin: 28px 0 26px; }
+.hero-cause { margin: 0; color: var(--muted-d); font-size: 15px; font-weight: 500; line-height: 1.4; text-wrap: pretty; }
+/* How to play and About PresLink: two flat buttons under the pay buttons, green for the game, purple for the charity */
+.home-links { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.hero-how { background: var(--green-l); color: var(--green-d); --lip-c: #bfe3cf; }
+.hero-about { background: var(--purple-l); color: var(--purple-d); --lip-c: #d6c9ec; }
+.hero-card .bundles-line { margin-top: 0; }
+/* The home preview is the game's bar in miniature: the same flat yellow, the black line and the white light, sweeping by a transform. */
+.demo-track { position: relative; height: 40px; border-radius: 20px; background: var(--yellow); margin: 22px 0 20px; }
 .demo-pin { position: absolute; left: 64%; top: -10px; bottom: -10px; width: 3px; margin-left: -1.5px; border-radius: 2px; background: var(--ink); }
 .demo-pin::before { content: ''; position: absolute; left: 50%; top: -14px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: var(--ink); }
 .demo-marker { position: absolute; left: 0; top: -8px; bottom: -8px; width: 10px; border-radius: 5px; background: #fff; box-shadow: 0 0 0 2px #1c1c1e, 0 2px 4px rgba(0, 0, 0, .14); animation: demosweep 2.6s cubic-bezier(.45, 0, .55, 1) infinite alternate; will-change: transform; }
@@ -220,8 +221,8 @@ button.cell:active { background: var(--fill); }
 /* the coin and the tokens jump to where they end: the coin gone into the slot, each token in the tray */
 @media (prefers-reduced-motion: reduce) { .cab-coin.drop, .cab-token.out { animation-duration: .01s !important; } }
 @media (prefers-reduced-motion: reduce) { .demo-marker { animation: none !important; left: 64%; margin-left: -5px; } }
-.hero-card .btn-xl { margin-bottom: 8px; }
-.notice { margin: -6px 0 14px; padding: 9px 12px; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 2px #f3d98b; color: #7a5a00; font-weight: 600; font-size: 14px; text-align: center; }
+.hero-card .btn-xl { margin-bottom: 10px; }
+.notice { margin: 10px 0 0; padding: 9px 12px; border-radius: 12px; background: var(--yellow-l); color: #7a5a00; font-weight: 600; font-size: 14px; text-align: center; }
 a.cell { text-decoration: none; }
 #about-stories > .card + .card, #about-stories + .card { margin-top: 12px; }
 
@@ -258,7 +259,7 @@ a.cell { text-decoration: none; }
 .game.enter { animation: gamein .35s cubic-bezier(.2, .8, .2, 1) both; }
 @keyframes gamein { from { opacity: 0; transform: translateY(16px) scale(.98); } to { opacity: 1; transform: none; } }
 .track-wrap { padding: 32px 10px 16px; }
-.track { position: relative; height: 64px; border-radius: 32px; background: linear-gradient(90deg, #fff4c2 0%, #ffe27c 24%, #ffc94e 50%, #ffa63a 76%, #f26a1b 100%); }
+.track { position: relative; height: 64px; border-radius: 32px; background: var(--yellow); }
 .pin { position: absolute; top: -14px; bottom: -14px; width: 4px; margin-left: -2px; border-radius: 2px; background: var(--ink); box-shadow: 0 0 0 2px rgba(255, 255, 255, .8); transition: left .25s; }
 .pin .swatch { position: absolute; top: -30px; left: 50%; width: 20px; height: 20px; margin-left: -10px; border-radius: 50%; outline: 3px solid var(--surface); background: var(--ink); }
 /* The light: a white pill moved by the game's frame loop (its transform is set every frame). */
@@ -367,34 +368,21 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
 /* Welcome: the two links of the PresLink mark fly in from opposite corners and lock together with a click;
    the star pops; the name rises letter by letter; then the mark flies up into its place in the top bar as the
    page appears. Tap anywhere to skip. */
-.splash { position: fixed; inset: 0; z-index: 50; background: #fff; display: grid; place-content: center; justify-items: center; gap: 10px; transition: opacity .42s ease .06s, visibility .5s; }
+.splash { position: fixed; inset: 0; z-index: 50; background: #fff; display: grid; place-content: center; justify-items: center; gap: 8px; transition: opacity .3s ease, visibility .3s; }
 .splash.gone { opacity: 0; visibility: hidden; pointer-events: none; }
 .no-splash .splash { display: none; }
-.splash-mark { width: 180px; height: 238px; transform-origin: center; animation: marklock .55s cubic-bezier(.3, 1.5, .5, 1) .66s both; }
-/* at the hand-off the words vanish at once; only the mark flies */
-.splash.gone .splash-word, .splash.gone .splash-sub, .splash.gone .splash-credit { opacity: 0; transition: opacity .12s; animation: none; }
-/* the lock animation would otherwise hold the mark's transform, so the flight is an animation too */
-.splash.gone .splash-mark { animation: markfly .5s cubic-bezier(.4, 0, .2, 1) both; }
-@keyframes markfly { to { transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(var(--s, .2)); } }
+/* The welcome: the mark grows in with one soft bounce and its star lands; the name and "Arcade" rise under it. */
+.splash-mark { width: 132px; height: 172px; animation: markin .6s cubic-bezier(.2, .9, .3, 1.25) both; }
 .splash-mark svg { width: 100%; height: 100%; overflow: visible; }
-.link-a, .link-b { animation: linkin .72s cubic-bezier(.22, 1, .36, 1) both; transform-box: fill-box; transform-origin: center; }
-.link-a { --from: translate(620px, -1240px) rotate(-18deg); }
-.link-b { --from: translate(-620px, 1240px) rotate(18deg); animation-delay: .04s; }
-@keyframes linkin { 0% { transform: var(--from); opacity: 0; } 30% { opacity: 1; } 100% { transform: none; opacity: 1; } }
-.link-star { animation: starpop .45s cubic-bezier(.2, .9, .3, 1.5) .78s both; transform-box: fill-box; transform-origin: center; }
-@keyframes starpop { 0% { transform: scale(0) rotate(-40deg); opacity: 0; } 100% { transform: none; opacity: 1; } }
-@keyframes marklock { 0% { transform: scale(1); } 28% { transform: scale(1.1, .92) rotate(-2deg); } 58% { transform: scale(.97, 1.03) rotate(1deg); } 100% { transform: scale(1); } }
-.splash-word { display: flex; font-size: 34px; font-weight: 800; color: var(--ink); letter-spacing: -.02em; margin-top: 6px; }
-.splash-word span { display: inline-block; animation: letterin .45s cubic-bezier(.2, .9, .3, 1.3) both; }
-.splash-word span:nth-child(1) { animation-delay: .9s; } .splash-word span:nth-child(2) { animation-delay: .935s; } .splash-word span:nth-child(3) { animation-delay: .97s; } .splash-word span:nth-child(4) { animation-delay: 1.005s; }
-.splash-word span:nth-child(5) { animation-delay: 1.04s; } .splash-word span:nth-child(6) { animation-delay: 1.075s; } .splash-word span:nth-child(7) { animation-delay: 1.11s; } .splash-word span:nth-child(8) { animation-delay: 1.145s; }
-@keyframes letterin { 0% { opacity: 0; transform: translateY(22px) scale(.8); } 100% { opacity: 1; transform: none; } }
-.splash-sub { font-size: 13px; font-weight: 700; color: var(--green); letter-spacing: .34em; text-transform: uppercase; margin-top: -2px; animation: subin .5s ease-out 1.25s both; }
-@keyframes subin { 0% { opacity: 0; letter-spacing: .1em; } 100% { opacity: 1; letter-spacing: .34em; } }
-.splash-credit { position: absolute; bottom: calc(36px + env(safe-area-inset-bottom)); left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 8px; color: var(--purple); font-weight: 600; font-size: 13px; animation: wordin .45s ease-out 1.35s both; }
+@keyframes markin { 0% { opacity: 0; transform: scale(.72); } 100% { opacity: 1; transform: none; } }
+.link-star { animation: starin .4s cubic-bezier(.2, .9, .3, 1.4) .42s both; transform-box: fill-box; transform-origin: center; }
+@keyframes starin { 0% { opacity: 0; transform: scale(0); } 100% { opacity: 1; transform: none; } }
+.splash-word { font-size: 32px; font-weight: 800; color: var(--purple); letter-spacing: -.02em; margin-top: 12px; animation: wordin .45s cubic-bezier(.2, .8, .2, 1) .35s both; }
+.splash-sub { font-size: 13px; font-weight: 700; color: var(--green); letter-spacing: .3em; text-transform: uppercase; margin-top: -4px; animation: wordin .45s cubic-bezier(.2, .8, .2, 1) .5s both; }
+.splash-credit { position: absolute; bottom: calc(36px + env(safe-area-inset-bottom)); left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 8px; color: var(--muted); font-weight: 600; font-size: 13px; animation: wordin .45s ease-out .6s both; }
 .splash-credit img { width: 20px; height: 24px; }
 @keyframes wordin { 0% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .splash-mark, .link-a, .link-b, .link-star, .splash-word span, .splash-sub, .splash-credit { animation: none; } .splash.gone .splash-mark { animation: none; } .splash { transition: opacity .4s ease, visibility .4s; } }
+@media (prefers-reduced-motion: reduce) { .splash-mark, .link-star, .splash-word, .splash-sub, .splash-credit { animation: none; } }
 
 /* iPad and desktop */
 .title-sub { margin: 2px 0 0; color: var(--muted); font-size: 14px; font-weight: 500; }
@@ -493,7 +481,7 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
   .game { max-width: 760px; margin: 0 auto; }
   /* Home: the hero beside the links, the top three under them */
   [data-screen="home"] { display: grid; grid-template-columns: 1.25fr 1fr; grid-template-areas: "hero top"; gap: 16px; align-items: start; }
-  [data-screen="home"] > .hero-card { grid-area: hero; margin-top: 14px; padding: 26px 24px 20px; }
+  [data-screen="home"] > .hero-card { grid-area: hero; margin-top: 14px; padding: 14px 8px 0; }
   [data-screen="home"] > .home-top { grid-area: top; margin-top: 14px; }
   .hero-h { font-size: 30px; }
   .demo-track { margin: 30px 0 28px; }
@@ -659,7 +647,7 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
 .gauge { position: relative; width: 190px; height: 190px; margin: 2px auto 4px; }
 .gauge svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
 .g-bg { fill: none; stroke: var(--fill); stroke-width: 9; }
-.g-fg { fill: none; stroke: url(#gauge-grad); stroke-width: 9; stroke-linecap: round; stroke-dasharray: 0 326.73; transition: stroke-dasharray .75s cubic-bezier(.2, .8, .2, 1); }
+.g-fg { fill: none; stroke: var(--green); stroke-width: 9; stroke-linecap: round; stroke-dasharray: 0 326.73; transition: stroke-dasharray .75s cubic-bezier(.2, .8, .2, 1); }
 .gauge .result-score { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; }
 .gauge .result-score small { display: block; margin: 4px 0 0; font-size: 13px; font-weight: 600; }
 @keyframes dotin { from { opacity: 0; transform: scale(.2); } to { opacity: 1; transform: none; } }
@@ -704,7 +692,8 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
 .legal a { color: var(--green-d); font-weight: 600; }
 /* The permission line where people pay, and plain text links inside sentences */
 .fine { margin: 12px 4px 0; text-align: center; color: var(--muted-d); font-size: 12px; font-weight: 500; line-height: 1.4; }
-.hero-card .fine { margin-top: 6px; }
+.hero-card .fine { margin: 10px 4px 0; }
+.hero-card + .card { margin-top: 22px; }
 .inline-link { border: 0; background: none; padding: 0; color: var(--green-d); font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 .org-line { margin: 18px 4px 0; text-align: center; color: var(--muted); font-size: 12px; font-weight: 500; line-height: 1.45; }
 .org-line + .credit { margin-top: 10px; }
@@ -846,4 +835,4 @@ p, .story-body p, .legal p { text-wrap: pretty; }
 /* Every control a finger uses is at least 44 px tall (the logo link, the bundle buttons, How to play). */
 .brand { min-height: 44px; }
 .bundles-line .link { min-height: 44px; align-content: center; }
-.hero-how { min-height: 52px; }
+.home-links .btn { min-height: 50px; }
