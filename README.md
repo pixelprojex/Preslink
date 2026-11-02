@@ -29,7 +29,7 @@ device, not the day's real ones, and nothing about them is sent to the server or
 
 The look is white and plain, after Duolingo (white pages and cards with a light grey edge, white buttons with
 a lip, large titles, tabs underlined in green, initials tiles in one of eight muted pastel colours that the player can change on the You tab, a progress ring) in PresLink's colours: green for actions, orange for the
-light and the ring, the yellow of the Presentation Brothers cross for the logo. The logo and the running
+light and the ring, the colours of the PresLink mark (two chain links: the Ghana flag's red, yellow and green with its star, and purple, grey and black) for the logo. The logo and the running
 total raised sit at the top of every screen; there is a tab bar (Play, Leaderboard, About, You), a Prizes page
 with a white card per prize (its photo, or a grey box with a question mark until there is one), and very
 little text. The leaderboard puts the top three on a podium (their tiles and scores on flat gold, silver and

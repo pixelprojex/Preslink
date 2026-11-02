@@ -4,7 +4,7 @@
 /* PresLink Arcade
    White and plain, after Duolingo: white pages and cards with a light grey edge, white buttons with a lip,
    large titles, tabs underlined in green, tabular numerals. Palette is the charity's: green for actions,
-   orange for the light and progress, yellow from the cross; the school's purple only where the school is
+   orange for the light and progress, yellow from the PresLink mark; the school's purple only where the school is
    meant. No tinted boxes, no glows. */
 :root {
   --bg: #ffffff;
@@ -364,18 +364,19 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
 .save-hint { text-align: center; color: var(--muted-d); font-size: 13px; font-weight: 500; line-height: 1.4; margin: 8px 4px 0; }
 .sheet .card { background: var(--surface); }
 
-/* Splash: the two links of the PresLink mark slide in from either end and lock together, the whole mark settles,
-   the name rises. */
+/* Splash: the two links of the PresLink mark swing in from either side, lock together with a bounce, then
+   pulse once like a heartbeat as the name rises. */
 .splash { position: fixed; inset: 0; z-index: 50; background: #fff; display: grid; place-content: center; justify-items: center; gap: 10px; transition: opacity .35s ease, visibility .35s, transform .35s ease; }
 .splash.gone { opacity: 0; visibility: hidden; pointer-events: none; transform: scale(1.04); }
 .no-splash .splash { display: none; }
-.splash-mark { width: 176px; height: 206px; animation: markbounce .5s cubic-bezier(.3, 1.4, .5, 1) .55s both; }
+.splash-mark { width: 176px; height: 206px; animation: marklock .5s cubic-bezier(.3, 1.4, .5, 1) .6s both, markpulse .8s cubic-bezier(.4, 0, .2, 1) 1.05s both; }
 .splash-mark svg { width: 100%; height: 100%; overflow: visible; }
-.link-a, .link-b { animation: linkin .55s cubic-bezier(.2, .9, .25, 1.1) both; }
-.link-a { --from: translate(0, -560px); }
-.link-b { --from: translate(0, 560px); animation-delay: .06s; }
-@keyframes linkin { 0% { transform: var(--from); opacity: 0; } 45% { opacity: 1; } 100% { transform: none; opacity: 1; } }
-@keyframes markbounce { 0% { transform: scale(1); } 35% { transform: scale(1.08) rotate(-2deg); } 70% { transform: scale(.98) rotate(1deg); } 100% { transform: scale(1); } }
+.link-a, .link-b { animation: linkin .62s cubic-bezier(.2, .9, .25, 1.12) both; transform-box: fill-box; transform-origin: center; }
+.link-a { --from: translate(240px, -520px) rotate(-14deg); }
+.link-b { --from: translate(-240px, 520px) rotate(14deg); animation-delay: .05s; }
+@keyframes linkin { 0% { transform: var(--from); opacity: 0; } 35% { opacity: 1; } 100% { transform: none; opacity: 1; } }
+@keyframes marklock { 0% { transform: scale(1); } 30% { transform: scale(1.1) rotate(-2deg); } 65% { transform: scale(.97) rotate(1deg); } 100% { transform: scale(1); } }
+@keyframes markpulse { 0%, 100% { transform: scale(1); } 25% { transform: scale(1.07); } 50% { transform: scale(1); } 70% { transform: scale(1.04); } }
 .splash-word { display: flex; font-size: 34px; font-weight: 800; color: var(--ink); letter-spacing: -.02em; margin-top: 6px; }
 .splash-word span { display: inline-block; animation: letterin .45s cubic-bezier(.2, .9, .3, 1.3) both; }
 .splash-word span:nth-child(1) { animation-delay: .42s; } .splash-word span:nth-child(2) { animation-delay: .455s; } .splash-word span:nth-child(3) { animation-delay: .49s; } .splash-word span:nth-child(4) { animation-delay: .525s; }
