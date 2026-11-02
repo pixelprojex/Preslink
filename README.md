@@ -29,7 +29,7 @@ device, not the day's real ones, and nothing about them is sent to the server or
 
 The look is white and plain, after Duolingo (white pages and cards with a light grey edge, white buttons with
 a lip, large titles, tabs underlined in green, initials tiles in one of eight muted pastel colours that the player can change on the You tab, a progress ring) in PresLink's colours: green for actions, orange for the
-light and the ring, the colours of the PresLink mark (two chain links: the Ghana flag's red, yellow and green with its star, and purple, grey and black) for the logo. The logo and the running
+light and the ring, the colours of the PresLink mark (two chain links: the Ghana flag's red, yellow and green with its star, and purple, white and black) for the logo. The logo and the running
 total raised sit at the top of every screen; there is a tab bar (Play, Leaderboard, About, You), a Prizes page
 with a white card per prize (its photo, or a grey box with a question mark until there is one), and very
 little text. The leaderboard puts the top three on a podium (their tiles and scores on flat gold, silver and
@@ -136,7 +136,7 @@ open Supabase.
 | `site/posters/` | The four poster files, served at `/a3`, `/a4`, `/social` and `/message` |
 | `tools/posters.cjs` | Saves the four poster files from `poster.html` (Playwright) |
 | `site/fonts/` | Inter (OFL): the app's variable font, and static weights in `fonts/static/` that the posters use so PDFs embed ordinary TrueType |
-| `site/assets/` | The PresLink mark (`preslink-mark.svg`, the two chain links, redrawn as a vector), the school crest, the app icons made from the mark, the project photos (JPEG and WebP) and the committee-photo placeholder `photo-school.svg` |
+| `site/assets/` | The PresLink mark (`preslink-mark.svg`, the two chain links of the drawing, rebuilt as clean geometry: 1.8 KB), the school crest, the app icons made from the mark, the project photos (JPEG and WebP) and the committee-photo placeholder `photo-school.svg` |
 | `supabase/functions/api/index.ts` | Register, checkout, confirm payment, start play, submit score, committee actions (including Stripe connect) |
 | `supabase/functions/stripe-webhook/index.ts` | Receives Stripe's payment confirmation |
 | `docs/admin.sql` | Extra SQL for the committee (most day-to-day admin is in the committee console) |
@@ -247,7 +247,7 @@ charity**:
 - The committee page, the poster tools and the poster files say `noindex`, so the game's page is the one
   people find. Deploy previews are kept out of Google by Netlify itself.
 - Icons at 48, 96, 192 and 512 px give Google and phones a sharp logo; the photos have descriptive alt text.
-- The welcome animation plays on each fresh open (a new tab), not on a reload or on the way back from Stripe.
+- The welcome plays on every open and reload (the mark, the name, a second and a half), not on the way back from Stripe and never for a crawler.
   Search engines and link previews never get it: they see the page at once.
 - **IndexNow** (`.github/workflows/indexnow.yml`): after every change reaches `main` and Netlify has published
   it, GitHub tells Bing, Yandex, Seznam and Naver that the page changed (Bing also feeds DuckDuckGo, Yahoo,
@@ -444,7 +444,7 @@ talk to the real backend.
 
 ## Posters
 
-The poster is the original A3 design, in four formats, each at its own address on the site:
+The poster is a white sheet that says little (the name, the headline, the price, the code, three photos and the promise, with purple only for PresLink and the school), in four formats, each at its own address on the site:
 
 | Address | What | Use |
 |---|---|---|

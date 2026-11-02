@@ -1263,7 +1263,7 @@
   function roundRect(ctx, x, y, w, h, r) {
     ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
   }
-  const markImage = new Promise((resolve) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => resolve(null); img.src = 'assets/preslink-mark.svg?v=3'; });
+  const markImage = new Promise((resolve) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => resolve(null); img.src = 'assets/preslink-mark.svg?v=4'; });
   async function renderTicket() {
     const W = 1080, H = 1350;
     const c = document.createElement('canvas');
@@ -1275,7 +1275,7 @@
     ctx.fillStyle = '#ffffff'; roundRect(ctx, 56, 56, W - 112, H - 112, 52); ctx.fill();
     // the mark and the wordmark
     const img = await markImage;
-    if (img) ctx.drawImage(img, W / 2 - 73, 112, 146, 170);
+    if (img) ctx.drawImage(img, W / 2 - 65, 112, 130, 170);
     ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = '#5b3a9a'; ctx.font = font(50, 800); ctx.fillText('PresLink Arcade', W / 2, 356);
     // the light bar: the game's own mark
@@ -1719,28 +1719,14 @@
   // ---------------------------------------------------------------------------
   // Boot
   // ---------------------------------------------------------------------------
-  // Splash: a device's first visit only (decided in the head), about a second and a half. A tap skips it.
+  // The welcome: on every open and reload (decided in the head), about a second and a half. A tap skips it.
   const splashDone = new Promise((resolve) => {
     const el = $('#splash');
     if (!el) { resolve(); return; }
-    // At the end the mark flies to where the logo sits in the top bar, as the page shows through.
-    const finish = () => {
-      try {
-        // the logo in the top bar on a phone, in the sidebar on a desktop: whichever is on screen
-        const mark = $('.splash-mark'), brand = [$('.brand img'), $('.side-brand img')].find((el) => el && el.getClientRects().length);
-        if (mark && brand && !reduceMotion()) {
-          const m = mark.getBoundingClientRect(), t = brand.getBoundingClientRect();
-          const s = t.height / m.height;
-          mark.style.setProperty('--s', s.toFixed(3));
-          mark.style.setProperty('--dx', ((t.left + t.width / 2) - (m.left + m.width / 2)).toFixed(1) + 'px');
-          mark.style.setProperty('--dy', ((t.top + t.height / 2) - (m.top + m.height / 2)).toFixed(1) + 'px');
-        }
-      } catch (_) { /* no hand-off, just the fade */ }
-      el.classList.add('gone'); resolve();
-    };
+    const finish = () => { el.classList.add('gone'); resolve(); };
     const returning = /session_id=|cancelled=/.test(location.search) || document.documentElement.classList.contains('no-splash');
     if (returning) { finish(); return; }
-    setTimeout(finish, reduceMotion() ? 600 : 1750);
+    setTimeout(finish, reduceMotion() ? 500 : 1400);
     el.addEventListener('click', finish);
   });
   // Back from another page (the back-forward cache): the page is as it was; only the numbers are refreshed.
