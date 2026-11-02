@@ -28,7 +28,7 @@ back once done, and a player who already has a score never sees it. Practice goe
 device, not the day's real ones, and nothing about them is sent to the server or uses a play.
 
 The look is white and plain, after Duolingo (white pages and cards with a light grey edge, white buttons with
-a lip, large titles, tabs underlined in green, initials tiles in one of eight muted pastel colours that the player can change on the You tab, a progress ring) in one palette taken from the PresLink mark (two chain links: the Ghana flag's red, yellow and green with its star, and purple, white and black), each colour with one job: purple for PresLink, the charity and the school; green for things you do and for success; the logo's yellow for the game (its bar and light, first place, prize cards); grey for everything secondary; red only for errors. No gradients. The logo and the running
+a lip, large titles, tabs underlined in green, initials tiles in one of eight muted pastel colours that the player can change on the You tab, a progress ring) in one palette taken from the PresLink mark (two chain links: the Ghana flag's red, yellow and green with its star, and purple, white and black), each colour with one job: purple for PresLink, the charity and the school; green for things you do and for success; the logo's yellow for the game (first place, prize cards); grey for everything secondary; red only for errors. The one gradient is the game's bar, a warm sweep from pale yellow to orange. The logo and the running
 total raised sit at the top of every screen; there is a tab bar (Play, Leaderboard, About, You), a Prizes page
 with a white card per prize (its photo, or a trophy on pale yellow until there is one), and very
 little text. The leaderboard puts the top three on a podium (their tiles and scores on flat gold, silver and
@@ -247,7 +247,8 @@ charity**:
   people find. Deploy previews are kept out of Google by Netlify itself.
 - Icons at 48, 96, 192 and 512 px give Google and phones a sharp logo; the photos have descriptive alt text.
 - The welcome plays on every open and reload (a pen draws the two links in their colours, they close with a clink, the star lands and the name rises; about two seconds, a tap skips it), not on the way back from Stripe and never for a crawler.
-- A `favicon.ico` (16, 32 and 48 px) sits at the root for browsers and crawlers that ask for it there; every page links it and the SVG mark.
+- The icons are all square, as Google and browsers require: the mark on a white tile. `favicon.ico` (16, 32 and 48 px) and `apple-touch-icon.png` (180 px) sit at the root, where browsers and iPhones look without being told; every page links them with the SVG tile icon (`assets/icon.svg`), and the manifest carries the 192, 512 and maskable 512.
+- A missing address shows `404.html`: the mark, one line and a button back to the game.
   Search engines and link previews never get it: they see the page at once.
 - **IndexNow** (`.github/workflows/indexnow.yml`): after every change reaches `main` and Netlify has published
   it, GitHub tells Bing, Yandex, Seznam and Naver that the page changed (Bing also feeds DuckDuckGo, Yahoo,
