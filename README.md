@@ -225,7 +225,9 @@ the request came from.
 
 1. The owner sets the closing date and the five prize texts (Everyone, Students, Teachers, Best light,
    First play), each with a photo if there is one, through the API with the owner code (below). They
-   appear on the Prizes page as typed, one card per prize; an empty line shows "To be announced".
+   appear on the Prizes page as typed, one card per prize; an empty line shows "To be announced". Under each
+   prize the page shows who holds it right now (the top of each board, the best single light and the best first
+   play, ranked as the Terms say), or "No scores yet".
 2. At the end, **Winners** in the console shows the top three of each prize, ranked exactly as the site
    ranks them, with their codes and emails, and a CSV.
 3. Announce the initials. A winner shows their **You** tab (or the saved code picture): the initials and the
