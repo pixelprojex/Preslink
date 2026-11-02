@@ -2,9 +2,9 @@
 
 A web app, opened from a QR code on any device with a browser, for the PresLink charity at Presentation Brothers College, Cork.
 Scan a QR code, tap **Play · €2**, pay with Apple Pay, Google Pay or a card, and
-**stop the light on the mark**: three lights a play, the score is the average, out of 1,000.
+**stop the light on the line**: three goes a play, the score is the average, out of 1,000.
 One campaign, three boards (Everyone, Students, Teachers) and prizes at the end, plus two spot prizes
-(the best single light and the best first play). Every payment goes to PresLink.
+(the best single go and the best first play). Every payment goes to PresLink.
 
 There is no sign-up. On the first tap a small sheet asks for two or three letters (your initials),
 picked on an on-screen letter pad (tap a box to clear that letter), so the phone keyboard never covers
@@ -21,11 +21,11 @@ already has the same letters you still get them, shown with a small blue numbere
 carries a 2), so nobody is ever refused.
 
 Before a player's very first real play comes a **practice**, once: after paying, Start opens a big box ("This
-is a practice: three free lights to try the game, they don't count"), the three lights run on a game card
+is a practice: three free goes to learn the game, they don't count"), the three goes run on a game card
 edged in gold and marked Practice, and a second box ("Practice done", the practice score, "Now for real")
 leads into the real play. It can't be skipped (Back leaves, and it is there again next time), it never comes
-back once done, and a player who already has a score never sees it. Practice lights are made up on the
-device, not the day's real lights, and nothing about them is sent to the server or uses a play.
+back once done, and a player who already has a score never sees it. Practice goes are made up on the
+device, not the day's real ones, and nothing about them is sent to the server or uses a play.
 
 The look is white and plain, after Duolingo (white pages and cards with a light grey edge, white buttons with
 a lip, large titles, tabs underlined in green, initials tiles in one of eight muted pastel colours that the player can change on the You tab, a progress ring) in PresLink's colours: green for actions, orange for the
@@ -35,7 +35,7 @@ with a white card per prize (its photo, or a grey box with a question mark until
 little text. The leaderboard puts the top three on a podium (their tiles and scores on flat gold, silver and
 bronze steps, first in the middle and highest) and everyone else in plain rows (place, initials tile, score),
 with your own row edged in green. The result is one
-card (the score, its three lights, your best and rank, Play again), and You is one card with your tile and
+card (the score, its three goes, your best and rank, Play again), and You is one card with your tile and
 code, three numbers (plays left, your best, donated) and a short list. The same pages lay themselves out for
 an iPad (a 640 px column with the tab bar underneath; About shares rows, Home gets a top-three
 card) and for a desktop (the tab bar becomes a sidebar with the school at its foot, sheets become centred
@@ -223,7 +223,7 @@ the request came from.
 
 ### 6. Prizes at the end
 
-1. The owner sets the closing date and the five prize texts (Everyone, Students, Teachers, Best light,
+1. The owner sets the closing date and the five prize texts (Everyone, Students, Teachers, Best go,
    First play), each with a photo if there is one, through the API with the owner code (below). They
    appear on the Prizes page as typed, one card per prize; an empty line shows "To be announced". Under each
    prize the page shows who holds it right now (the top of each board, the best single light and the best first
@@ -247,7 +247,8 @@ charity**:
 - The committee page, the poster tools and the poster files say `noindex`, so the game's page is the one
   people find. Deploy previews are kept out of Google by Netlify itself.
 - Icons at 48, 96, 192 and 512 px give Google and phones a sharp logo; the photos have descriptive alt text.
-- Search engines and link previews never get the welcome animation: they see the page at once.
+- The welcome animation plays on each fresh open (a new tab), not on a reload or on the way back from Stripe.
+  Search engines and link previews never get it: they see the page at once.
 - **IndexNow** (`.github/workflows/indexnow.yml`): after every change reaches `main` and Netlify has published
   it, GitHub tells Bing, Yandex, Seznam and Naver that the page changed (Bing also feeds DuckDuckGo, Yahoo,
   Ecosia and ChatGPT search). The key file is `site/2bd96824e96199e73fa1d53b924ff191.txt`. It runs by itself;
@@ -310,7 +311,7 @@ changes the site. Every change asks first, in a box under what was clicked, then
   - **Cancel play** and **Restore**, on each play, with an optional reason kept with it.
   - **Ban** and **Unban**. A banned player can't pay or play and leaves the boards and the winners.
   - **Reset name**: a random new name, with the same code.
-- **Winners**: the top three of each prize (Everyone, Students, Teachers, Best light, First play), ranked
+- **Winners**: the top three of each prize (Everyone, Students, Teachers, Best go, First play), ranked
   exactly as the public site ranks them, with codes and emails, and a CSV.
 - **Blocked names**: initials nobody can choose for a new name. The committee's own can be unblocked; the
   site's built-in list stays.
@@ -333,7 +334,7 @@ curl -X POST "$SUPABASE_URL/functions/v1/api" -H "Content-Type: application/json
   -d '{"action":"admin","code":"<committee code>","owner_code":"<owner code>","op":"settings","prizes":{"everyone":"€50 voucher"},"ends_on":"2026-12-12","goal_cents":200000}'
 ```
 
-- `settings`: the goal, the closing date and the five prize texts (Everyone, Students, Teachers, Best light,
+- `settings`: the goal, the closing date and the five prize texts (Everyone, Students, Teachers, Best go,
   First play). They show on the Prizes page as typed.
 - `set_content` and `upload_image`: the site's words and photos (below).
 - `stripe_connect` and `stripe_disconnect`: payments on or off (section 2 above).

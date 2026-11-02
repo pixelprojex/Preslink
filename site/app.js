@@ -588,8 +588,8 @@
     contentKey = key;
     c = c || {};
     const hero = c.hero || {}, about = c.about || {}, contact = c.contact || {};
-    $('.hero-h').textContent = hero.title || 'Stop the light.';
-    $('.hero-p').textContent = hero.subtitle || 'Every play funds schools in Ghana and Nigeria.';
+    $('.hero-h').textContent = hero.title || 'Stop the light on the line.';
+    $('.hero-cause').textContent = hero.subtitle || "Every cent after card fees goes to PresLink, the school's charity for schools in Ghana and Nigeria.";
     const notice = $('#home-notice');
     notice.textContent = c.notice || ''; notice.hidden = !c.notice;
     $('#about-intro-title').textContent = about.intro_title || 'Run by students';
@@ -886,7 +886,7 @@
     })();
     fetching.catch(() => {});
     const m = $('#game-msg');
-    m.textContent = 'Light 1 of 3';
+    m.textContent = 'Go 1 of 3';
     // The first time, the rules sit over the game until Got it is tapped; nothing moves meanwhile.
     if (!store.get(HOW_SEEN_KEY) && best == null) { await showIntro(); if (game.state !== 'loading') return; }
     try {
@@ -913,7 +913,7 @@
     if (prog && prog.play_id === res.play_id && Array.isArray(prog.taps) && prog.taps.length > 0 && prog.taps.length < ROUNDS) {
       game.taps = prog.taps.slice(); game.scores = prog.scores.slice(); game.errs = prog.errs.slice();
       from = prog.taps.length;
-      toast(`Carrying on from light ${from + 1}`);
+      toast(`Carrying on from go ${from + 1}`);
     } else if (prog) store.del(PROGRESS_KEY);
     beginRound(from);
   }
@@ -923,7 +923,7 @@
     game.round = i;
     const r = game.play.rounds[i];
     const m = $('#game-msg');
-    m.textContent = `${game.practice ? 'Practice light' : 'Light'} ${i + 1} of 3`;
+    m.textContent = `${game.practice ? 'Practice go' : 'Go'} ${i + 1} of 3`;
     setPin(r.target);
     marker.classList.remove('hit', 'miss', 'hide');
     measure();
@@ -1045,10 +1045,10 @@
   // ring the player never asked for.
   function dropHiddenFocus() { const a = document.activeElement; if (a && a !== document.body && a.blur && !a.getClientRects().length) a.blur(); }
   const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
-  const tapWord = () => (finePointer.matches ? 'Click or press Space when the light is on the mark' : 'Tap when the light is on the mark');
+  const tapWord = () => (finePointer.matches ? 'Click or press Space when the white light is on the black line' : 'Tap when the white light is on the black line');
   if (finePointer.matches) {
-    const step = $('#how-title').closest('.sheet').querySelector('.steps li'); if (step) step.textContent = 'Click or press Space when the light is on the mark.';
-    $('#practice-rule').textContent = 'Click or press Space when the light is on the mark.';
+    const step = $('#how-title').closest('.sheet').querySelector('.steps li'); if (step) step.textContent = 'Click or press Space when the white light is on the black line.';
+    $('#practice-rule').textContent = 'Click or press Space when the white light is on the black line.';
   }
 
   // After the stop: the light's number under the bar and a verdict; then the next light.
@@ -1213,7 +1213,7 @@
     countUp($('#result-score'), 0, score, 650, String);
     const lights = r && Array.isArray(r.rounds) && r.rounds.length === ROUNDS ? r.rounds.map((x) => Number(x)) : game.scores;
     // The three lights the score is the average of
-    $('#result-rounds').innerHTML = lights.map((s, i) => `<div class="lt"><span>Light ${i + 1}</span><strong>${s}</strong></div>`).join('');
+    $('#result-rounds').innerHTML = lights.map((s, i) => `<div class="lt"><span>Go ${i + 1}</span><strong>${s}</strong></div>`).join('');
     $('#result-best').textContent = r && best != null ? best : '–';
     $('#result-rank').textContent = rank ? '#' + rank : '–';
     renderResultEmail();
@@ -1240,7 +1240,6 @@
     // First scored play: ask where to send the news if they win, and nothing on top of it.
     const firstAsk = !!r && !!player && !player.contact_email && !store.get(CONTACT_ASKED_KEY);
     if (!firstAsk) dropHiddenFocus(); // Enter or Space plays again (see the keys above)
-    if (r && rank === 1 && prevRank !== 1 && !firstAsk) toast('You are top of the board');
     if (firstAsk) openContact(true);
   }
   // The reminder row on the result screen shows only while no email is on file.
@@ -1745,6 +1744,7 @@
         .finally(() => { refreshMe(true); refreshStats(); });
     } else if (pending) store.del(PENDING_KEY);
     if (DEMO) toast('Demo: payments and scores are simulated on this device.', false, 4000);
+    else fetch(CONFIG.SUPABASE_URL + '/functions/v1/api', { method: 'OPTIONS' }).catch(() => {}); // wakes the server function, so the first tap that needs it does not wait
     store.del('preslink.practice'); // left by the practice rounds of an earlier version
 
     renderHome();

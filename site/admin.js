@@ -248,7 +248,7 @@
     lead('Teachers board', top((x) => !x.banned && x.role === 'teacher'), (top((x) => !x.banned && x.role === 'teacher') || {}).score);
     const sp = d.spot || {};
     const rowFor = (initials) => board.find((x) => x.initials === initials);
-    lead('Best light', sp.best_light ? rowFor(sp.best_light.initials) || { initials: sp.best_light.initials, claim_code: '', player_id: '' } : null, sp.best_light ? sp.best_light.score : '');
+    lead('Best go', sp.best_light ? rowFor(sp.best_light.initials) || { initials: sp.best_light.initials, claim_code: '', player_id: '' } : null, sp.best_light ? sp.best_light.score : '');
     lead('First play', sp.first_play ? rowFor(sp.first_play.initials) || { initials: sp.first_play.initials, claim_code: '', player_id: '' } : null, sp.first_play ? sp.first_play.score : '');
     const dd = $('#ov-days tbody'); dd.innerHTML = '';
     (d.by_day || []).forEach((x) => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${esc(when(x.day + 'T12:00:00', false))}</td><td class="num">${x.payments}</td><td class="num">${euro(x.amount_cents)}</td>`; dd.appendChild(tr); });
@@ -422,7 +422,7 @@
       ${noteAt('top')}
       <h4>Plays</h4>
       ${noteAt('plays')}
-      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Started</th><th class="num">Score</th><th class="num">Best light</th><th></th></tr></thead><tbody>${plays.map(playRow).join('') || '<tr><td colspan="4" class="muted">No plays.</td></tr>'}</tbody></table></div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Started</th><th class="num">Score</th><th class="num">Best go</th><th></th></tr></thead><tbody>${plays.map(playRow).join('') || '<tr><td colspan="4" class="muted">No plays.</td></tr>'}</tbody></table></div>
       <h4>Free plays</h4>
       <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Given</th><th>Reason</th></tr></thead><tbody>${free.map((x) => `<tr><td>${esc(when(x.created_at))}</td><td class="wrap">${esc(x.reason)}</td></tr>`).join('') || '<tr><td colspan="2" class="muted">None given.</td></tr>'}</tbody></table></div>
       <h4>Payments</h4>
@@ -448,7 +448,7 @@
         askFirst(b, top, {
           text: `Give ${name} a free play? Only for a play that failed through a fault on our side. It isn't a payment and doesn't count as money raised. ${shown.given} of ${shown.limit} given so far.`,
           ok: 'Give the play',
-          input: { label: 'Reason (kept with the play)', placeholder: 'e.g. froze on the second light', min: 3, max: 120, hint: MESSAGES.BAD_REASON },
+          input: { label: 'Reason (kept with the play)', placeholder: 'e.g. froze on the second go', min: 3, max: 120, hint: MESSAGES.BAD_REASON },
           run: async (reason) => { const r = await call('give_play', { player_id: id, reason }); await changed(name, `Free play given to ${name} (${r.given} of ${r.limit}).`); },
         });
         return;
@@ -504,7 +504,7 @@
   // Winners --------------------------------------------------------------------
   // The top three of each prize slot, ranked as the public site ranks them, with what the committee needs at the
   // close: the emails to reach a winner and the code they show to collect.
-  const SLOTS = [['everyone', 'Everyone board'], ['students', 'Students board'], ['teachers', 'Teachers board'], ['best_light', 'Best light'], ['first_play', 'First play']];
+  const SLOTS = [['everyone', 'Everyone board'], ['students', 'Students board'], ['teachers', 'Teachers board'], ['best_light', 'Best go'], ['first_play', 'First play']];
   loaders.winners = async () => {
     const res = await guarded(() => call('winners'));
     if (!res) return;
@@ -514,7 +514,7 @@
     const lights = (k, w) => {
       const l = Array.isArray(w.lights) ? w.lights : [];
       if (k === 'best_light') return l.length > 1 ? ` <span class="muted small">then ${l.slice(1).join(', ')}</span>` : '';
-      return k === 'first_play' && l.length ? ` <span class="muted small">lights ${l.join(', ')}</span>` : '';
+      return k === 'first_play' && l.length ? ` <span class="muted small">goes ${l.join(', ')}</span>` : '';
     };
     $('#win-slots').innerHTML = SLOTS.map(([k, label]) => {
       const rows = (res[k] || []).map((w) => `<tr><td class="num">${w.rank}</td><td><a href="#players" data-player="${esc(w.initials)}">${esc(w.initials)}</a>${w.banned ? ' <span class="muted">(banned)</span>' : ''}</td><td class="num">${w.score}${lights(k, w)}</td><td><strong class="code">${esc(w.claim_code)}</strong></td><td>${esc(w.contact_email || '–')}</td><td>${esc(w.school_email || '–')}</td><td>${esc(when(w.achieved_at))}</td></tr>`).join('');
