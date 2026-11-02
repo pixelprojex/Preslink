@@ -1726,7 +1726,8 @@
     // At the end the mark flies to where the logo sits in the top bar, as the page shows through.
     const finish = () => {
       try {
-        const mark = $('.splash-mark'), brand = $('.brand img');
+        // the logo in the top bar on a phone, in the sidebar on a desktop: whichever is on screen
+        const mark = $('.splash-mark'), brand = [$('.brand img'), $('.side-brand img')].find((el) => el && el.getClientRects().length);
         if (mark && brand && !reduceMotion()) {
           const m = mark.getBoundingClientRect(), t = brand.getBoundingClientRect();
           const s = t.height / m.height;

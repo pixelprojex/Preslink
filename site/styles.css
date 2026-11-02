@@ -370,8 +370,10 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
 .splash { position: fixed; inset: 0; z-index: 50; background: #fff; display: grid; place-content: center; justify-items: center; gap: 10px; transition: opacity .42s ease .06s, visibility .5s; }
 .splash.gone { opacity: 0; visibility: hidden; pointer-events: none; }
 .no-splash .splash { display: none; }
-.splash-mark { width: 180px; height: 238px; transform-origin: center; animation: marklock .55s cubic-bezier(.3, 1.5, .5, 1) .66s both; transition: transform .5s cubic-bezier(.4, 0, .2, 1); }
-.splash.gone .splash-mark { transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(var(--s, .2)); }
+.splash-mark { width: 180px; height: 238px; transform-origin: center; animation: marklock .55s cubic-bezier(.3, 1.5, .5, 1) .66s both; }
+/* the lock animation would otherwise hold the mark's transform, so the flight is an animation too */
+.splash.gone .splash-mark { animation: markfly .5s cubic-bezier(.4, 0, .2, 1) both; }
+@keyframes markfly { to { transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(var(--s, .2)); } }
 .splash-mark svg { width: 100%; height: 100%; overflow: visible; }
 .link-a, .link-b { animation: linkin .72s cubic-bezier(.22, 1, .36, 1) both; transform-box: fill-box; transform-origin: center; }
 .link-a { --from: translate(620px, -1240px) rotate(-18deg); }
@@ -390,7 +392,7 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
 .splash-credit { position: absolute; bottom: calc(36px + env(safe-area-inset-bottom)); left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 8px; color: var(--purple); font-weight: 600; font-size: 13px; animation: wordin .45s ease-out 1.35s both; }
 .splash-credit img { width: 20px; height: 24px; }
 @keyframes wordin { 0% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .splash-mark, .link-a, .link-b, .link-star, .splash-word span, .splash-sub, .splash-credit { animation: none; } .splash.gone .splash-mark { transform: none; } .splash { transition: opacity .4s ease, visibility .4s; } }
+@media (prefers-reduced-motion: reduce) { .splash-mark, .link-a, .link-b, .link-star, .splash-word span, .splash-sub, .splash-credit { animation: none; } .splash.gone .splash-mark { animation: none; } .splash { transition: opacity .4s ease, visibility .4s; } }
 
 /* iPad and desktop */
 .title-sub { margin: 2px 0 0; color: var(--muted); font-size: 14px; font-weight: 500; }
