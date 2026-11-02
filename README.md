@@ -28,10 +28,9 @@ back once done, and a player who already has a score never sees it. Practice goe
 device, not the day's real ones, and nothing about them is sent to the server or uses a play.
 
 The look is white and plain, after Duolingo (white pages and cards with a light grey edge, white buttons with
-a lip, large titles, tabs underlined in green, initials tiles in one of eight muted pastel colours that the player can change on the You tab, a progress ring) in PresLink's colours: green for actions, orange for the
-light and the ring, the colours of the PresLink mark (two chain links: the Ghana flag's red, yellow and green with its star, and purple, white and black) for the logo. The logo and the running
+a lip, large titles, tabs underlined in green, initials tiles in one of eight muted pastel colours that the player can change on the You tab, a progress ring) in one palette taken from the PresLink mark (two chain links: the Ghana flag's red, yellow and green with its star, and purple, white and black), each colour with one job: purple for PresLink, the charity and the school; green for things you do and for success; the logo's yellow for the game (its bar and light, first place, prize cards); grey for everything secondary; red only for errors. No gradients. The logo and the running
 total raised sit at the top of every screen; there is a tab bar (Play, Leaderboard, About, You), a Prizes page
-with a white card per prize (its photo, or a grey box with a question mark until there is one), and very
+with a white card per prize (its photo, or a trophy on pale yellow until there is one), and very
 little text. The leaderboard puts the top three on a podium (their tiles and scores on flat gold, silver and
 bronze steps, first in the middle and highest) and everyone else in plain rows (place, initials tile, score),
 with your own row edged in green. The result is one
@@ -247,7 +246,8 @@ charity**:
 - The committee page, the poster tools and the poster files say `noindex`, so the game's page is the one
   people find. Deploy previews are kept out of Google by Netlify itself.
 - Icons at 48, 96, 192 and 512 px give Google and phones a sharp logo; the photos have descriptive alt text.
-- The welcome plays on every open and reload (the mark, the name, a second and a half), not on the way back from Stripe and never for a crawler.
+- The welcome plays on every open and reload (a pen draws the two links in their colours, they close with a clink, the star lands and the name rises; about two seconds, a tap skips it), not on the way back from Stripe and never for a crawler.
+- A `favicon.ico` (16, 32 and 48 px) sits at the root for browsers and crawlers that ask for it there; every page links it and the SVG mark.
   Search engines and link previews never get it: they see the page at once.
 - **IndexNow** (`.github/workflows/indexnow.yml`): after every change reaches `main` and Netlify has published
   it, GitHub tells Bing, Yandex, Seznam and Naver that the page changed (Bing also feeds DuckDuckGo, Yahoo,
@@ -444,16 +444,16 @@ talk to the real backend.
 
 ## Posters
 
-The poster is a white sheet that says little (the name, the headline, the price, the code, three photos and the promise, with purple only for PresLink and the school), in four formats, each at its own address on the site:
+The printed poster is a white sheet that says little (the name, the headline, the price, the code, three photos and the promise, with purple only for PresLink and the school; the A3 adds a line under each photo on what it is). The post and the message are for screens: on deep purple, with a photo of the bikes PresLink bought and no code, since they are seen on the phone that would have to scan it. Four formats, each at its own address on the site:
 
 | Address | What | Use |
 |---|---|---|
 | `preslink.netlify.app/a3` | A3 PDF | Corridors, the canteen, shop windows. Print at actual size. |
 | `preslink.netlify.app/a4` | A4 PDF | Noticeboards, doors, handouts. The A3 shrunk exactly, as the paper is. |
 | `preslink.netlify.app/social` | 1080 x 1350 picture | Instagram and Facebook posts, WhatsApp status. The web address takes the code's place. |
-| `preslink.netlify.app/message` | 1200 x 630 picture | To attach to a message or an email; it is also the picture a shared link shows. |
+| `preslink.netlify.app/message` | 1200 x 630 picture | To attach to a message or an email; it is also the picture a shared link shows. The web address, beside a photo. |
 
-The addresses work in capitals too (`/A3`). The QR codes open the site with a tag (`?r=a3`, `?r=a4`, `?r=msg`), and
+The addresses work in capitals too (`/A3`). The QR codes on the A3 and A4 open the site with a tag (`?r=a3`, `?r=a4`), and
 the tag goes with any payment that follows, so Stripe's payment details (metadata, `source`) show which posters
 bring plays. Nothing about the person is recorded. Online, send the link itself where you can:
 `preslink.netlify.app` shows the Message poster as its preview in WhatsApp, Messages, Instagram, Facebook and most

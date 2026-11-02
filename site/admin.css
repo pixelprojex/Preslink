@@ -1,5 +1,5 @@
 /* The committee console: plain, white, system type, thin lines, and nothing that edits the site. Nothing from the arcade's look. */
-:root { --ink: #111827; --text: #374151; --muted: #6b7280; --line: #e5e7eb; --panel: #f9fafb; --blue: #1d4ed8; --red: #b91c1c; --green: #047857; --field: #d1d5db; }
+:root { --ink: #111827; --text: #374151; --muted: #6b7280; --line: #e5e7eb; --panel: #f9fafb; --blue: #8a219d; --red: #c33b29; --green: #2e8520; /* the PresLink palette: purple accents, green for done */ --field: #d1d5db; }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { margin: 0; background: #fff; color: var(--ink); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
@@ -18,7 +18,7 @@ a { color: var(--blue); }
 /* fields */
 input, select, textarea { width: 100%; font: inherit; color: var(--ink); background: #fff; border: 1px solid var(--field); border-radius: 6px; padding: 9px 11px; margin: 0; }
 textarea { resize: vertical; }
-input:focus, select:focus, textarea:focus { outline: 2px solid #bfdbfe; outline-offset: 0; border-color: #60a5fa; }
+input:focus, select:focus, textarea:focus { outline: 2px solid #ecd3f1; outline-offset: 0; border-color: #b56bc4; }
 input[readonly] { background: var(--panel); }
 .lbl { display: block; font-size: 13px; color: var(--muted); margin: 18px 0 6px; }
 .pw { position: relative; }

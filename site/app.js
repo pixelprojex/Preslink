@@ -370,7 +370,7 @@
     const canvas = $('#confetti');
     const ctx = canvas.getContext('2d');
     let parts = [], raf = 0;
-    const colors = ['#1f9d5a', '#f6c21f', '#5b3a9a', '#ffffff', '#ffe08a'];
+    const colors = ['#c33b29', '#f2ea5f', '#5cb73b', '#8a219d', '#2e8520']; // the logo's colours
     function tick() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       parts = parts.filter((p) => p.life > 0);
@@ -612,7 +612,9 @@
     if (site) rows.push(`<a class="cell" href="${esc(/^https?:\/\//.test(site) ? site : 'https://' + site)}" target="_blank" rel="noopener"><span>Website<small>${esc(site.replace(/^https?:\/\//, ''))}</small></span><span class="chev">›</span></a>`);
     cc.innerHTML = rows.length ? `<h2 class="card-h">Contact</h2>${rows.join('')}` : '';
     cc.hidden = !rows.length;
-    $('.story.school .photo').src = about.intro_image || 'assets/photo-school.svg?v=2';
+    const schoolPhoto = $('.story.school .photo');
+    schoolPhoto.src = about.intro_image || 'assets/photo-school.svg?v=2';
+    schoolPhoto.hidden = !about.intro_image; // no grey placeholder: the card is its words until there is a photo
     const photos = c.prize_photos || {};
     $$('.prize[data-prize]').forEach((el) => {
       const src = String(photos[el.dataset.prize] || ''), img = $('img', el);
@@ -1263,26 +1265,24 @@
   function roundRect(ctx, x, y, w, h, r) {
     ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
   }
-  const markImage = new Promise((resolve) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => resolve(null); img.src = 'assets/preslink-mark.svg?v=4'; });
+  const markImage = new Promise((resolve) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => resolve(null); img.src = 'assets/preslink-mark.svg?v=5'; });
   async function renderTicket() {
     const W = 1080, H = 1350;
     const c = document.createElement('canvas');
     c.width = W; c.height = H;
     const ctx = c.getContext('2d');
     const font = (size, weight) => `${weight} ${size}px -apple-system, BlinkMacSystemFont, Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif`;
-    // green ground, white card
-    ctx.fillStyle = '#1f9d5a'; ctx.fillRect(0, 0, W, H);
+    // purple ground, white card
+    ctx.fillStyle = '#8a219d'; ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = '#ffffff'; roundRect(ctx, 56, 56, W - 112, H - 112, 52); ctx.fill();
     // the mark and the wordmark
     const img = await markImage;
     if (img) ctx.drawImage(img, W / 2 - 65, 112, 130, 170);
     ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-    ctx.fillStyle = '#5b3a9a'; ctx.font = font(50, 800); ctx.fillText('PresLink Arcade', W / 2, 356);
+    ctx.font = font(50, 800); { const a = 'PresLink ', b = 'Arcade', wa = ctx.measureText(a).width, wb = ctx.measureText(b).width, x0 = W / 2 - (wa + wb) / 2; ctx.textAlign = 'left'; ctx.fillStyle = '#8a219d'; ctx.fillText(a, x0, 356); ctx.fillStyle = '#2e8520'; ctx.fillText(b, x0 + wa, 356); ctx.textAlign = 'center'; }
     // the light bar: the game's own mark
     const bx = 240, by = 396, bw = 600, bh = 34;
-    const g = ctx.createLinearGradient(bx, 0, bx + bw, 0);
-    g.addColorStop(0, '#fff3c4'); g.addColorStop(.45, '#ffd766'); g.addColorStop(.75, '#ffab45'); g.addColorStop(1, '#f26a1b');
-    ctx.fillStyle = g; roundRect(ctx, bx, by, bw, bh, bh / 2); ctx.fill();
+    ctx.fillStyle = '#f2ea5f'; roundRect(ctx, bx, by, bw, bh, bh / 2); ctx.fill();
     ctx.fillStyle = '#1c1c1e'; roundRect(ctx, bx + bw * 0.62 - 3, by - 10, 6, bh + 20, 3); ctx.fill();
     ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#1c1c1e'; ctx.lineWidth = 4; roundRect(ctx, bx + bw * 0.62 - 13, by - 6, 26, bh + 12, 13); ctx.fill(); ctx.stroke();
     // name
@@ -1292,12 +1292,12 @@
     if (sx) { // the same initials as someone else: a numbered bubble on the shoulder of the name
       const w = ctx.measureText(lt).width;
       const cx = W / 2 + w / 2 + 34, cy = 712 - 150;
-      ctx.fillStyle = '#2a7de1'; ctx.beginPath(); ctx.arc(cx, cy, 44, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#1c1c1e'; ctx.beginPath(); ctx.arc(cx, cy, 44, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#fff'; ctx.font = font(52, 800); ctx.textBaseline = 'middle'; ctx.fillText(sx, cx, cy + 2); ctx.textBaseline = 'alphabetic';
     }
     // code
     ctx.fillStyle = '#8e8e93'; ctx.font = font(28, 700); ctx.fillText('Y O U R   C O D E', W / 2, 820);
-    ctx.fillStyle = '#1f9d5a'; ctx.font = font(200, 800); ctx.fillText(player.claim_code.split('').join(' '), W / 2, 1000);
+    ctx.fillStyle = '#8a219d'; ctx.font = font(200, 800); ctx.fillText(player.claim_code.split('').join(' '), W / 2, 1000);
     // rule, then the condition first so nobody reads the ticket as a prize
     ctx.fillStyle = '#e5e5ea'; ctx.fillRect(160, 1064, W - 320, 3);
     ctx.fillStyle = '#1c1c1e'; ctx.font = font(36, 800); ctx.fillText(HONOURS() ? 'Proves your scores are yours.' : 'Show this to collect a prize.', W / 2, 1140);
@@ -1723,11 +1723,19 @@
   const splashDone = new Promise((resolve) => {
     const el = $('#splash');
     if (!el) { resolve(); return; }
-    const finish = () => { el.classList.add('gone'); resolve(); };
+    let done = false;
+    const finish = (played) => {
+      if (done) return; done = true;
+      el.classList.add('gone'); resolve();
+      if (played === true && !reduceMotion()) { // the page under the welcome rises in as it opens
+        const scr = $('.screen:not([hidden])');
+        if (scr) { scr.classList.add('rise-in'); setTimeout(() => scr.classList.remove('rise-in'), 1100); }
+      }
+    };
     const returning = /session_id=|cancelled=/.test(location.search) || document.documentElement.classList.contains('no-splash');
     if (returning) { finish(); return; }
-    setTimeout(finish, reduceMotion() ? 500 : 1400);
-    el.addEventListener('click', finish);
+    setTimeout(() => finish(true), reduceMotion() ? 500 : 1900);
+    el.addEventListener('click', () => finish(true));
   });
   // Back from another page (the back-forward cache): the page is as it was; only the numbers are refreshed.
   window.addEventListener('pageshow', (e) => { if (e.persisted) { overlay(null); refreshStats(); refreshMe(true); } });
