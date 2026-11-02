@@ -139,7 +139,6 @@ button.cell:active { background: var(--fill); }
 .cell:focus-visible::before { display: none; }
 .segmented .tab:focus-visible, .segmented button:focus-visible { outline-offset: -6px; border-radius: 13px; }
 .tabbar button:focus-visible { outline-offset: -3px; }
-.mini-link:focus-visible { outline-offset: 0; }
 .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
 .btn-primary { background: var(--green); color: #fff; }
 .btn-red { background: var(--red); color: #fff; --face: 0 0 #0000; --lip-c: #a32d2d; }
@@ -205,10 +204,11 @@ button.cell:active { background: var(--fill); }
 .hero-card { padding: 18px 16px 14px; margin-top: 8px; }
 .hero-h { font-size: 24px; font-weight: 800; letter-spacing: -.03em; margin: 0 0 4px; }
 .hero-p { margin: 0 0 16px; color: var(--muted); font-size: 14px; font-weight: 500; line-height: 1.45; }
-/* the charity first: who the money goes to, in plain sight, and the way to read more */
-.hero-cause { margin: 0; color: var(--ink); font-size: 15px; font-weight: 500; line-height: 1.45; text-wrap: pretty; }
-.hero-more { margin: 0 0 8px -8px; }
-.hero-more .text-link { min-height: 40px; font-size: 14px; }
+/* the charity first: who the money goes to, in one quiet line, with the way to read more */
+.hero-cause { margin: 0 0 4px; color: var(--muted); font-size: 14px; font-weight: 500; line-height: 1.45; text-wrap: pretty; }
+.hero-cause .inline-link { white-space: nowrap; }
+/* How to play: a proper button, as easy to find as Play */
+.hero-how { margin-top: 10px; }
 .hero-card .bundles-line { margin-top: 12px; }
 /* The home preview is the game's bar in miniature: the same gradient, mark and white light, sweeping by a transform. */
 .demo-track { position: relative; height: 40px; border-radius: 20px; background: linear-gradient(90deg, #fff4c2 0%, #ffe27c 24%, #ffc94e 50%, #ffa63a 76%, #f26a1b 100%); margin: 28px 0 26px; }
@@ -364,30 +364,37 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
 .save-hint { text-align: center; color: var(--muted-d); font-size: 13px; font-weight: 500; line-height: 1.4; margin: 8px 4px 0; }
 .sheet .card { background: var(--surface); }
 
-/* Splash: the two links of the PresLink mark swing in from either side, lock together with a bounce, then
-   pulse once like a heartbeat as the name rises. */
-.splash { position: fixed; inset: 0; z-index: 50; background: #fff; display: grid; place-content: center; justify-items: center; gap: 10px; transition: opacity .35s ease, visibility .35s, transform .35s ease; }
-.splash.gone { opacity: 0; visibility: hidden; pointer-events: none; transform: scale(1.04); }
+/* Welcome: the two links of the PresLink mark fly in from opposite corners and lock together with a click;
+   the star pops; the name rises letter by letter; then the mark flies up into its place in the top bar as the
+   page appears. Tap anywhere to skip. */
+.splash { position: fixed; inset: 0; z-index: 50; background: #fff; display: grid; place-content: center; justify-items: center; gap: 10px; transition: opacity .42s ease .06s, visibility .5s; }
+.splash.gone { opacity: 0; visibility: hidden; pointer-events: none; }
 .no-splash .splash { display: none; }
-.splash-mark { width: 176px; height: 206px; animation: marklock .5s cubic-bezier(.3, 1.4, .5, 1) .6s both, markpulse .8s cubic-bezier(.4, 0, .2, 1) 1.05s both; }
+.splash-mark { width: 180px; height: 238px; transform-origin: center; animation: marklock .55s cubic-bezier(.3, 1.5, .5, 1) .66s both; }
+/* at the hand-off the words vanish at once; only the mark flies */
+.splash.gone .splash-word, .splash.gone .splash-sub, .splash.gone .splash-credit { opacity: 0; transition: opacity .12s; animation: none; }
+/* the lock animation would otherwise hold the mark's transform, so the flight is an animation too */
+.splash.gone .splash-mark { animation: markfly .5s cubic-bezier(.4, 0, .2, 1) both; }
+@keyframes markfly { to { transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(var(--s, .2)); } }
 .splash-mark svg { width: 100%; height: 100%; overflow: visible; }
-.link-a, .link-b { animation: linkin .62s cubic-bezier(.2, .9, .25, 1.12) both; transform-box: fill-box; transform-origin: center; }
-.link-a { --from: translate(240px, -520px) rotate(-14deg); }
-.link-b { --from: translate(-240px, 520px) rotate(14deg); animation-delay: .05s; }
-@keyframes linkin { 0% { transform: var(--from); opacity: 0; } 35% { opacity: 1; } 100% { transform: none; opacity: 1; } }
-@keyframes marklock { 0% { transform: scale(1); } 30% { transform: scale(1.1) rotate(-2deg); } 65% { transform: scale(.97) rotate(1deg); } 100% { transform: scale(1); } }
-@keyframes markpulse { 0%, 100% { transform: scale(1); } 25% { transform: scale(1.07); } 50% { transform: scale(1); } 70% { transform: scale(1.04); } }
+.link-a, .link-b { animation: linkin .72s cubic-bezier(.22, 1, .36, 1) both; transform-box: fill-box; transform-origin: center; }
+.link-a { --from: translate(620px, -1240px) rotate(-18deg); }
+.link-b { --from: translate(-620px, 1240px) rotate(18deg); animation-delay: .04s; }
+@keyframes linkin { 0% { transform: var(--from); opacity: 0; } 30% { opacity: 1; } 100% { transform: none; opacity: 1; } }
+.link-star { animation: starpop .45s cubic-bezier(.2, .9, .3, 1.5) .78s both; transform-box: fill-box; transform-origin: center; }
+@keyframes starpop { 0% { transform: scale(0) rotate(-40deg); opacity: 0; } 100% { transform: none; opacity: 1; } }
+@keyframes marklock { 0% { transform: scale(1); } 28% { transform: scale(1.1, .92) rotate(-2deg); } 58% { transform: scale(.97, 1.03) rotate(1deg); } 100% { transform: scale(1); } }
 .splash-word { display: flex; font-size: 34px; font-weight: 800; color: var(--ink); letter-spacing: -.02em; margin-top: 6px; }
 .splash-word span { display: inline-block; animation: letterin .45s cubic-bezier(.2, .9, .3, 1.3) both; }
-.splash-word span:nth-child(1) { animation-delay: .42s; } .splash-word span:nth-child(2) { animation-delay: .455s; } .splash-word span:nth-child(3) { animation-delay: .49s; } .splash-word span:nth-child(4) { animation-delay: .525s; }
-.splash-word span:nth-child(5) { animation-delay: .56s; } .splash-word span:nth-child(6) { animation-delay: .595s; } .splash-word span:nth-child(7) { animation-delay: .63s; } .splash-word span:nth-child(8) { animation-delay: .665s; }
+.splash-word span:nth-child(1) { animation-delay: .9s; } .splash-word span:nth-child(2) { animation-delay: .935s; } .splash-word span:nth-child(3) { animation-delay: .97s; } .splash-word span:nth-child(4) { animation-delay: 1.005s; }
+.splash-word span:nth-child(5) { animation-delay: 1.04s; } .splash-word span:nth-child(6) { animation-delay: 1.075s; } .splash-word span:nth-child(7) { animation-delay: 1.11s; } .splash-word span:nth-child(8) { animation-delay: 1.145s; }
 @keyframes letterin { 0% { opacity: 0; transform: translateY(22px) scale(.8); } 100% { opacity: 1; transform: none; } }
-.splash-sub { font-size: 13px; font-weight: 700; color: var(--green); letter-spacing: .34em; text-transform: uppercase; margin-top: -2px; animation: subin .5s ease-out .75s both; }
+.splash-sub { font-size: 13px; font-weight: 700; color: var(--green); letter-spacing: .34em; text-transform: uppercase; margin-top: -2px; animation: subin .5s ease-out 1.25s both; }
 @keyframes subin { 0% { opacity: 0; letter-spacing: .1em; } 100% { opacity: 1; letter-spacing: .34em; } }
-.splash-credit { position: absolute; bottom: calc(36px + env(safe-area-inset-bottom)); left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 8px; color: var(--purple); font-weight: 600; font-size: 13px; animation: wordin .45s ease-out .85s both; }
+.splash-credit { position: absolute; bottom: calc(36px + env(safe-area-inset-bottom)); left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 8px; color: var(--purple); font-weight: 600; font-size: 13px; animation: wordin .45s ease-out 1.35s both; }
 .splash-credit img { width: 20px; height: 24px; }
 @keyframes wordin { 0% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .splash-mark, .link-a, .link-b, .splash-word span, .splash-sub, .splash-credit { animation: none; } .splash { transition: opacity .4s ease, visibility .4s; } }
+@media (prefers-reduced-motion: reduce) { .splash-mark, .link-a, .link-b, .link-star, .splash-word span, .splash-sub, .splash-credit { animation: none; } .splash.gone .splash-mark { animation: none; } .splash { transition: opacity .4s ease, visibility .4s; } }
 
 /* iPad and desktop */
 .title-sub { margin: 2px 0 0; color: var(--muted); font-size: 14px; font-weight: 500; }
@@ -588,10 +595,6 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
 .btn { overflow: hidden; }
 .btn-primary { --face: 0 0 #0000; --lip-c: var(--green-d); }
 
-/* Home: the rules as a quiet link under the bundles */
-.hero-links { display: flex; justify-content: center; gap: 4px; margin: 10px 0 0; }
-.mini-link { border: 0; background: none; color: var(--green-d); font-weight: 700; font-size: 14px; padding: 7px 12px; border-radius: 999px; cursor: pointer; transition: background .15s; }
-.mini-link:active { background: var(--green-l); }
 .card-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding-right: 12px; } /* the label and its link on one line of text */
 .card-row .card-h { padding-bottom: 2px; }
 .card-row .text-link { min-height: 44px; margin-top: 2px; font-size: 14px; }
@@ -843,4 +846,4 @@ p, .story-body p, .legal p { text-wrap: pretty; }
 /* Every control a finger uses is at least 44 px tall (the logo link, the bundle buttons, How to play). */
 .brand { min-height: 44px; }
 .bundles-line .link { min-height: 44px; align-content: center; }
-.mini-link { min-height: 44px; }
+.hero-how { min-height: 52px; }
