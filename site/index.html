@@ -6,15 +6,16 @@
   <meta name="theme-color" content="#ffffff">
   <meta name="color-scheme" content="light">
   <script>
-    // The welcome animation plays once, on a device's very first visit; every later open goes straight in.
-    // Search engines and link previews never get it: they see the page itself at once.
+    // The welcome animation plays each time the site is opened afresh (a new tab, or opened again after it was
+    // closed), not on a reload within the same tab and not on the way back from the payment page. Search
+    // engines and link previews never get it: they see the page itself at once.
     // Decided here, before anything draws, so there is nothing to hide after the fact.
     (function () {
       try {
         var back = /session_id=|cancelled=/.test(location.search);
         var robot = /bot|crawl|spider|slurp|lighthouse|inspectiontool|facebookexternalhit|whatsapp|embedly|preview/i.test(navigator.userAgent);
-        if (back || robot || localStorage.getItem('preslink.welcomed')) document.documentElement.classList.add('no-splash');
-        else localStorage.setItem('preslink.welcomed', '1');
+        if (back || robot || sessionStorage.getItem('preslink.splashed')) document.documentElement.classList.add('no-splash');
+        else sessionStorage.setItem('preslink.splashed', '1');
       } catch (e) { document.documentElement.classList.add('no-splash'); }
     })();
   </script>
@@ -31,7 +32,7 @@
   <meta property="og:url" content="https://preslink.netlify.app/">
   <meta property="og:title" content="PresLink Arcade: can you stop the light?">
   <meta property="og:description" content="Play PresLink Arcade, the charity game of PresLink at Presentation Brothers College, Cork. €2 a play raises money for schools in Ghana and Nigeria.">
-  <meta property="og:image" content="https://preslink.netlify.app/posters/preslink-arcade-message.png?v=2">
+  <meta property="og:image" content="https://preslink.netlify.app/posters/preslink-arcade-message.png?v=3">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="PresLink Arcade: Play. Win prizes. Fund a school. €2 a go at preslink.netlify.app.">
@@ -39,7 +40,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="PresLink Arcade: can you stop the light?">
   <meta name="twitter:description" content="Play PresLink Arcade, the charity game of PresLink at Presentation Brothers College, Cork. €2 a play raises money for schools in Ghana and Nigeria.">
-  <meta name="twitter:image" content="https://preslink.netlify.app/posters/preslink-arcade-message.png?v=2">
+  <meta name="twitter:image" content="https://preslink.netlify.app/posters/preslink-arcade-message.png?v=3">
   <!-- Who runs the site, for search engines: PresLink, the student charity of Presentation Brothers College, Cork.
        WebSite gives Google the site's name for its results; Organization and the school say whose it is. -->
   <script type="application/ld+json">
@@ -122,25 +123,37 @@
     ]
   }
   </script>
-  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
-  <link rel="icon" href="assets/icon-48.png" type="image/png" sizes="48x48">
-  <link rel="icon" href="assets/icon-96.png" type="image/png" sizes="96x96">
-  <link rel="icon" href="assets/icon-192.png" type="image/png" sizes="192x192">
-  <link rel="apple-touch-icon" href="assets/icon-180.png">
+  <link rel="icon" href="assets/icon.svg?v=3" type="image/svg+xml">
+  <link rel="icon" href="assets/icon-48.png?v=3" type="image/png" sizes="48x48">
+  <link rel="icon" href="assets/icon-96.png?v=3" type="image/png" sizes="96x96">
+  <link rel="icon" href="assets/icon-192.png?v=3" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="assets/icon-180.png?v=3">
   <link rel="manifest" href="manifest.webmanifest">
   <!-- the game's server: connect while the page is still loading -->
   <link rel="preconnect" href="https://bsovummlmfclefdlvsic.supabase.co" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=55">
+  <link rel="stylesheet" href="styles.css?v=58">
 </head>
 <body>
 <div class="splash" id="splash" aria-hidden="true">
   <div class="splash-mark">
-    <svg viewBox="0 0 100 100" aria-hidden="true">
-      <g class="arm arm-t"><path fill="#F6C21F" stroke="#F6C21F" stroke-width="3" stroke-linejoin="round" d="M45 50h10l12-43H33z"/></g>
-      <g class="arm arm-r"><path fill="#F6C21F" stroke="#F6C21F" stroke-width="3" stroke-linejoin="round" d="M50 45v10l43 12V33z"/></g>
-      <g class="arm arm-b"><path fill="#F6C21F" stroke="#F6C21F" stroke-width="3" stroke-linejoin="round" d="M55 50H45L33 93h34z"/></g>
-      <g class="arm arm-l"><path fill="#F6C21F" stroke="#F6C21F" stroke-width="3" stroke-linejoin="round" d="M50 55V45L7 33v34z"/></g>
-      <g class="dots" fill="#F26A1B" fill-opacity=".85"><circle cx="50" cy="41" r="8.5"/><circle cx="59" cy="50" r="8.5"/><circle cx="50" cy="59" r="8.5"/><circle cx="41" cy="50" r="8.5"/></g>
+    <svg viewBox="121.2 -12.5 819.1 957.1" aria-hidden="true">
+      <defs><clipPath id="splash-crossing"><polygon points="528.5,112.3 -668.5,197.7 -625.7,796.2 571.2,710.7"/></clipPath></defs>
+      <g transform="translate(500 500) rotate(32) translate(60 -200)">
+        <g class="link-a">
+    <path d="M -100 -150 A 100 100 0 0 1 100 -150" fill="none" stroke="#c8352a" stroke-width="96"/>
+    <path d="M 100 -150 L 100 150" fill="none" stroke="#f3e95a" stroke-width="96"/>
+    <path d="M -100 150 L -100 -150" fill="none" stroke="#f3e95a" stroke-width="96"/>
+    <path d="M 100 150 A 100 100 0 0 1 -100 150" fill="none" stroke="#52b537" stroke-width="96"/>
+    <polygon points="100.0,-133.0 109.4,-107.9 136.1,-106.7 115.2,-90.1 122.3,-64.3 100.0,-79.0 77.7,-64.3 84.8,-90.1 63.9,-106.7 90.6,-107.9" fill="#141414"/>
+        </g>
+        <g class="link-b">
+    <path d="M -240 160 A 100 100 0 0 1 -40 160" fill="none" stroke="#8a219d" stroke-width="96"/>
+    <path d="M -40 160 L -40 460" fill="none" stroke="#dadae1" stroke-width="96"/>
+    <path d="M -240 460 L -240 160" fill="none" stroke="#dadae1" stroke-width="96"/>
+    <path d="M -40 460 A 100 100 0 0 1 -240 460" fill="none" stroke="#141414" stroke-width="96"/>
+        </g>
+        <g class="link-a"><g clip-path="url(#splash-crossing)"><path d="M 100 150 A 100 100 0 0 1 -100 150" fill="none" stroke="#52b537" stroke-width="96"/></g></g>
+      </g>
     </svg>
   </div>
   <div class="splash-word" aria-label="PresLink"><span>P</span><span>r</span><span>e</span><span>s</span><span>L</span><span>i</span><span>n</span><span>k</span></div>
@@ -161,7 +174,7 @@
 
 <main class="shell">
   <header class="appbar">
-    <a class="brand" href="#home" aria-label="PresLink Arcade home"><img src="assets/cross.svg?v=10" alt=""><span>PresLink <b>Arcade</b></span></a>
+    <a class="brand" href="#home" aria-label="PresLink Arcade home"><img src="assets/preslink-mark.svg?v=2" alt=""><span>PresLink <b>Arcade</b></span></a>
     <div class="raised" id="raised" aria-live="polite">
       <svg class="ring" viewBox="0 0 36 36" aria-hidden="true"><circle class="ring-bg" cx="18" cy="18" r="15.5"/><circle class="ring-fg" id="ring-fg" cx="18" cy="18" r="15.5" stroke-dasharray="0 97.4"/></svg>
       <span class="raised-t"><span class="raised-n odo" id="raised-n" aria-label="€0">€0</span><span class="raised-l">raised</span></span>
@@ -171,8 +184,9 @@
   <!-- ================= HOME ================= -->
   <section class="screen" data-screen="home">
     <div class="card hero-card">
-      <h1 class="hero-h">Stop the light.</h1>
-      <p class="hero-p">Every play funds schools in Ghana and Nigeria.</p>
+      <h1 class="hero-h">Stop the light on the line.</h1>
+      <p class="hero-cause">Every cent after card fees goes to PresLink, the school's charity for schools in Ghana and Nigeria.</p>
+      <p class="hero-more"><button class="text-link" type="button" data-go="about">More about PresLink ›</button></p>
       <p class="notice" id="home-notice" hidden></p>
       <div class="demo-track" aria-hidden="true"><span class="demo-pin"></span><span class="demo-marker"></span></div>
       <button class="btn btn-primary btn-xl" id="home-play" type="button">Play · €2</button>
@@ -212,9 +226,9 @@
       <button class="back" type="button" data-go="home" aria-label="Back">‹</button>
       <p class="practice-tag">Practice</p>
       <h2>This is a practice</h2>
-      <p>Three free lights to try the game. They don't count.</p>
+      <p>Three free goes to learn the game. They don't count.</p>
       <div class="demo-track" aria-hidden="true"><span class="demo-pin"></span><span class="demo-marker"></span></div>
-      <p class="practice-rule" id="practice-rule">Tap when the light is on the mark.</p>
+      <p class="practice-rule" id="practice-rule">Tap when the white light is on the black line.</p>
       <button class="btn btn-primary btn-xl" type="button" id="practice-go">Start practice</button>
     </div>
     <div class="card practice-box" id="practice-end" hidden>
@@ -222,7 +236,7 @@
       <p class="practice-tag">Practice done</p>
       <strong class="practice-score" id="practice-score">0</strong>
       <h2>Now for real</h2>
-      <p>Your next three lights count.</p>
+      <p>Your next three goes count.</p>
       <button class="btn btn-primary btn-xl" type="button" id="practice-real">Play for real</button>
     </div>
     <div class="game" id="game">
@@ -243,7 +257,7 @@
         <div class="score" aria-live="polite"><span id="score-value">0</span></div>
         <div class="verdict" id="verdict"></div>
       </div>
-      <p class="tap-hint" id="tap-hint">Tap when the light is on the mark</p>
+      <p class="tap-hint" id="tap-hint">Tap when the white light is on the black line</p>
     </div>
 
     <div class="result" id="result" hidden>
@@ -290,7 +304,7 @@
       <article class="card prize" data-prize="everyone"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Top score</h2><p class="prize-what tba" id="prize-everyone">To be announced</p><p class="prize-lead" id="lead-everyone"></p></div></article>
       <article class="card prize" data-prize="students"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Top student</h2><p class="prize-what tba" id="prize-students">To be announced</p><p class="prize-lead" id="lead-students"></p></div></article>
       <article class="card prize" data-prize="teachers"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Top teacher</h2><p class="prize-what tba" id="prize-teachers">To be announced</p><p class="prize-lead" id="lead-teachers"></p></div></article>
-      <article class="card prize" data-prize="best_light"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Best single light</h2><p class="prize-what tba" id="prize-best-light">To be announced</p><p class="prize-lead" id="lead-best-light"></p></div></article>
+      <article class="card prize" data-prize="best_light"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Best go</h2><p class="prize-what tba" id="prize-best-light">To be announced</p><p class="prize-lead" id="lead-best-light"></p></div></article>
       <article class="card prize" data-prize="first_play"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Best first play</h2><p class="prize-what tba" id="prize-first-play">To be announced</p><p class="prize-lead" id="lead-first-play"></p></div></article>
     </div>
   </section>
@@ -390,7 +404,7 @@
 </main>
 
 <nav class="tabbar" id="tabbar" aria-label="Main">
-  <a class="side-brand" href="#home" aria-hidden="true" tabindex="-1"><img src="assets/cross.svg?v=10" alt=""><span>PresLink <b>Arcade</b></span></a>
+  <a class="side-brand" href="#home" aria-hidden="true" tabindex="-1"><img src="assets/preslink-mark.svg?v=2" alt=""><span>PresLink <b>Arcade</b></span></a>
   <span class="tab-ind" aria-hidden="true"></span>
   <button type="button" data-tab="play"><svg><use href="#i-play"/></svg><span>Play</span></button>
   <button type="button" data-tab="board"><svg><use href="#i-trophy"/></svg><span>Leaderboard</span></button>
@@ -435,9 +449,9 @@
   <div class="sheet-body">
     <div class="card">
       <ol class="steps">
-        <li>Tap when the light is on the mark.</li>
-        <li>Three lights. Your score is the average.</li>
-        <li data-honours="Top of the board at the end is honoured.">Top of the board at the end wins.</li>
+        <li>Tap when the white light is on the black line.</li>
+        <li>You get three goes. Your score is the average of the three.</li>
+        <li data-honours="Top of the leaderboard when the game ends is honoured.">Top of the leaderboard when the game ends wins.</li>
       </ol>
     </div>
     <button class="btn btn-primary btn-xl page-cta" type="button" id="how-done">Got it</button>
@@ -481,17 +495,17 @@
     <h3>1. Who runs this</h3>
     <p>PresLink Arcade is run by PresLink, the student charity committee of Presentation Brothers College, The Mardyke, Cork T12 VK49 (“we”), with staff mentors<span class="org-legal"></span>. <span class="org-contact">You can contact us through the school.</span></p>
     <h3>2. What you are buying</h3>
-    <p>A play is three lights, and your score is the average of the three. Plays cost €2 each, €5 for 3 or €10 for 7. They are added to your player straight away and can be used until the game closes. Everything you pay, less Stripe's card fees, goes to PresLink for the Presentation Brothers' schools and projects in Ghana and Nigeria.</p>
+    <p>A play is three goes: each time, you stop the moving light as close to the line as you can. Your score is the average of the three. Plays cost €2 each, €5 for 3 or €10 for 7. They are added to your player straight away and can be used until the game closes. Everything you pay, less Stripe's card fees, goes to PresLink for the Presentation Brothers' schools and projects in Ghana and Nigeria.</p>
     <h3>3. Who can play</h3>
     <p>Anyone. Under 18s need a parent's or guardian's permission before paying. One player per person. <span class="mode-prizes">Committee members and staff mentors can play but can't win prizes.</span></p>
     <h3>4. Your initials, code and boards</h3>
     <p>You play under two or three initials of your choice. If someone already has them you are shown with a number, for example JAK#2. Offensive names are blocked or removed. Your four-digit code proves a score is yours and signs you in on another device: keep it private. Everyone is on the Everyone board. Students and teachers of Presentation Brothers College can also join the Students or Teachers board with their school email address, which we may check.</p>
     <h3 class="mode-prizes">5. Prizes</h3>
-    <p class="mode-prizes">Prizes are awarded once, when the game closes (the date is on the Prizes page): for the highest score on the Everyone, Students and Teachers boards, the best single light, and the best score on a player's first play. The prizes are described on the Prizes page and have no cash alternative. No prize counts spending; more plays give more chances at a best score, which is why spending is capped. Equal scores on a board: the earlier one wins. Equal best lights are split by each player's next-best light, then the one after; equal first plays by that play's best light, then the next. Only a person's first player counts for the First play prize. Winners are told by email, or in school, within 14 days of the close, collect by showing their initials and code, and receive their prizes within six weeks. Winners' initials and scores stay on the boards.</p>
+    <p class="mode-prizes">Prizes are awarded once, when the game closes (the date is on the Prizes page): for the highest score on the Everyone, Students and Teachers boards, the best single go, and the best score on a player's first play. The prizes are described on the Prizes page and have no cash alternative. No prize counts spending; more plays give more chances at a best score, which is why spending is capped. Equal scores on a board: the earlier one wins. Equal best goes are split by each player's next-best go, then the one after; equal first plays by that play's best go, then the next. Only a person's first player counts for the First play prize. Winners are told by email, or in school, within 14 days of the close, collect by showing their initials and code, and receive their prizes within six weeks. Winners' initials and scores stay on the boards.</p>
     <h3 class="mode-honours" hidden>5. Honours</h3>
-    <p class="mode-honours" hidden>When the game closes, the top of the Everyone, Students and Teachers boards, the best single light and the best first play are honoured, as described on the Honours page. There are no prizes of money or money's worth. Equal scores are split as on the boards: the earlier one wins, and equal best lights go to the better next-best light.</p>
+    <p class="mode-honours" hidden>When the game closes, the top of the Everyone, Students and Teachers boards, the best single go and the best first play are honoured, as described on the Honours page. There are no prizes of money or money's worth. Equal scores are split as on the boards: the earlier one wins, and equal best goes go to the better next-best go.</p>
     <h3>6. Fair play</h3>
-    <p>Each light scores up to 999 by how close to the mark you stop it, timed to the millisecond from the moment your finger touches the screen, which keeps differences between phones small. Everyone plays the same three lights on a given day, and nothing in a score is random. Our server checks every score. We may cancel scores or remove a player for cheating or tampering, and we will say why. If you disagree with a decision, email us: we will look again and reply.</p>
+    <p>Each go scores up to 999 by how close to the line you stop the light, timed to the millisecond from the moment your finger touches the screen, which keeps differences between phones small. Everyone gets the same three goes on a given day, and nothing in a score is random. Our server checks every score. We may cancel scores or remove a player for cheating or tampering, and we will say why. If you disagree with a decision, email us: we will look again and reply.</p>
     <h3>7. Refunds and problems</h3>
     <p>Unused plays can be refunded if you ask within 14 days of buying them, or if the game ends before you can use them. A play can't be refunded once it has been used. If a play fails because of a fault on our side (it freezes, or the score is not saved), we will give you a new play or a refund. Each player can spend at most €20 a day and €100 in all; the You tab shows what you have donated. Payments are processed by Stripe, and we never see your card number. Your rights under Irish consumer law are not affected.</p>
     <h3>8. Changes</h3>
@@ -542,6 +556,6 @@
 <script src="config.js"></script>
 <!-- the demo backend loads only when no server is configured -->
 <script>if (!(window.PRESLINK_CONFIG || {}).SUPABASE_URL) document.write('<script src="mock.js?v=43"><\/script>');</script>
-<script src="app.js?v=49"></script>
+<script src="app.js?v=52"></script>
 </body>
 </html>
