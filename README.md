@@ -136,7 +136,7 @@ open Supabase.
 | `site/posters/` | The four poster files, served at `/a3`, `/a4`, `/social` and `/message` |
 | `tools/posters.cjs` | Saves the four poster files from `poster.html` (Playwright) |
 | `site/fonts/` | Inter (OFL): the app's variable font, and static weights in `fonts/static/` that the posters use so PDFs embed ordinary TrueType |
-| `site/assets/` | The PresLink cross (`cross.svg`), the school crest, icons, the project photos (JPEG and WebP) and the committee-photo placeholder `photo-school.svg` |
+| `site/assets/` | The PresLink mark (`preslink-mark.svg`, the two chain links, redrawn as a vector), the school crest, the app icons made from the mark, the project photos (JPEG and WebP) and the committee-photo placeholder `photo-school.svg` |
 | `supabase/functions/api/index.ts` | Register, checkout, confirm payment, start play, submit score, committee actions (including Stripe connect) |
 | `supabase/functions/stripe-webhook/index.ts` | Receives Stripe's payment confirmation |
 | `docs/admin.sql` | Extra SQL for the committee (most day-to-day admin is in the committee console) |

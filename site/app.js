@@ -1257,13 +1257,13 @@
   $('#code-done').addEventListener('click', () => closeSheets());
   $('#code-save').addEventListener('click', () => saveCodeImage());
   $('#you-save').addEventListener('click', () => (IOS_TOUCH ? showCodeSheet() : saveCodeImage())); // iPhone: the sheet shows what to tap
-  // The ticket: a 4:5 image with the PresLink cross, the light bar, the initials and the code, and
+  // The ticket: a 4:5 image with the PresLink mark, the light bar, the initials and the code, and
   // the words that matter: it is not a prize, it is the code that collects one if you win. Shown in
   // the code sheet and saved by the button below (where it goes depends on the device, see save).
   function roundRect(ctx, x, y, w, h, r) {
     ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
   }
-  const crossImage = new Promise((resolve) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => resolve(null); img.src = 'assets/cross.svg?v=10'; });
+  const markImage = new Promise((resolve) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => resolve(null); img.src = 'assets/preslink-mark.svg?v=1'; });
   async function renderTicket() {
     const W = 1080, H = 1350;
     const c = document.createElement('canvas');
@@ -1273,9 +1273,9 @@
     // green ground, white card
     ctx.fillStyle = '#1f9d5a'; ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = '#ffffff'; roundRect(ctx, 56, 56, W - 112, H - 112, 52); ctx.fill();
-    // cross and wordmark
-    const img = await crossImage;
-    if (img) ctx.drawImage(img, W / 2 - 72, 128, 144, 144);
+    // the mark and the wordmark
+    const img = await markImage;
+    if (img) ctx.drawImage(img, W / 2 - 73, 112, 146, 170);
     ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = '#5b3a9a'; ctx.font = font(50, 800); ctx.fillText('PresLink Arcade', W / 2, 356);
     // the light bar: the game's own mark
