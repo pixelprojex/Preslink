@@ -130,7 +130,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <!-- the game's server: connect while the page is still loading -->
   <link rel="preconnect" href="https://bsovummlmfclefdlvsic.supabase.co" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=54">
+  <link rel="stylesheet" href="styles.css?v=55">
 </head>
 <body>
 <div class="splash" id="splash" aria-hidden="true">
@@ -287,11 +287,11 @@
   <section class="screen" data-screen="prize" hidden>
     <div class="title"><h1 data-honours="Honours">Prizes</h1><p class="title-sub" id="prize-sub">Winners are emailed at the close</p></div>
     <div class="prize-grid">
-      <article class="card prize" data-prize="everyone"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Top score</h2><p class="prize-what tba" id="prize-everyone">To be announced</p></div></article>
-      <article class="card prize" data-prize="students"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Top student</h2><p class="prize-what tba" id="prize-students">To be announced</p></div></article>
-      <article class="card prize" data-prize="teachers"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Top teacher</h2><p class="prize-what tba" id="prize-teachers">To be announced</p></div></article>
-      <article class="card prize" data-prize="best_light"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Best single light</h2><p class="prize-what tba" id="prize-best-light">To be announced</p></div></article>
-      <article class="card prize" data-prize="first_play"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Best first play</h2><p class="prize-what tba" id="prize-first-play">To be announced</p></div></article>
+      <article class="card prize" data-prize="everyone"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Top score</h2><p class="prize-what tba" id="prize-everyone">To be announced</p><p class="prize-lead" id="lead-everyone"></p></div></article>
+      <article class="card prize" data-prize="students"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Top student</h2><p class="prize-what tba" id="prize-students">To be announced</p><p class="prize-lead" id="lead-students"></p></div></article>
+      <article class="card prize" data-prize="teachers"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Top teacher</h2><p class="prize-what tba" id="prize-teachers">To be announced</p><p class="prize-lead" id="lead-teachers"></p></div></article>
+      <article class="card prize" data-prize="best_light"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Best single light</h2><p class="prize-what tba" id="prize-best-light">To be announced</p><p class="prize-lead" id="lead-best-light"></p></div></article>
+      <article class="card prize" data-prize="first_play"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Best first play</h2><p class="prize-what tba" id="prize-first-play">To be announced</p><p class="prize-lead" id="lead-first-play"></p></div></article>
     </div>
   </section>
 
@@ -542,6 +542,6 @@
 <script src="config.js"></script>
 <!-- the demo backend loads only when no server is configured -->
 <script>if (!(window.PRESLINK_CONFIG || {}).SUPABASE_URL) document.write('<script src="mock.js?v=43"><\/script>');</script>
-<script src="app.js?v=48"></script>
+<script src="app.js?v=49"></script>
 </body>
 </html>

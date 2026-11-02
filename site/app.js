@@ -444,7 +444,7 @@
       else if (game.state !== 'done' || $('#result').hidden) { redirect('home'); return; }
     }
     if (name === 'board') loadBoard();
-    if (name === 'prize') refreshStats();
+    if (name === 'prize') { refreshStats(); refreshLeads(); }
     if (name === 'about') refreshStats();
     if (name === 'you') openYou();
     if (name === 'signin') setTimeout(() => $('#signin-name').focus(), 60);
@@ -512,12 +512,13 @@
   // two and a half), so it winds up, spins and settles as one movement, never a run of separate ticks.
   const fmtEuro = (n) => '€' + n.toLocaleString('en-IE');
   function odoStatic(el, value, fmt = fmtEuro) {
+    el.classList.remove('rolling');
     const txt = fmt(value);
     el.innerHTML = Array.from(txt).map((c) => /\d/.test(c) ? `<span class="dg"><span class="strip"><span>${c}</span></span></span>` : `<span class="sep">${esc(c)}</span>`).join('');
     el.setAttribute('aria-label', txt);
   }
   function odoRoll(el, from, to, fmt = fmtEuro) {
-    clearTimeout(el._settle);
+    clearTimeout(el._settle); cancelAnimationFrame(el._roll);
     if (reduceMotion() || to <= from) { odoStatic(el, to, fmt); return; }
     const toS = String(to), L = toS.length;
     const fromS = String(from).padStart(L, ' ');
@@ -536,9 +537,18 @@
       html += `<span class="dg"><span class="strip">${seq.map((d) => `<span>${d}</span>`).join('')}</span></span>`;
     }
     el.innerHTML = html;
+    el.classList.add('rolling');
     el.setAttribute('aria-label', fmt(to));
-    void el.offsetWidth; // the strips sit on their first digit, then roll
-    el.querySelectorAll('.strip').forEach((st, i) => { st.style.transitionDuration = ms + 'ms'; st.style.transform = `translateY(-${(turns[i] * 1.1).toFixed(2)}em)`; });
+    // The strips roll frame by frame, easing out; then the number is set plainly.
+    const strips = [...el.querySelectorAll('.strip')];
+    const t0 = performance.now();
+    cancelAnimationFrame(el._roll);
+    const step = (t) => {
+      const k = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - k, 3);
+      strips.forEach((st, i) => { st.style.transform = `translateY(-${(turns[i] * 1.1 * e).toFixed(3)}em)`; });
+      if (k < 1) el._roll = requestAnimationFrame(step);
+    };
+    el._roll = requestAnimationFrame(step);
     el._settle = setTimeout(() => odoStatic(el, to, fmt), ms + 80);
   }
   let shownRaised = null; // whole euro shown in the app bar
@@ -1473,7 +1483,26 @@
     paint(rows);
     prefetchBoards(false, ['everyone', 'student', 'teacher']); // the other tabs open at once
   }
-  setInterval(() => { if (current === 'board' && !document.hidden) loadBoard(); }, 20000); // the board stays live while it is open
+  setInterval(() => { if (document.hidden) return; if (current === 'board') loadBoard(); if (current === 'prize') refreshLeads(); }, 20000); // the board and the prizes stay live while open
+  // Prizes: who holds each prize right now. The tops of the three boards come from the boards; the best single
+  // light and the best first play from the server's spot prizes (decided by skill, with tie-breaks, as the Terms say).
+  let spot = null;
+  const leadHtml = (r, me) => `<span class="lead-k">${me ? 'You lead' : 'Leading'}</span>${avatarHtml(r.initials, false, r.colour)}<strong>${esc(String(r.score))}</strong>`;
+  function paintLeads() {
+    const put = (id, r) => { const el = $(id); const me = !!r && !!player && r.tag === player.tag; el.innerHTML = r ? leadHtml(r, me) : '<span class="lead-k">No scores yet</span>'; };
+    put('#lead-everyone', (boardCache.everyone || [])[0]);
+    put('#lead-students', (boardCache.student || [])[0]);
+    put('#lead-teachers', (boardCache.teacher || [])[0]);
+    put('#lead-best-light', spot && spot.best_light);
+    put('#lead-first-play', spot && spot.first_play);
+  }
+  async function refreshLeads() {
+    paintLeads(); // what is known now; fresh answers follow
+    const jobs = ['everyone', 'student', 'teacher'].map((role) => rpc('board', { p_role: role === 'everyone' ? null : role }).then((rows) => { boardCache[role] = rows; }).catch(() => {}));
+    jobs.push(rpc('spot_prizes').then((s) => { spot = s; }).catch(() => {}));
+    await Promise.all(jobs);
+    paintLeads();
+  }
   const boardCache = {};
   // Everyone and the player's own board by default: the ones a new score changes and a visitor opens first.
   function prefetchBoards(force, roles = ['everyone', isSchool() ? player.role : null]) {

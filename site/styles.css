@@ -522,8 +522,11 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
 
 /* Odometer: digit strips that roll as one motion (see odoRoll). 1ch is the width of a 0, and the digits are tabular. */
 .odo { font-variant-numeric: tabular-nums; }
-.odo .dg { display: inline-block; width: 1ch; height: 1.1em; overflow: hidden; vertical-align: bottom; text-align: center; }
-.odo .strip { display: block; transform: translateY(0); transition: transform 0ms cubic-bezier(.2, .75, .15, 1); will-change: transform; }
+/* each column clips its strip by clip-path as well as overflow, so nothing shows outside it on any browser */
+.odo .dg { display: inline-block; width: 1ch; height: 1.1em; overflow: hidden; clip-path: inset(0); vertical-align: bottom; text-align: center; }
+.odo .strip { display: block; transform: translateY(0); }
+/* while a column rolls, the digits entering and leaving fade at its top and bottom edges, as on a real counter */
+.odo.rolling .dg { -webkit-mask-image: linear-gradient(transparent, #000 32%, #000 68%, transparent); mask-image: linear-gradient(transparent, #000 32%, #000 68%, transparent); }
 .odo .strip > span { display: block; height: 1.1em; line-height: 1.1em; }
 .odo .sep { display: inline-block; height: 1.1em; line-height: 1.1em; }
 /* The same initials twice: a numbered bubble on the rim of the circle, and a small one in running text. */
@@ -758,6 +761,11 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
 .prize-body h2 { margin: 0 0 2px; font-size: 17px; font-weight: 800; letter-spacing: -.01em; }
 .prize-what { margin: 0; font-size: 15px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
 .prize-what.tba { color: var(--muted); font-weight: 500; }
+/* who holds the prize right now: the tile and the score, or "No scores yet" */
+.prize-lead { display: flex; align-items: center; gap: 8px; margin: 8px 0 0; font-size: 14px; color: var(--ink); min-height: 28px; }
+.prize-lead .lead-k { color: var(--muted); font-weight: 600; }
+.prize-lead .avatar { width: 38px; height: 28px; font-size: 12px; border-radius: 8px; }
+.prize-lead strong { font-weight: 800; font-size: 16px; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
 
 /* You: one card with your tile and your code; three numbers; then the rows */
 .profile { text-align: center; padding: 24px 16px 18px; }
