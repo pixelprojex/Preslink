@@ -34,13 +34,14 @@ a lip, large titles, tabs underlined in green, initials tiles in one of eight mu
 total raised sit at the top of every screen; there is a tab bar (Play, Leaderboard, About, You), a Prizes page
 with a white card per prize (its photo, or a trophy on pale yellow until there is one), and very
 little text. Home is one centred column: the headline and its one rule, the game's bar, Play, the two bundles,
-How to play, then the charity in one purple line and the permission line. The leaderboard has pill tabs, your
+How to play, the top three scores (with a link to the full leaderboard; three open places and "Be the first"
+while the board is empty), then the charity in one purple line and the permission line. The leaderboard has pill tabs, your
 place on that board at a glance ("You're 4th with 254"), a podium for the top three (a crown over first, on a
 yellow step; grey steps for second and third) and everyone else in plain rows, with your row tinted green. The
 result is one card (the score, its three plays, your best and rank, Play again), and You is one card with your
 tile and code, three numbers (games left, your best, donated) and a short list. The same pages lay themselves out for
 an iPad (a 640 px column with the tab bar underneath; About shares rows) and for a desktop (the tab bar becomes a sidebar with the school at its foot, sheets become centred
-modals, Home puts the hero beside the top three, You puts your card beside the rest, a mouse gets hover
+modals, Home stays one centred column, You puts your card beside the rest, a mouse gets hover
 states that touch never sees, and a keyboard plays the whole game with Space or Enter).
 
 ```
