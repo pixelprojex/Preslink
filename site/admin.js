@@ -25,10 +25,10 @@
     LOCKED: 'Too many wrong codes. Try again in 15 minutes.',
     ADMIN_NOT_SET: 'No committee code has been set yet.',
     PLAYER_NOT_FOUND: 'No player with that name.',
-    PLAY_NOT_FOUND: 'That play was not found. Open the player again.',
+    PLAY_NOT_FOUND: 'That game was not found. Open the player again.',
     BANNED: 'This player is banned. Unban them first.',
-    CLOSED: 'The game has closed, so a new play could not be used.',
-    FREE_PLAY_LIMIT: 'This player has had all the free plays one player can have.',
+    CLOSED: 'The campaign has closed, so a new game could not be used.',
+    FREE_PLAY_LIMIT: 'This player has had all the free games one player can have.',
     BAD_REASON: 'Write a short reason (at least 3 characters).',
     BAD_INITIALS: 'Type three initials, A to Z.',
     BUILT_IN_NAME: "That name is on the site's own list, and it stays blocked.",
@@ -129,6 +129,24 @@
     finally { btn.disabled = false; }
   });
   $('#signout').addEventListener('click', () => signOut());
+  // The committee chooses its own code; this browser stays signed in with the new one.
+  $('#code-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const a = $('#new-code').value, b = $('#new-code-2').value, err = $('#code-error'), done = $('#code-done'), btn = $('#code-submit');
+    const show = (t) => { err.textContent = t; err.hidden = !t; };
+    done.textContent = ''; show('');
+    if (a.length < 8) { show('The new code needs at least 8 characters.'); return; }
+    if (a !== b) { show('The two codes are not the same.'); return; }
+    if (a === session.get()) { show('That is the code in use now.'); return; }
+    btn.disabled = true;
+    try {
+      await call('set_code', { new_code: a });
+      session.set(a);
+      $('#new-code').value = ''; $('#new-code-2').value = '';
+      done.textContent = 'Code changed. Use the new code from now on.';
+    } catch (ex) { show(ex.code === 'CODE_TOO_SHORT' ? 'The new code needs at least 8 characters.' : msg(ex)); }
+    finally { btn.disabled = false; }
+  });
   function renderStripe(s) {
     stripe = s || null;
     $('#top-stripe').textContent = !s || !s.connected ? 'Stripe not connected' : (s.mode === 'live' ? 'Stripe live' : 'Stripe test mode');
@@ -248,8 +266,8 @@
     lead('Teachers board', top((x) => !x.banned && x.role === 'teacher'), (top((x) => !x.banned && x.role === 'teacher') || {}).score);
     const sp = d.spot || {};
     const rowFor = (initials) => board.find((x) => x.initials === initials);
-    lead('Best go', sp.best_light ? rowFor(sp.best_light.initials) || { initials: sp.best_light.initials, claim_code: '', player_id: '' } : null, sp.best_light ? sp.best_light.score : '');
-    lead('First play', sp.first_play ? rowFor(sp.first_play.initials) || { initials: sp.first_play.initials, claim_code: '', player_id: '' } : null, sp.first_play ? sp.first_play.score : '');
+    lead('Best play', sp.best_light ? rowFor(sp.best_light.initials) || { initials: sp.best_light.initials, claim_code: '', player_id: '' } : null, sp.best_light ? sp.best_light.score : '');
+    lead('First game', sp.first_play ? rowFor(sp.first_play.initials) || { initials: sp.first_play.initials, claim_code: '', player_id: '' } : null, sp.first_play ? sp.first_play.score : '');
     const dd = $('#ov-days tbody'); dd.innerHTML = '';
     (d.by_day || []).forEach((x) => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${esc(when(x.day + 'T12:00:00', false))}</td><td class="num">${x.payments}</td><td class="num">${euro(x.amount_cents)}</td>`; dd.appendChild(tr); });
     if (!dd.children.length) dd.innerHTML = '<tr><td colspan="3" class="muted">No payments yet.</td></tr>';
@@ -276,7 +294,8 @@
     $('#cp-goal').textContent = Number(camp.goal_cents) > 0 ? whole(camp.goal_cents) : 'Not set';
     $('#cp-limits').textContent = `${whole(camp.daily_cap_cents)} a day, ${whole(camp.campaign_cap_cents)} in all`;
     $('#cp-mode').textContent = camp.prize_mode === 'honours' ? 'Honours only, no prizes' : 'Prizes';
-    $('#cp-pay').textContent = !stripe ? '–' : !stripe.connected ? 'Off' : stripe.mode === 'live' ? 'On, live' : 'On, test mode';
+    // Which Stripe account the money goes to, by its name in Stripe: if it ever changed, it would show here.
+    $('#cp-pay').textContent = !stripe ? '–' : !stripe.connected ? 'Off' : `${stripe.mode === 'live' ? 'On, live' : 'On, test mode'}${stripe.account ? ` · to ${stripe.account}` : ''}`;
   }
 
   // Payments -------------------------------------------------------------------
@@ -323,7 +342,7 @@
   $('#pay-prev').addEventListener('click', () => { pay.offset = Math.max(0, pay.offset - pay.limit); loadPayments(); });
   $('#pay-next').addEventListener('click', () => { pay.offset += pay.limit; loadPayments(); });
   $('#pay-csv').addEventListener('click', async () => {
-    const rows = [['when', 'name', 'board', 'bundle', 'plays', 'amount_eur', 'refunded_eur', 'email', 'source', 'stripe_session', 'payment_intent']];
+    const rows = [['when', 'name', 'board', 'bundle', 'games', 'amount_eur', 'refunded_eur', 'email', 'source', 'stripe_session', 'payment_intent']];
     for (let off = 0; ; off += 500) {
       const res = await guarded(() => call('payments', { q: pay.q, from: pay.from, to: pay.to, limit: 500, offset: off }));
       if (!res) return;
@@ -365,7 +384,7 @@
   $('#pl-prev').addEventListener('click', () => { pl.offset = Math.max(0, pl.offset - pl.limit); loadPlayers(); });
   $('#pl-next').addEventListener('click', () => { pl.offset += pl.limit; loadPlayers(); });
   $('#pl-csv').addEventListener('click', async () => {
-    const rows = [['name', 'board', 'code', 'email', 'school_email', 'plays', 'best', 'paid_eur', 'banned', 'first_seen', 'last_seen']];
+    const rows = [['name', 'board', 'code', 'email', 'school_email', 'games', 'best', 'paid_eur', 'banned', 'first_seen', 'last_seen']];
     for (let off = 0; ; off += 500) {
       const res = await guarded(() => call('players', { q: pl.q, role: pl.role || null, banned: pl.banned ? true : null, limit: 500, offset: off }));
       if (!res) return;
@@ -399,7 +418,7 @@
   const playRow = (x) => {
     const scored = x.score != null;
     const why = x.voided && x.void_reason && x.void_reason !== 'committee' ? ` <span class="muted small">${esc(x.void_reason)}</span>` : '';
-    const act = !scored ? '' : x.voided ? '<button class="mini" type="button" data-act="restore">Restore</button>' : '<button class="mini" type="button" data-act="cancel">Cancel play</button>';
+    const act = !scored ? '' : x.voided ? '<button class="mini" type="button" data-act="restore">Restore</button>' : '<button class="mini" type="button" data-act="cancel">Cancel game</button>';
     return `<tr data-play="${esc(x.play_id)}" data-score="${scored ? x.score : ''}"><td>${esc(when(x.started_at))}</td><td class="num">${scored ? x.score : 'unfinished'}</td><td class="num">${x.best_light == null ? '–' : x.best_light}</td><td>${x.voided ? '<span class="tag">Cancelled</span>' + why + ' ' : ''}${act}</td></tr>`;
   };
   async function viewPlayer(initials, scroll = true) {
@@ -417,16 +436,16 @@
     box.dataset.initials = p.initials;
     box.innerHTML = `<div class="head"><h3 class="who">${esc(p.initials)}${p.banned ? ' <span class="tag">Banned</span>' : ''}</h3><button class="mini" type="button" data-act="close">Close</button></div>
       <p class="code-line"><span class="muted">Code</span> <strong class="code">${esc(p.claim_code)}</strong> <span class="muted small">Give it only to the player, in person.</span></p>
-      <dl><dt>Board</dt><dd>${esc(BOARD[p.role] || p.role)}</dd><dt>Email</dt><dd>${esc(p.contact_email || '–')}</dd><dt>School email</dt><dd>${esc(p.school_email || '–')}</dd><dt>Plays left</dt><dd>${left}</dd><dt>Free plays</dt><dd>${free.length} of ${limit} given</dd><dt>First seen</dt><dd>${esc(when(p.created_at))}</dd><dt>Last seen</dt><dd>${esc(when(p.last_seen_at))}</dd>${(res.others || []).length ? `<dt>Same initials</dt><dd>${res.others.map(esc).join(', ')}</dd>` : ''}</dl>
-      <div class="actions" id="pl-actions"><button class="btn small" type="button" data-act="give"${canGive ? '' : ' disabled'}>Give a free play</button><button class="btn small" type="button" data-act="rename">Reset name</button><button class="btn small" type="button" data-act="${p.banned ? 'unban' : 'ban'}">${p.banned ? 'Unban' : 'Ban'}</button>${canGive ? '' : `<span class="muted small">${p.banned ? 'Unban them to give a free play.' : 'All the free plays allowed are given.'}</span>`}</div>
+      <dl><dt>Board</dt><dd>${esc(BOARD[p.role] || p.role)}</dd><dt>Email</dt><dd>${esc(p.contact_email || '–')}</dd><dt>School email</dt><dd>${esc(p.school_email || '–')}</dd><dt>Games left</dt><dd>${left}</dd><dt>Free games</dt><dd>${free.length} of ${limit} given</dd><dt>First seen</dt><dd>${esc(when(p.created_at))}</dd><dt>Last seen</dt><dd>${esc(when(p.last_seen_at))}</dd>${(res.others || []).length ? `<dt>Same initials</dt><dd>${res.others.map(esc).join(', ')}</dd>` : ''}</dl>
+      <div class="actions" id="pl-actions"><button class="btn small" type="button" data-act="give"${canGive ? '' : ' disabled'}>Give a free game</button><button class="btn small" type="button" data-act="rename">Reset name</button><button class="btn small" type="button" data-act="${p.banned ? 'unban' : 'ban'}">${p.banned ? 'Unban' : 'Ban'}</button>${canGive ? '' : `<span class="muted small">${p.banned ? 'Unban them to give a free game.' : 'All the free games allowed are given.'}</span>`}</div>
       ${noteAt('top')}
-      <h4>Plays</h4>
+      <h4>Games</h4>
       ${noteAt('plays')}
-      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Started</th><th class="num">Score</th><th class="num">Best go</th><th></th></tr></thead><tbody>${plays.map(playRow).join('') || '<tr><td colspan="4" class="muted">No plays.</td></tr>'}</tbody></table></div>
-      <h4>Free plays</h4>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Started</th><th class="num">Score</th><th class="num">Best play</th><th></th></tr></thead><tbody>${plays.map(playRow).join('') || '<tr><td colspan="4" class="muted">No plays.</td></tr>'}</tbody></table></div>
+      <h4>Free games</h4>
       <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Given</th><th>Reason</th></tr></thead><tbody>${free.map((x) => `<tr><td>${esc(when(x.created_at))}</td><td class="wrap">${esc(x.reason)}</td></tr>`).join('') || '<tr><td colspan="2" class="muted">None given.</td></tr>'}</tbody></table></div>
       <h4>Payments</h4>
-      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>When</th><th>Bundle</th><th class="num">Plays</th><th class="num">Amount</th><th class="num">Refunded</th><th>Stripe</th></tr></thead><tbody>${pays.map((x) => `<tr><td>${esc(when(x.created_at))}</td><td>${esc(x.bundle)}</td><td class="num">${x.credits}</td><td class="num">${euro(x.amount_cents)}</td><td class="num">${refundCell(x)}</td><td>${stripeCell(x)}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">No payments.</td></tr>'}</tbody></table></div>`;
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>When</th><th>Bundle</th><th class="num">Games</th><th class="num">Amount</th><th class="num">Refunded</th><th>Stripe</th></tr></thead><tbody>${pays.map((x) => `<tr><td>${esc(when(x.created_at))}</td><td>${esc(x.bundle)}</td><td class="num">${x.credits}</td><td class="num">${euro(x.amount_cents)}</td><td class="num">${refundCell(x)}</td><td>${stripeCell(x)}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">No payments.</td></tr>'}</tbody></table></div>`;
     box.hidden = false;
     const status = $('.status', box);
     if (scroll) box.scrollIntoView({ block: 'nearest' });
@@ -446,16 +465,16 @@
       case 'close': closeConfirm(); $('#pl-detail').hidden = true; return;
       case 'give':
         askFirst(b, top, {
-          text: `Give ${name} a free play? Only for a play that failed through a fault on our side. It isn't a payment and doesn't count as money raised. ${shown.given} of ${shown.limit} given so far.`,
-          ok: 'Give the play',
-          input: { label: 'Reason (kept with the play)', placeholder: 'e.g. froze on the second go', min: 3, max: 120, hint: MESSAGES.BAD_REASON },
-          run: async (reason) => { const r = await call('give_play', { player_id: id, reason }); await changed(name, `Free play given to ${name} (${r.given} of ${r.limit}).`); },
+          text: `Give ${name} a free game? Only for a game that failed through a fault on our side. It isn't a payment and doesn't count as money raised. ${shown.given} of ${shown.limit} given so far.`,
+          ok: 'Give the game',
+          input: { label: 'Reason (kept with the game)', placeholder: 'e.g. froze on the second play', min: 3, max: 120, hint: MESSAGES.BAD_REASON },
+          run: async (reason) => { const r = await call('give_play', { player_id: id, reason }); await changed(name, `Free game given to ${name} (${r.given} of ${r.limit}).`); },
         });
         return;
       case 'rename': {
         const letters = name.split('#')[0];
         askFirst(b, top, {
-          text: `Give ${name} a new random name? Their scores, plays and code stay. They sign in with the new name and the same code, so tell them.`,
+          text: `Give ${name} a new random name? Their scores, games and code stay. They sign in with the new name and the same code, so tell them.`,
           ok: 'Reset name',
           run: async () => {
             const r = await call('reset_name', { player_id: id });
@@ -482,9 +501,9 @@
       case 'cancel': {
         const tr = b.closest('tr');
         askFirst(b, tr, {
-          text: `Cancel this play? Its score of ${tr.dataset.score} stops counting on the boards and for prizes. You can restore it.`,
-          ok: 'Cancel play', danger: true,
-          input: { label: 'Why (kept with the play, optional)', placeholder: "e.g. a committee member's play", max: 120 },
+          text: `Cancel this game? Its score of ${tr.dataset.score} stops counting on the boards and for prizes. You can restore it.`,
+          ok: 'Cancel game', danger: true,
+          input: { label: 'Why (kept with the game, optional)', placeholder: "e.g. a committee member's game", max: 120 },
           run: async (reason) => { await call('void', { play_id: tr.dataset.play, voided: true, reason }); await changed(name, `Play cancelled: the score of ${tr.dataset.score} no longer counts.`, 'plays'); },
         });
         return;
@@ -492,8 +511,8 @@
       case 'restore': {
         const tr = b.closest('tr');
         askFirst(b, tr, {
-          text: `Restore this play? Its score of ${tr.dataset.score} counts again.`,
-          ok: 'Restore play',
+          text: `Restore this game? Its score of ${tr.dataset.score} counts again.`,
+          ok: 'Restore game',
           run: async () => { await call('void', { play_id: tr.dataset.play, voided: false }); await changed(name, `Play restored: the score of ${tr.dataset.score} counts again.`, 'plays'); },
         });
         return;
@@ -504,7 +523,7 @@
   // Winners --------------------------------------------------------------------
   // The top three of each prize slot, ranked as the public site ranks them, with what the committee needs at the
   // close: the emails to reach a winner and the code they show to collect.
-  const SLOTS = [['everyone', 'Everyone board'], ['students', 'Students board'], ['teachers', 'Teachers board'], ['best_light', 'Best go'], ['first_play', 'First play']];
+  const SLOTS = [['everyone', 'Everyone board'], ['students', 'Students board'], ['teachers', 'Teachers board'], ['best_light', 'Best play'], ['first_play', 'First game']];
   loaders.winners = async () => {
     const res = await guarded(() => call('winners'));
     if (!res) return;
@@ -514,7 +533,7 @@
     const lights = (k, w) => {
       const l = Array.isArray(w.lights) ? w.lights : [];
       if (k === 'best_light') return l.length > 1 ? ` <span class="muted small">then ${l.slice(1).join(', ')}</span>` : '';
-      return k === 'first_play' && l.length ? ` <span class="muted small">goes ${l.join(', ')}</span>` : '';
+      return k === 'first_play' && l.length ? ` <span class="muted small">plays ${l.join(', ')}</span>` : '';
     };
     $('#win-slots').innerHTML = SLOTS.map(([k, label]) => {
       const rows = (res[k] || []).map((w) => `<tr><td class="num">${w.rank}</td><td><a href="#players" data-player="${esc(w.initials)}">${esc(w.initials)}</a>${w.banned ? ' <span class="muted">(banned)</span>' : ''}</td><td class="num">${w.score}${lights(k, w)}</td><td><strong class="code">${esc(w.claim_code)}</strong></td><td>${esc(w.contact_email || '–')}</td><td>${esc(w.school_email || '–')}</td><td>${esc(when(w.achieved_at))}</td></tr>`).join('');

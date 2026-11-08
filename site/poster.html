@@ -13,14 +13,13 @@
   <style>
     /* The poster in four formats, all drawn from this page (tools/posters.cjs saves them to posters/):
        ?f=a3 and ?f=a4 to print, ?f=social (1080 × 1350) for posts, ?f=message (1200 × 630) for messages and
-       link previews. A3 is the original design. A4 is the same sheet shrunk by 1/√2, as the paper is: every
-       print size is in "u", a millimetre on A3. &mode=honours swaps the prize words for the honours ones;
-       &closes=12 December and &org=NAME (RCN 20000000) add the closing date and the organiser to the small print.
-       The printed sheets are white and say little: the name, the headline, the price, the code, three photos (on
-       the A3 each with a line on what it is), the promise; purple marks PresLink and the school. The post and the
-       message are for screens: on deep purple, with a photo and no code, since they are seen on the phone that
-       would have to scan it. */
-    /* Static weights: PDF printers embed them as ordinary TrueType. */
+       link previews. A4 is the A3 shrunk by 1/√2, as the paper is: every print size is in "u", a millimetre on A3.
+       &mode=honours swaps the prize words for the honours ones; &closes=12 December and &org=NAME (RCN 20000000)
+       add the closing date and the organiser to the small print.
+       Paper: white, the name, the headline, three photos with what PresLink did there (the A3 says a line more about
+       each), and a purple panel with the code, the price and the address. Screens (the post and the message): deep
+       purple, the headline, three photos together, the price and the address; no code, since they are seen on the
+       phone that would have to scan it. */
     @font-face { font-family: 'Inter'; font-weight: 500; font-display: block; src: url('fonts/static/inter-latin-500-normal.woff2') format('woff2'); }
     @font-face { font-family: 'Inter'; font-weight: 600; font-display: block; src: url('fonts/static/inter-latin-600-normal.woff2') format('woff2'); }
     @font-face { font-family: 'Inter'; font-weight: 700; font-display: block; src: url('fonts/static/inter-latin-700-normal.woff2') format('woff2'); }
@@ -32,14 +31,14 @@
       --green: #2e8520;
       --purple: #8a219d;
       --yellow: #f2ea5f;
-      --plum: #4e1759; /* the logo's purple, deepened: the ground of the post and the message */
+      --plum: #4e1759; /* the logo's purple, deepened: the ground of the post, the message and the print panel */
     }
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }
     body { background: #ededf0; color: var(--ink); font-family: Inter, -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
     p, h1, figure { margin: 0; }
 
-    /* ---------- The pieces, the same in every format ---------- */
+    /* ---------- The pieces ---------- */
     .sheet { position: relative; display: flex; flex-direction: column; overflow: hidden; background: #fff; transform-origin: top left; flex: none; }
     .sheet > * { flex-shrink: 0; }
     .top { display: flex; align-items: center; justify-content: space-between; }
@@ -54,108 +53,135 @@
     .hero { text-align: center; }
     h1 { font-weight: 900; line-height: .95; letter-spacing: -.04em; }
     h1 .g { color: var(--purple); }
-    .price { font-weight: 800; line-height: 1; letter-spacing: -.02em; }
-    .scan { display: flex; flex-direction: column; align-items: center; }
-    .scan-label { font-weight: 800; line-height: 1; letter-spacing: .08em; text-transform: uppercase; color: var(--purple); }
-    .qr svg { display: block; width: 100%; height: 100%; }
-    .url { font-weight: 800; line-height: 1.1; text-align: center; white-space: nowrap; }
+    /* the game itself, drawn: the bar, the black line, the white light about to reach it */
+    .bar { position: relative; margin-left: auto; margin-right: auto; border-radius: 999px; background: linear-gradient(90deg, #fff4c2 0%, #ffe27c 24%, #ffc94e 50%, #ffa63a 76%, #f26a1b 100%); }
+    .bar .pin { position: absolute; left: 62%; background: var(--ink); }
+    .bar .light { position: absolute; left: 50%; border-radius: 999px; background: #fff; border-style: solid; border-color: var(--ink); }
+    .lede { color: var(--muted); font-weight: 600; line-height: 1.35; text-wrap: balance; }
+    .price { display: inline-block; font-weight: 800; line-height: 1; letter-spacing: -.02em; }
+    .url { font-weight: 800; line-height: 1.1; white-space: nowrap; }
+    img { display: block; }
+    /* three photos side by side, each with what PresLink did there */
     .stories { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .stories figure { min-width: 0; }
-    .stories img { display: block; width: 100%; object-fit: cover; background: #f2f2f4; }
+    .stories img { width: 100%; object-fit: cover; background: #f2f2f4; }
     .stories figcaption { text-align: center; }
-    .stories b { display: block; font-weight: 700; line-height: 1.15; letter-spacing: -.01em; }
+    .stories b { display: block; font-weight: 800; line-height: 1.15; letter-spacing: -.015em; }
     .stories .sub { display: none; }
-    .hero-photo { margin: 0; }
-    .hero-photo img { display: block; width: 100%; object-fit: cover; }
-    .tile { display: grid; place-items: center; background: #fff; flex: none; }
-    .price { display: inline-block; }
+    /* three photos together: one large, two stacked */
+    .mosaic { display: grid; grid-template-columns: 1.35fr 1fr; grid-template-rows: 1fr 1fr; }
+    .mosaic img { width: 100%; height: 100%; object-fit: cover; min-height: 0; }
+    .mosaic .m1 { grid-row: 1 / 3; }
+    /* the code, the price and the address in a purple panel */
+    .scan { display: flex; align-items: center; }
+    .qr-tile { background: #fff; flex: none; }
+    .qr svg { display: block; width: 100%; height: 100%; }
+    .scan-words { display: flex; flex-direction: column; }
+    .scan-label { font-weight: 800; line-height: 1; letter-spacing: .1em; text-transform: uppercase; }
+    .scan-price { font-weight: 900; line-height: 1; letter-spacing: -.03em; }
+    .scan-bundles { font-weight: 700; line-height: 1.2; }
     .foot { text-align: center; }
     .promise { font-weight: 700; line-height: 1.3; text-wrap: balance; }
     .terms { color: var(--muted); font-weight: 500; line-height: 1.35; text-wrap: balance; }
 
-    /* ---------- A3 and A4: the sheet in u ---------- */
+    /* ---------- A3 and A4 ---------- */
     .print { --u: 1mm; }
     .print.a4 { --u: .70711mm; }
-    .print .sheet { width: calc(297 * var(--u)); height: calc(420 * var(--u)); padding: calc(14 * var(--u)) calc(18 * var(--u)) calc(12 * var(--u)); }
-    .print .top { height: calc(26 * var(--u)); }
+    .print .sheet { width: calc(297 * var(--u)); height: calc(420 * var(--u)); padding: calc(15 * var(--u)) calc(18 * var(--u)) calc(12 * var(--u)); }
+    .print .top { height: calc(24 * var(--u)); }
     .print .brand { gap: calc(5 * var(--u)); }
-    .print .mark { height: calc(26 * var(--u)); }
-    .print .wordmark { font-size: calc(12 * var(--u)); }
-    .print .school { gap: calc(5 * var(--u)); }
+    .print .mark { height: calc(24 * var(--u)); }
+    .print .wordmark { font-size: calc(11.5 * var(--u)); }
+    .print .school { gap: calc(4.5 * var(--u)); }
     .print .school-name { font-size: calc(4.3 * var(--u)); }
-    .print .crest { height: calc(20 * var(--u)); }
-    .print .hero { margin-top: calc(16 * var(--u)); }
-    .print h1 { font-size: calc(25 * var(--u)); }
-    .print .price { margin-top: calc(8 * var(--u)); font-size: calc(11 * var(--u)); }
-    .print .scan { margin-top: calc(13 * var(--u)); }
-    .print .scan-label { font-size: calc(9 * var(--u)); }
-    .print .qr { width: calc(152 * var(--u)); height: calc(152 * var(--u)); margin-top: calc(3 * var(--u)); }
-    .print .url { font-size: calc(11 * var(--u)); margin-top: calc(1 * var(--u)); }
-    .print .stories { gap: calc(7 * var(--u)); margin-top: calc(12 * var(--u)); }
-    .print .stories img { height: calc(50 * var(--u)); border-radius: calc(6 * var(--u)); }
-    .print .stories figcaption { margin-top: calc(3 * var(--u)); }
-    .print .stories b { font-size: calc(5.5 * var(--u)); color: var(--muted); }
+    .print .crest { height: calc(19 * var(--u)); }
+    .print .hero { margin-top: calc(13 * var(--u)); }
+    .print h1 { font-size: calc(21 * var(--u)); }
+    .print .bar { width: calc(170 * var(--u)); height: calc(11 * var(--u)); margin-top: calc(11 * var(--u)); }
+    .print .bar .pin { top: calc(-4 * var(--u)); width: calc(1.8 * var(--u)); height: calc(19 * var(--u)); margin-left: calc(-.9 * var(--u)); border-radius: var(--u); }
+    .print .bar .light { top: calc(-3.5 * var(--u)); width: calc(7.5 * var(--u)); height: calc(18 * var(--u)); margin-left: calc(-3.75 * var(--u)); border-width: calc(1.1 * var(--u)); }
+    .print .lede { margin: calc(9 * var(--u)) auto 0; max-width: calc(220 * var(--u)); font-size: calc(6.4 * var(--u)); }
+    .print .stories { gap: calc(6 * var(--u)); margin-top: calc(12 * var(--u)); }
+    .print .stories img { height: calc(58 * var(--u)); border-radius: calc(6 * var(--u)); }
+    .print .stories figcaption { margin-top: calc(3.4 * var(--u)); }
+    .print .stories b { font-size: calc(5.6 * var(--u)); }
+    .print:not(.a4) .stories .sub { display: block; margin: calc(1.6 * var(--u)) auto 0; max-width: calc(78 * var(--u)); color: var(--muted); font-size: calc(3.9 * var(--u)); font-weight: 500; line-height: 1.35; text-wrap: balance; }
+    .print .scan { gap: calc(13 * var(--u)); margin-top: calc(13 * var(--u)); padding: calc(10 * var(--u)) calc(14 * var(--u)) calc(10 * var(--u)) calc(10 * var(--u)); border-radius: calc(9 * var(--u)); background: var(--plum); color: #fff; }
+    .print .qr-tile { width: calc(116 * var(--u)); height: calc(116 * var(--u)); padding: calc(2 * var(--u)); border-radius: calc(6 * var(--u)); }
+    .print .qr { width: 100%; height: 100%; }
+    .print .scan-words { gap: calc(4 * var(--u)); }
+    .print .scan-label { font-size: calc(7.2 * var(--u)); color: var(--yellow); }
+    .print .scan-price { font-size: calc(19 * var(--u)); margin-top: calc(3 * var(--u)); white-space: nowrap; }
+    .print .scan-bundles { font-size: calc(6.6 * var(--u)); color: rgba(255, 255, 255, .82); white-space: nowrap; }
+    .print .scan .url { margin-top: calc(7 * var(--u)); font-size: calc(9.4 * var(--u)); }
     .print footer { margin-top: auto; }
-    .print:not(.a4) .stories .sub { display: block; margin: calc(1.6 * var(--u)) auto 0; max-width: calc(80 * var(--u)); color: var(--muted); font-size: calc(3.9 * var(--u)); font-weight: 500; line-height: 1.35; text-wrap: balance; }
-    .print:not(.a4) .stories b { color: var(--ink); font-size: calc(5.8 * var(--u)); }
-    .print:not(.a4) .qr { width: calc(136 * var(--u)); height: calc(136 * var(--u)); }
-    .print:not(.a4) .hero { margin-top: calc(14 * var(--u)); }
-    .print:not(.a4) .stories { margin-top: calc(10 * var(--u)); }
-    .print.a4 .stories img { height: calc(50 * var(--u)); }
-    .print.a4 .qr { width: calc(146 * var(--u)); height: calc(146 * var(--u)); }
     .print .promise { font-size: calc(4.8 * var(--u)); }
-    .print .terms { margin-top: calc(2.5 * var(--u)); font-size: calc(3.2 * var(--u)); }
+    .print .terms { margin-top: calc(2.4 * var(--u)); font-size: calc(3.1 * var(--u)); }
+    .print .only-screen { display: none; }
+    .print.a4 .stories img { height: calc(68 * var(--u)); } /* the A4 has no line under each heading: its photos take the room */
 
-    /* ---------- Social: 1080 × 1350, on deep purple, a photo, the web address in the place of the code ---------- */
+    /* ---------- The screen formats: deep purple, three photos ---------- */
     .social .sheet, .message .sheet { background: var(--plum); color: #fff; }
     .social .wordmark, .message .wordmark, .social .school-name, .message .school-name, .social h1, .message h1, .social .url, .message .url { color: #fff; }
     .social .wordmark span, .message .wordmark span, .social h1 .g, .message h1 .g { color: var(--yellow); }
-    .social .mark-tile, .message .mark-tile { background: #fff; display: grid; place-items: center; flex: none; }
+    .social .mark-tile, .message .mark-tile { display: grid; place-items: center; flex: none; background: #fff; }
     .social .crest, .message .crest { background: #fff; border-radius: 999px; }
     .social .price, .message .price { background: var(--yellow); color: var(--plum); border-radius: 999px; }
     .social .scan-label, .message .scan-label { color: var(--yellow); }
+    .social .bar .pin, .message .bar .pin { background: #fff; }
+    .social .lede, .message .lede { color: rgba(255, 255, 255, .86); }
     .social .promise, .message .promise { color: rgba(255, 255, 255, .92); }
     .social .terms { color: rgba(255, 255, 255, .62); }
-    .social .hero-photo figcaption, .message .hero-photo figcaption { color: rgba(255, 255, 255, .7); }
 
-    .social .sheet { width: 1080px; height: 1350px; padding: 64px 72px 52px; }
-    .social .top { height: 104px; }
-    .social .brand { gap: 22px; }
-    .social .mark-tile { width: 104px; height: 104px; border-radius: 26px; }
-    .social .mark { height: 80px; }
-    .social .wordmark { font-size: 46px; }
-    .social .school { gap: 18px; }
+    /* Social: 1080 × 1350 */
+    .social .sheet { width: 1080px; height: 1350px; padding: 60px 68px 50px; }
+    .social .top { height: 96px; }
+    .social .brand { gap: 20px; }
+    .social .mark-tile { width: 96px; height: 96px; border-radius: 24px; }
+    .social .mark { height: 74px; }
+    .social .wordmark { font-size: 44px; }
+    .social .school { gap: 16px; }
     .social .school-name { font-size: 19px; }
-    .social .crest { height: 84px; padding: 6px; }
-    .social .hero { margin-top: 56px; }
-    .social h1 { font-size: 104px; }
-    .social .price { margin-top: 30px; padding: 12px 32px; font-size: 36px; }
-    .social .hero-photo { margin-top: 44px; }
-    .social .hero-photo img { height: 430px; border-radius: 30px; }
-    .social .hero-photo figcaption { margin-top: 14px; text-align: center; font-size: 22px; font-weight: 600; }
-    .social .scan { margin-top: 40px; }
-    .social .scan-label { font-size: 26px; }
-    .social .url { margin-top: 12px; font-size: 72px; font-weight: 900; letter-spacing: -.03em; }
-    .social footer, .message footer { margin-top: auto; }
+    .social .crest { height: 80px; padding: 6px; }
+    .social .hero { margin-top: 40px; }
+    .social h1 { font-size: 84px; }
+    .social .bar { width: 640px; height: 40px; margin-top: 34px; }
+    .social .bar .pin { top: -15px; width: 7px; height: 70px; margin-left: -3.5px; border-radius: 4px; }
+    .social .bar .light { top: -13px; width: 28px; height: 66px; margin-left: -14px; border-width: 4px; }
+    .social .lede { margin: 30px auto 0; max-width: 820px; font-size: 27px; }
+    .social .price { margin-top: 24px; padding: 11px 30px; font-size: 32px; }
+    .social .mosaic { gap: 14px; height: 390px; margin-top: 34px; }
+    .social .mosaic img { border-radius: 26px; }
+    .social .scan { flex-direction: column; margin-top: 28px; }
+    .social .scan-words { align-items: center; }
+    .social .scan-label { font-size: 24px; }
+    .social .url { margin-top: 8px; font-size: 64px; font-weight: 900; letter-spacing: -.03em; }
+    .social footer { margin-top: auto; }
     .social .promise { font-size: 22px; }
-    .social .terms { margin-top: 10px; font-size: 15px; }
+    .social .terms { margin-top: 8px; font-size: 15px; }
 
-    /* ---------- Message: 1200 × 630, for chats, emails and the link's preview: the words beside a photo ---------- */
-    .message .sheet { width: 1200px; height: 630px; padding: 40px 48px 32px 56px; }
-    .message .top { height: 64px; }
-    .message .brand { gap: 16px; }
-    .message .mark-tile { width: 64px; height: 64px; border-radius: 17px; }
-    .message .mark { height: 50px; }
-    .message .wordmark { font-size: 32px; }
+    /* Message: 1200 × 630, for chats, emails and the link's preview: the words beside three photos */
+    .message .sheet { width: 1200px; height: 630px; padding: 40px 40px 34px 56px; }
+    .message .top { height: 60px; }
+    .message .brand { gap: 15px; }
+    .message .mark-tile { width: 60px; height: 60px; border-radius: 16px; }
+    .message .mark { height: 46px; }
+    .message .wordmark { font-size: 30px; }
     .message .school { display: none; }
-    .message .body { flex: 1 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) 452px; align-items: center; gap: 44px; margin-top: -64px; }
-    .message .hero { text-align: left; padding-top: 64px; }
-    .message h1 { font-size: 74px; }
-    .message .price { margin-top: 24px; padding: 9px 24px; font-size: 26px; }
-    .message .url { margin-top: 22px; font-size: 36px; text-align: left; }
-    .message .hero-photo img { height: 558px; border-radius: 26px; }
+    .message .body { flex: 1 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) 500px; align-items: stretch; gap: 40px; margin-top: -60px; }
+    .message .hero { display: flex; flex-direction: column; justify-content: center; text-align: left; padding-top: 64px; padding-bottom: 36px; }
+
+    .message h1 { font-size: 54px; }
+    .message .bar { width: 420px; height: 26px; margin: 26px 0 0; }
+    .message .bar .pin { top: -10px; width: 5px; height: 46px; margin-left: -2.5px; border-radius: 3px; }
+    .message .bar .light { top: -9px; width: 19px; height: 44px; margin-left: -9.5px; border-width: 3px; }
+    .message .lede { margin-top: 22px; font-size: 20px; max-width: 520px; }
+    .message .price { align-self: flex-start; margin-top: 20px; padding: 8px 22px; font-size: 24px; }
+    .message .url { margin-top: 16px; font-size: 32px; text-align: left; }
+    .message .mosaic { gap: 10px; height: 556px; }
+    .message .mosaic img { border-radius: 20px; }
     .message footer { margin-top: 0; }
-    .message .promise { position: absolute; left: 56px; bottom: 34px; width: 560px; text-align: left; font-size: 17px; }
+    .message .promise { position: absolute; left: 56px; bottom: 32px; width: 540px; text-align: left; font-size: 16px; }
 
     /* ---------- On screen: the sheet scaled to fit, a switch between formats and the file to download ---------- */
     .tools { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; background: rgba(237, 237, 240, .92); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
@@ -206,36 +232,43 @@
 
         <div class="body">
           <section class="hero">
-            <h1><span id="h1a">Play. Win prizes.</span><br><span class="g">Fund a school.</span></h1>
-            <p class="price">€2 a go</p>
+            <h1>Can you stop the light<br><span class="g">on the line?</span></h1>
+            <div class="bar" aria-hidden="true"><span class="pin"></span><span class="light"></span></div>
+            <p class="lede" id="lede">A game of timing for PresLink, the school's charity. Three plays a game; top scores win prizes.</p>
+            <p class="price only-screen">€2 a game</p>
             <p class="url only-message">preslink.netlify.app</p>
           </section>
 
-          <figure class="hero-photo">
-            <img src="assets/photo-bikes.jpg" alt="Students in Ghana with the bicycles PresLink bought them for getting to school" style="object-position: 50% 30%">
-            <figcaption>Bikes to school, from PresLink</figcaption>
-          </figure>
-
-          <section class="scan">
-            <p class="scan-label" id="scan-label">Scan to play</p>
-            <div class="qr" id="qr" role="img" aria-label="QR code for PresLink Arcade"></div>
-            <p class="url only-print">preslink.netlify.app</p>
-          </section>
+          <div class="mosaic">
+            <img class="m1" src="assets/photo-bikes.jpg" alt="Students in Ghana with the bicycles PresLink bought them" style="object-position: 40% 30%">
+            <img class="m2" src="assets/photo-classrooms.jpg" alt="A new classroom block PresLink funded in Ghana" style="object-position: 62% 45%">
+            <img class="m3" src="assets/photo-babies.jpg" alt="The Mother of Mercy Babies Home in Sirigu, Ghana" style="object-position: 50% 55%">
+          </div>
         </div>
 
         <section class="stories">
           <figure>
-            <img src="assets/photo-bikes.jpg" alt="Students with bicycles" style="object-position: 50% 25%">
+            <img src="assets/photo-bikes.jpg" alt="Students with bicycles" style="object-position: 50% 30%">
             <figcaption><b>Bikes to school</b><span class="sub">Bicycles so students can get to class and stay in school.</span></figcaption>
+          </figure>
+          <figure>
+            <img src="assets/photo-classrooms.jpg" alt="A new classroom in Ghana" style="object-position: 62% 45%">
+            <figcaption><b>New classrooms</b><span class="sub">A three-classroom block in Sokabisi, Bolgatanga.</span></figcaption>
           </figure>
           <figure>
             <img src="assets/photo-babies.jpg" alt="Mother of Mercy Babies Home" style="object-position: 50% 55%">
             <figcaption><b>Care for babies</b><span class="sub">For the Mother of Mercy Babies Home in Sirigu, Ghana.</span></figcaption>
           </figure>
-          <figure>
-            <img src="assets/photo-classrooms.jpg" alt="A new classroom in Ghana" style="object-position: 62% 50%">
-            <figcaption><b>New classrooms</b><span class="sub">A three-classroom block in Sokabisi, Bolgatanga.</span></figcaption>
-          </figure>
+        </section>
+
+        <section class="scan">
+          <div class="qr-tile"><div class="qr" id="qr" role="img" aria-label="QR code for PresLink Arcade"></div></div>
+          <div class="scan-words">
+            <p class="scan-label" id="scan-label">Scan to play</p>
+            <p class="scan-price">€2 a game</p>
+            <p class="scan-bundles">3 games €5 · 7 games €10</p>
+            <p class="url">preslink.netlify.app</p>
+          </div>
         </section>
 
         <footer class="foot">
@@ -275,18 +308,17 @@
 
       // Each format keeps only its own pieces: the code is for paper and messages, the photos for paper and posts.
       var drop = function (sel) { Array.prototype.forEach.call(document.querySelectorAll(sel), function (el) { el.remove(); }); };
-      // The code is for paper only: the post and the message are read on the phone that would have to scan it, so
-      // they carry the address and a photo instead.
-      if (f === 'social') { drop('.qr, .only-message, .stories'); document.getElementById('scan-label').textContent = 'Play now at'; document.querySelector('.scan').appendChild(document.querySelector('.only-print')); }
-      else if (f === 'message') drop('.stories, .terms, .only-print, .scan, .hero-photo figcaption');
-      else drop('.only-message, .hero-photo');
-      // The print sheets and posts run top to bottom; the message sets the words beside its photo.
-      if (f !== 'message') { var body = document.querySelector('.body'); while (body.firstChild) body.parentNode.insertBefore(body.firstChild, body); body.remove(); }
+      // The code is for paper only: the post and the message are read on the phone that would have to scan it, so they
+      // carry the address and three photos instead. Paper carries the photos as captioned stories and the code in a
+      // purple panel with the prices.
+      if (f === 'social') { drop('.qr-tile, .scan-price, .scan-bundles, .stories, .only-message'); document.getElementById('scan-label').textContent = 'Play now at'; }
+      else if (f === 'message') drop('.stories, .terms, .scan');
+      else drop('.only-screen, .only-message, .mosaic');
 
-      if (honours) document.getElementById('h1a').textContent = 'Play. Top the board.';
+      if (honours) document.getElementById('lede').textContent = "A game of timing for PresLink, the school's charity. Three plays a game; top scores are honoured.";
       var terms = document.getElementById('terms');
       if (terms) {
-        terms.textContent = '€2 a go, 3 for €5, 7 for €10. ' + (honours ? 'The top scores are honoured when the game closes' : 'Prizes for the top scores when the game closes')
+        terms.textContent = '€2 a game of three plays, 3 games for €5, 7 for €10. ' + (honours ? 'The top scores are honoured when the game closes' : 'Prizes for the top scores when the game closes')
           + (closes ? ' on ' + closes : '') + '. Under 18s need a parent’s or guardian’s permission to pay. '
           + 'Run by PresLink, Presentation Brothers College, Cork' + (org ? ', under ' + org : '') + '. Terms at preslink.netlify.app';
       }

@@ -8,6 +8,8 @@
 --    boards for any week with claim codes, find a player, void/restore, ban, rename, block names, CSV.
 select public.admin_set_code(null, 'YourCommitteeCode');            -- first time
 select public.admin_set_code('OldCode', 'NewCommitteeCode');        -- later
+-- If the committee's code is lost (it is kept only as a hash, so nobody can read it back), set a new one directly:
+--   update public.settings set value = encode(sha256(convert_to('NewCommitteeCode', 'UTF8')), 'hex') where key = 'admin_code_hash';
 -- If the committee is locked out after too many wrong tries, clear the lock:
 delete from public.auth_attempts where scope = 'admin';
 

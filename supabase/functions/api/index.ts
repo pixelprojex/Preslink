@@ -36,9 +36,9 @@ const STRIPE_API = (Deno.env.get("STRIPE_API_BASE") ?? "https://api.stripe.com")
 const SITE_URL = (Deno.env.get("SITE_URL") ?? "").replace(/\/$/, "");
 
 export const BUNDLES: Record<string, { credits: number; amount: number; label: string }> = {
-  single: { credits: 1, amount: 200, label: "1 play" },
-  triple: { credits: 3, amount: 500, label: "3 plays" },
-  seven: { credits: 7, amount: 1000, label: "7 plays" },
+  single: { credits: 1, amount: 200, label: "1 game" },
+  triple: { credits: 3, amount: 500, label: "3 games" },
+  seven: { credits: 7, amount: 1000, label: "7 games" },
 };
 
 const CORS = {
@@ -197,14 +197,13 @@ async function checkout(req: Request, body: Body) {
   const bundle = String(body.bundle ?? "");
   const b = BUNDLES[bundle];
   if (!b) throw new HttpError(400, "BAD_BUNDLE");
-
   const player = await rpc<{ initials: string; banned?: boolean }>("me_player", { p_id: playerId });
   if (player.banned) throw new HttpError(403, "BANNED");
   const origin = siteOrigin(req);
   // The spending limits (a day's and the campaign's): DAILY_LIMIT or SPEND_LIMIT before any checkout opens.
   await rpc("spend_check", { p_player_id: playerId, p_amount_cents: b.amount });
 
-  // Demo mode: with no Stripe key configured, plays are free and clearly labelled as such.
+  // Demo mode: with no Stripe key configured, games are free and clearly labelled as such.
   if (!(await stripeKey())) {
     const id = `cs_demo_${bundle}_${playerId}_${crypto.randomUUID().replace(/-/g, "")}`;
     return { url: `${origin}/?session_id=${id}`, session_id: id, demo: true };
@@ -219,7 +218,7 @@ async function checkout(req: Request, body: Body) {
     "line_items[0][price_data][unit_amount]": String(b.amount),
     "line_items[0][price_data][product_data][name]": `PresLink Arcade: ${b.label}`,
     "line_items[0][price_data][product_data][description]":
-      "Every play supports Presentation Brothers schools in Ghana and Nigeria. Unused plays can be refunded within 14 days.",
+      "Each game is three plays. Every game supports Presentation Brothers schools in Ghana and Nigeria. Unused games can be refunded within 14 days.",
     success_url: `${origin}/?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/?cancelled=1`,
     client_reference_id: playerId,
@@ -262,7 +261,7 @@ async function confirm(body: Body) {
   const demo = sessionId.match(/^cs_demo_(single|triple|seven)_([0-9a-f-]{36})_[0-9a-f]{32}$/);
   if (demo && !(await stripeKey())) {
     const b = BUNDLES[demo[1]];
-    // Recorded under its session id, so coming back to the same link never adds the plays twice.
+    // Recorded under its session id, so coming back to the same link never adds the games twice.
     const grant = await rpc<{ credits: number; granted: boolean }>("grant_demo_credits", { p_player_id: demo[2], p_credits: b.credits, p_session_id: sessionId });
     const player = await rpc("me_player", { p_id: demo[2] });
     return { paid: true, granted: !!grant.granted, demo: true, credits_added: b.credits, bundle: demo[1], credits: grant.credits, player };
@@ -355,11 +354,13 @@ async function signin(body: Body) {
 }
 
 const ADMIN_OPS = new Set(["overview", "emails", "void", "ban", "block", "set_code", "settings", "player", "reset_name", "stripe_status", "stripe_connect", "stripe_disconnect", "payments", "players", "set_content", "upload_image", "give_play", "winners", "blocked", "campaign"]);
-// The operations that change the site itself (its words and photos, the prizes, the campaign, Stripe, the
-// committee code) belong to the site's owner, not the committee: they need the OWNER_CODE secret as well as the
-// committee code. With no OWNER_CODE configured, none of them can be used. Running the game (bans, cancelled
-// plays, offensive names, blocked names, free plays) needs the committee code alone.
-const OWNER_OPS = new Set(["set_code", "settings", "stripe_connect", "stripe_disconnect", "set_content", "upload_image"]);
+// The operations that change the site itself (its words and photos, the prizes, the campaign, Stripe) belong to
+// the site's owner, not the committee: they need the OWNER_CODE secret as well as the committee code. With no
+// OWNER_CODE configured, none of them can be used. Running the game (bans, cancelled plays, offensive names,
+// blocked names, free plays) needs the committee code alone, and so does changing the committee code: the
+// committee (the principal, say) can choose a code the site's owner does not know. If it is ever lost, a new one
+// is set in the database (docs/admin.sql, step 0).
+const OWNER_OPS = new Set(["settings", "stripe_connect", "stripe_disconnect", "set_content", "upload_image"]);
 
 // The committee code is checked by the database (same lockout as every admin call).
 async function adminVerify(code: string) {
@@ -468,7 +469,7 @@ async function admin(body: Body) {
     case "campaign": return await rpc("admin_campaign", { p_code: code });
     case "set_code": {
       const newCode = String(body.new_code ?? "");
-      if (newCode.length < 6 || newCode.length > 200) throw new HttpError(400, "CODE_TOO_SHORT");
+      if (newCode.length < 8 || newCode.length > 200) throw new HttpError(400, "CODE_TOO_SHORT");
       await rpc("admin_set_code", { p_code: code, p_new_code: newCode });
       return { ok: true };
     }
