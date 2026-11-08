@@ -210,6 +210,21 @@ button.cell:active { background: var(--fill); }
 .hero-p { margin: 0 0 16px; color: var(--muted); font-size: 14px; font-weight: 500; line-height: 1.45; }
 /* the charity first: who the money goes to, in one quiet line, with the way to read more */
 /* The charity: one purple line with the crest, the whole of it a way to About */
+/* Home: the top three of the Everyone board, a tap from the full leaderboard */
+.home-top { width: 100%; max-width: 480px; margin: 26px auto 0; }
+.home-top-head { display: flex; align-items: center; justify-content: space-between; padding: 0 2px 8px 4px; }
+.home-top-head h2 { margin: 0; font-size: 17px; font-weight: 800; letter-spacing: -.01em; color: var(--ink); }
+.home-top-head .link { display: inline-flex; align-items: center; gap: 4px; min-height: 40px; padding: 6px 8px; color: var(--green-d); font-size: 14px; font-weight: 700; }
+.home-top-head .link span { font-size: 19px; line-height: 1; margin-top: -2px; }
+.home-board { padding: 2px 0; }
+.home-board li { min-height: 54px; }
+.home-board .rank { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 800; color: var(--ink); background: var(--fill); }
+.home-board .rank.r1 { background: var(--yellow); }
+.home-board li.me .rank { color: var(--ink); }
+.home-board .ghost-tile { width: 44px; height: 34px; border: 2px dashed var(--line); border-radius: 9px; }
+.home-board li.empty-row { animation: none; }
+.home-board li.empty-row .who { color: var(--muted); font-weight: 700; }
+.home-board li.empty-row .pts { color: var(--muted-2); }
 .cause { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 480px; margin: 30px auto 0; padding: 14px 16px; border: 0; border-radius: 16px; background: var(--purple-l); color: var(--purple-d); text-align: left; font: inherit; cursor: pointer; transition: transform .12s ease, background .15s ease; }
 .cause:active { transform: scale(.985); }
 .cause-crest { flex: none; width: 24px; height: 29px; }

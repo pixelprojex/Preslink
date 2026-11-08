@@ -487,8 +487,27 @@
     if (canPlayNow() && !closed) prefetchPlay();
     renderHomeTop();
   }
-  // Home shows no board of its own; it only fetches the Everyone board ahead, so the Leaderboard tab opens at once.
-  function renderHomeTop() { if (!boardCache.everyone) prefetchBoards(false, ['everyone']); }
+  // Home shows the top three of the Everyone board (from the last visit at once, then fresh, at most every 20 s).
+  // Fetching it also means the Leaderboard tab opens at once.
+  let homeTopAt = 0, homeTopKey = '';
+  function renderHomeTop() {
+    paintHomeTop();
+    if (!boardCache.everyone || Date.now() - homeTopAt > 20000) { homeTopAt = Date.now(); prefetchBoards(true, ['everyone']); }
+  }
+  function paintHomeTop() {
+    const el = $('#home-board');
+    const rows = boardCache.everyone;
+    const me = (r) => !!player && r.tag === player.tag;
+    const key = JSON.stringify([rows ? rows.slice(0, 3).map((r) => [r.tag, r.score, r.rank, r.initials, r.colour]) : null, player && player.tag]);
+    if (key === homeTopKey) return;
+    homeTopKey = key;
+    el.innerHTML = [0, 1, 2].map((i) => {
+      const r = rows && rows[i];
+      if (r) return `<li${me(r) ? ' class="me"' : ''}><span class="rank r${i + 1}">${r.rank}</span>${avatarHtml(r.initials, false, r.colour)}<span class="who">${me(r) ? 'You' : ''}</span><span class="pts">${r.score}</span></li>`;
+      // No score yet in this place: an empty, dashed tile (the first one invites a first score once the board is known to be empty)
+      return `<li class="empty-row"><span class="rank r${i + 1}">${i + 1}</span><span class="ghost-tile" aria-hidden="true"></span><span class="who">${rows && !rows.length && i === 0 ? 'Be the first' : ''}</span><span class="pts">–</span></li>`;
+    }).join('');
+  }
   $('#home-play').addEventListener('click', () => playOrBuy());
   let wantGame = false;
   function startPlay() { sounds.prime(); wantGame = true; if (location.hash === '#play') { wantGame = false; game.state = 'idle'; startGame(); } else go('play'); }
@@ -1512,7 +1531,7 @@
   const boardCache = (() => { const c = store.get(BOARDS_KEY); return c && c.v && Date.now() - c.at < 1800000 ? c.v : {}; })();
   let boardsSaveT = 0;
   const saveBoards = () => { clearTimeout(boardsSaveT); boardsSaveT = setTimeout(() => store.set(BOARDS_KEY, { at: Date.now(), v: boardCache }), 300); };
-  function setBoard(role, rows) { boardCache[role] = rows; saveBoards(); }
+  function setBoard(role, rows) { boardCache[role] = rows; saveBoards(); if (role === 'everyone') paintHomeTop(); }
   // Everyone and the player's own board by default: the ones a new score changes and a visitor opens first.
   function prefetchBoards(force, roles = ['everyone', isSchool() ? player.role : null]) {
     for (const role of roles) {

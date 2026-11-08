@@ -132,7 +132,7 @@
   <!-- the game's server: connect while the page is still loading -->
   <link rel="preconnect" href="https://bsovummlmfclefdlvsic.supabase.co" crossorigin>
   <link rel="preload" href="fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=67">
+  <link rel="stylesheet" href="styles.css?v=68">
 </head>
 <body>
 <div class="splash" id="splash" aria-hidden="true">
@@ -177,6 +177,10 @@
       <button class="btn btn-primary btn-xl" id="home-play" type="button">Play · €2</button>
       <p class="bundles-line"><button class="link" type="button" data-bundle="triple">3 games · €5</button><button class="link" type="button" data-bundle="seven">7 games · €10</button></p>
       <button class="howto" type="button" data-sheet="how"><span class="how-ic" aria-hidden="true">?</span>How to play</button>
+    </div>
+    <div class="home-top">
+      <div class="home-top-head"><h2 id="home-top-h">Top scores</h2><button class="link" type="button" data-go="board">Leaderboard <span aria-hidden="true">›</span></button></div>
+      <ol class="card board home-board" id="home-board" aria-labelledby="home-top-h"></ol>
     </div>
     <button class="cause" type="button" data-go="about">
       <img class="cause-crest" src="assets/crest.svg?v=10" alt="" width="24" height="29">
@@ -541,6 +545,6 @@
 <script src="config.js"></script>
 <!-- the demo backend loads only when no server is configured -->
 <script>if (!(window.PRESLINK_CONFIG || {}).SUPABASE_URL) document.write('<script src="mock.js?v=44"><\/script>');</script>
-<script src="app.js?v=59"></script>
+<script src="app.js?v=60"></script>
 </body>
 </html>
