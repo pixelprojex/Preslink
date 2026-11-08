@@ -39,7 +39,7 @@
 
   const MESSAGES = {
     NETWORK: 'No connection. Check your signal and try again.',
-    NO_CREDITS: 'No plays left.',
+    NO_CREDITS: 'No games left.',
     BAD_INITIALS: 'Two or three initials, A to Z.',
     BLOCKED_INITIALS: 'Those initials are not allowed. Try others.',
     TAKEN: 'Those initials are taken. Try others.',
@@ -58,10 +58,10 @@
     NO_SITE_URL: 'Payments are not set up for this address yet.',
     PLAYER_NOT_FOUND: 'We could not find your player on this device. Tap Play to start fresh.',
     SCORE_MISMATCH: 'That score did not check out, so it was not saved.',
-    ALREADY_SCORED: 'That play was already scored.',
-    PLAY_NOT_FOUND: 'That play could not be found.',
-    PLAY_VOID: 'That play was cancelled.',
-    BAD_TAP: 'That play did not check out, so it was not saved.',
+    ALREADY_SCORED: 'That game was already scored.',
+    PLAY_NOT_FOUND: 'That game could not be found.',
+    PLAY_VOID: 'That game was cancelled.',
+    BAD_TAP: 'That game did not check out, so it was not saved.',
     STRIPE_ERROR: 'Stripe had a problem. Please try again.',
     SERVER_ERROR: 'Something went wrong on our side. Please try again.',
   };
@@ -177,7 +177,7 @@
   function ensurePlayer(bundle) {
     if (player) return true;
     pendingBundle = bundle || 'single';
-    $('#name-submit').textContent = { single: 'Play · €2', triple: '3 plays · €5', seven: '7 plays · €10' }[pendingBundle] || 'Play';
+    $('#name-submit').textContent = { single: 'Play · €2', triple: '3 games · €5', seven: '7 games · €10' }[pendingBundle] || 'Play';
     showError('name-error', '');
     nameInitials.set('');
     openSheet('name');
@@ -473,7 +473,8 @@
   // ---------------------------------------------------------------------------
   const canPlayNow = () => !!player && (credits > 0 || !!openPlay);
   const playsLeft = () => credits + (openPlay ? 1 : 0);
-  const playLabel = () => canPlayNow() ? `Play · ${playsLeft()} left` : 'Play · €2';
+  const gamesLeft = (n) => `${n} ${n === 1 ? 'game' : 'games'} left`;
+  const playLabel = () => canPlayNow() ? `Play · ${gamesLeft(playsLeft())}` : 'Play · €2';
   // After the closing date nothing more can be bought or started (the server refuses too).
   const isClosed = () => { const d = stats && stats.ends_on ? new Date(stats.ends_on + 'T23:59:59') : null; return !!d && !isNaN(d) && Date.now() > d.getTime(); };
   function renderHome() {
@@ -482,22 +483,12 @@
     setText(btn, closed ? 'The game has closed' : playLabel());
     btn.disabled = closed;
     $('[data-screen="home"] .bundles-line').hidden = closed;
-    $('.hero-card .fine').hidden = closed; // nothing can be paid for after the close
+    $('.home-fine').hidden = closed; // nothing can be paid for after the close
     if (canPlayNow() && !closed) prefetchPlay();
     renderHomeTop();
   }
-  // The top three of the Everyone board on Home.
-  let homeTopSeq = 0;
-  function renderHomeTop() {
-    const rows = boardCache.everyone;
-    if (!rows) {
-      const seq = ++homeTopSeq;
-      rpc('board', { p_role: null }).then((r) => { if (seq !== homeTopSeq || boardCache.everyone) return; boardCache.everyone = r; renderHomeTop(); }).catch(() => {});
-      return;
-    }
-    $('#home-top-list').innerHTML = rows.slice(0, 3).map((r) => rowHtml(r, !!player && r.tag === player.tag)).join('');
-    $('#home-top-empty').hidden = rows.length > 0;
-  }
+  // Home shows no board of its own; it only fetches the Everyone board ahead, so the Leaderboard tab opens at once.
+  function renderHomeTop() { if (!boardCache.everyone) prefetchBoards(false, ['everyone']); }
   $('#home-play').addEventListener('click', () => playOrBuy());
   let wantGame = false;
   function startPlay() { sounds.prime(); wantGame = true; if (location.hash === '#play') { wantGame = false; game.state = 'idle'; startGame(); } else go('play'); }
@@ -647,11 +638,23 @@
     $$('.org-rcn').forEach((el) => { el.textContent = org.rcn ? ` · RCN ${org.rcn}` : ''; });
   }
   let statsSeq = 0, shownClosed = false;
+  // The last numbers seen are kept on the device, so the total, the prizes and the words show at once on the
+  // next visit, even on a slow connection; the fresh ones replace them a moment later.
+  const STATS_KEY = 'preslink.stats';
+  function showCachedStats() {
+    const c = store.get(STATS_KEY);
+    if (!c || !c.v || Date.now() - c.at > 7 * 86400000) return;
+    applyStats(c.v);
+  }
   async function refreshStats() {
     const seq = ++statsSeq;
     let fresh;
     try { fresh = await rpc('stats'); } catch (_) { return; }
     if (seq !== statsSeq) return; // a newer answer is on its way (e.g. right after a payment)
+    store.set(STATS_KEY, { at: Date.now(), v: fresh });
+    applyStats(fresh);
+  }
+  function applyStats(fresh) {
     stats = fresh;
     applyContent(stats.content || {});
     applyOrg(stats.content || {});
@@ -723,7 +726,7 @@
     }
     overlay(null);
     if (!result || !result.paid) {
-      toast('We could not confirm the payment yet. If you were charged, your plays will appear shortly.', true, 6000);
+      toast('We could not confirm the payment yet. If you were charged, your games will appear shortly.', true, 6000);
       return;
     }
     if (result.player) adoptPlayer(result.player);
@@ -738,7 +741,7 @@
     await wait(120);
     prefetchPlay(); // ready before the Start button is
     await coinDrop(n);
-    $('#cab-text').textContent = n === 1 ? '1 play added' : `${n} plays added`;
+    $('#cab-text').textContent = n === 1 ? '1 game added' : `${n} games added`;
     // The player starts the play themselves: the button pops in and waits.
     const btn = $('#cab-play');
     btn.hidden = false; btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop');
@@ -750,7 +753,7 @@
   async function coinDrop(n) {
     const coin = $('#coin'), slot = $('#cab-slot'), panel = $('#cab-panel'), token = $('#token'), val = $('#cab-credits');
     const target = playsLeft(), from = Math.max(0, target - n);
-    const show = (k) => { val.textContent = k; $('#cab-unit').textContent = k === 1 ? 'play' : 'plays'; };
+    const show = (k) => { val.textContent = k; $('#cab-unit').textContent = k === 1 ? 'game' : 'games'; };
     show(from);
     token.classList.remove('out');
     coin.classList.remove('drop'); void coin.offsetWidth; coin.classList.add('drop');
@@ -859,7 +862,7 @@
     setMarker(0);
   }
   function updatePlayCredits() {
-    $('#play-credits').textContent = `${credits} left`;
+    $('#play-credits').textContent = gamesLeft(credits);
   }
 
   // The play is fetched before the tap (see prefetchPlay), so the light is moving on the first frame.
@@ -888,7 +891,7 @@
     })();
     fetching.catch(() => {});
     const m = $('#game-msg');
-    m.textContent = 'Go 1 of 3';
+    m.textContent = 'Play 1 of 3';
     // The first time, the rules sit over the game until Got it is tapped; nothing moves meanwhile.
     if (!store.get(HOW_SEEN_KEY) && best == null) { await showIntro(); if (game.state !== 'loading') return; }
     try {
@@ -925,7 +928,7 @@
     game.round = i;
     const r = game.play.rounds[i];
     const m = $('#game-msg');
-    m.textContent = `${game.practice ? 'Practice go' : 'Go'} ${i + 1} of 3`;
+    m.textContent = `${game.practice ? 'Practice play' : 'Play'} ${i + 1} of 3`;
     setPin(r.target);
     marker.classList.remove('hit', 'miss', 'hide');
     measure();
@@ -1215,7 +1218,7 @@
     countUp($('#result-score'), 0, score, 650, String);
     const lights = r && Array.isArray(r.rounds) && r.rounds.length === ROUNDS ? r.rounds.map((x) => Number(x)) : game.scores;
     // The three lights the score is the average of
-    $('#result-rounds').innerHTML = lights.map((s, i) => `<div class="lt"><span>Go ${i + 1}</span><strong>${s}</strong></div>`).join('');
+    $('#result-rounds').innerHTML = lights.map((s, i) => `<div class="lt"><span>Play ${i + 1}</span><strong>${s}</strong></div>`).join('');
     $('#result-best').textContent = r && best != null ? best : '–';
     $('#result-rank').textContent = rank ? '#' + rank : '–';
     renderResultEmail();
@@ -1228,13 +1231,13 @@
       setText(again, 'Try again');
       again.onclick = () => { n.hidden = true; submitPending().then((x) => showResult(score, x.r, x.note)); };
     } else if (credits > 0 && !isClosed()) {
-      setText(again, `Play again · ${credits} left`);
+      setText(again, `Play again · ${gamesLeft(credits)}`);
       again.onclick = () => { game.state = 'idle'; startGame(); };
     } else if (isClosed()) {
       setText(again, 'Done');
       again.onclick = () => go('home');
     } else {
-      setText(again, 'Another play · €2');
+      setText(again, 'Another game · €2');
       again.onclick = () => buy('single');
       $('#result-topup').hidden = false;
     }
@@ -1454,7 +1457,7 @@
   // tile stands on a step with its place on it.
   const podiumHtml = (rows) => rows.slice(0, 3).map((r, i) => {
     const me = !!player && r.tag === player.tag;
-    return `<li class="p${i + 1}${me ? ' me' : ''}"${me ? ' aria-label="You"' : ''}>${avatarHtml(r.initials, false, r.colour)}<span class="pts">${r.score}</span><span class="step">${r.rank}</span></li>`;
+    return `<li class="p${i + 1}${me ? ' me' : ''}"${me ? ' aria-label="You"' : ''}>${i === 0 ? '<span class="crown" aria-hidden="true"></span>' : ''}${avatarHtml(r.initials, false, r.colour)}<span class="pts">${r.score}</span><span class="step">${r.rank}</span></li>`;
   }).join('');
   const emptyHtml = (role) => `<strong>No scores yet</strong><span>${role !== 'everyone' && !isSchool() ? 'Students and teachers join with their school email on the You tab.' : 'The first score takes the top spot.'}</span>`;
   // What the board shows now, so a refresh that changes nothing redraws nothing (and nothing replays its entrance).
@@ -1480,7 +1483,7 @@
       return;
     }
     if (seq !== boardSeq) return; // a newer tab tap is in flight
-    boardCache[boardRole] = rows;
+    setBoard(boardRole, rows);
     paint(rows);
     prefetchBoards(false, ['everyone', 'student', 'teacher']); // the other tabs open at once
   }
@@ -1499,18 +1502,24 @@
   }
   async function refreshLeads() {
     paintLeads(); // what is known now; fresh answers follow
-    const jobs = ['everyone', 'student', 'teacher'].map((role) => rpc('board', { p_role: role === 'everyone' ? null : role }).then((rows) => { boardCache[role] = rows; }).catch(() => {}));
+    const jobs = ['everyone', 'student', 'teacher'].map((role) => rpc('board', { p_role: role === 'everyone' ? null : role }).then((rows) => { setBoard(role, rows); }).catch(() => {}));
     jobs.push(rpc('spot_prizes').then((s) => { spot = s; }).catch(() => {}));
     await Promise.all(jobs);
     paintLeads();
   }
-  const boardCache = {};
+  // The boards last seen (half an hour at most) are kept on the device too, so the Leaderboard opens at once.
+  const BOARDS_KEY = 'preslink.boards';
+  const boardCache = (() => { const c = store.get(BOARDS_KEY); return c && c.v && Date.now() - c.at < 1800000 ? c.v : {}; })();
+  let boardsSaveT = 0;
+  const saveBoards = () => { clearTimeout(boardsSaveT); boardsSaveT = setTimeout(() => store.set(BOARDS_KEY, { at: Date.now(), v: boardCache }), 300); };
+  function setBoard(role, rows) { boardCache[role] = rows; saveBoards(); }
   // Everyone and the player's own board by default: the ones a new score changes and a visitor opens first.
   function prefetchBoards(force, roles = ['everyone', isSchool() ? player.role : null]) {
     for (const role of roles) {
-      if (role && (force || !boardCache[role])) rpc('board', { p_role: role === 'everyone' ? null : role }).then((rows) => { boardCache[role] = rows; }).catch(() => {});
+      if (role && (force || !boardCache[role])) rpc('board', { p_role: role === 'everyone' ? null : role }).then((rows) => { setBoard(role, rows); }).catch(() => {});
     }
   }
+  const ordinal = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
   function renderBoard(rows) {
     const pod = $('#board-podium'), list = $('#board-list'), empty = $('#board-empty');
     const TOP = 20;
@@ -1520,6 +1529,10 @@
     if (mine >= TOP) html += '<li class="gap" aria-hidden="true">···</li>' + rowHtml(rows[mine], true);
     pod.innerHTML = podiumHtml(rows);
     pod.hidden = !rows.length;
+    // Your place on this board, at a glance above it
+    const you = $('#board-you');
+    if (mine >= 0) { you.innerHTML = `You're <strong>${ordinal(rows[mine].rank)}</strong> with <strong>${rows[mine].score}</strong>`; you.hidden = false; }
+    else you.hidden = true;
     list.innerHTML = html;
     list.hidden = !html;
     empty.innerHTML = rows.length ? '' : emptyHtml(boardRole);
@@ -1673,7 +1686,7 @@
     try {
       if (renamed) adoptPlayer(await api('update', { player_id: player.id, initials }));
       if (colour != null) adoptPlayer(await api('colour', { player_id: player.id, colour }));
-      Object.keys(boardCache).forEach((k) => { delete boardCache[k]; }); // the boards show the new tile on their next load
+      Object.keys(boardCache).forEach((k) => { delete boardCache[k]; }); saveBoards(); // the boards show the new tile on their next load
       $('#edit-form').hidden = true;
       renderYou();
       // The code goes with the letters: when it changes, say so, because it is what collects a prize.
@@ -1757,6 +1770,7 @@
     else fetch(CONFIG.SUPABASE_URL + '/functions/v1/api', { method: 'OPTIONS' }).catch(() => {}); // wakes the server function, so the first tap that needs it does not wait
     store.del('preslink.practice'); // left by the practice rounds of an earlier version
 
+    showCachedStats();
     renderHome();
     refreshStats();
     pollStats();

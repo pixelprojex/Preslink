@@ -9,7 +9,7 @@
   <link rel="icon" href="/assets/icon.svg?v=7" type="image/svg+xml">
   <link rel="shortcut icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=7">
-  <link rel="stylesheet" href="admin.css?v=6">
+  <link rel="stylesheet" href="admin.css?v=7">
 </head>
 <body>
 
@@ -55,16 +55,29 @@
         </dl>
         <p class="muted small campaign-note">Set by the site's owner. To change any of these, ask them.</p>
       </div>
+      <details class="code-change" id="code-change">
+        <summary>Change the committee code</summary>
+        <form id="code-form" autocomplete="off" novalidate>
+          <p class="muted small">Choose a code only the committee knows. Nobody, the site's owner included, can read it back, so write it down somewhere safe. Everyone signed in elsewhere will need the new code.</p>
+          <label class="lbl" for="new-code">New code (at least 8 characters)</label>
+          <input id="new-code" type="password" autocomplete="new-password" spellcheck="false" autocapitalize="none" autocorrect="off">
+          <label class="lbl" for="new-code-2">The new code again</label>
+          <input id="new-code-2" type="password" autocomplete="new-password" spellcheck="false" autocapitalize="none" autocorrect="off">
+          <p class="err" id="code-error" hidden></p>
+          <p class="status" id="code-done" role="status"></p>
+          <button class="btn primary" type="submit" id="code-submit">Change the code</button>
+        </form>
+      </details>
       <div class="figures">
         <div class="fig"><span>Raised</span><strong id="ov-raised">€0</strong><small id="ov-goal"></small></div>
         <div class="fig"><span>Payments</span><strong id="ov-payments">0</strong><small id="ov-today"></small></div>
-        <div class="fig"><span>Plays</span><strong id="ov-plays">0</strong></div>
+        <div class="fig"><span>Games played</span><strong id="ov-plays">0</strong></div>
         <div class="fig"><span>Players</span><strong id="ov-players">0</strong><small id="ov-roles"></small></div>
       </div>
       <div class="head sub"><h3>Leaders</h3><a href="#winners" class="small">Top three of each</a></div>
       <div class="tbl-wrap"><table class="tbl" id="ov-leaders"><thead><tr><th>Prize</th><th>Name</th><th class="num">Score</th><th>Code</th><th>Email</th></tr></thead><tbody></tbody></table></div>
       <div class="head sub"><h3>Latest payments</h3><a href="#payments" class="small">All payments</a></div>
-      <div class="tbl-wrap"><table class="tbl" id="ov-recent"><thead><tr><th>When</th><th>Name</th><th class="num">Plays</th><th class="num">Amount</th><th>Email</th></tr></thead><tbody></tbody></table></div>
+      <div class="tbl-wrap"><table class="tbl" id="ov-recent"><thead><tr><th>When</th><th>Name</th><th class="num">Games</th><th class="num">Amount</th><th>Email</th></tr></thead><tbody></tbody></table></div>
       <h3>Money by day</h3>
       <div class="tbl-wrap"><table class="tbl" id="ov-days"><thead><tr><th>Day</th><th class="num">Payments</th><th class="num">Amount</th></tr></thead><tbody></tbody></table></div>
     </section>
@@ -78,7 +91,7 @@
       </form>
       <div class="quick" id="pay-quick"><span class="muted small">Show</span><button type="button" class="mini" data-range="today">Today</button><button type="button" class="mini" data-range="7">Last 7 days</button><button type="button" class="mini" data-range="30">Last 30 days</button><button type="button" class="mini on" data-range="all">Everything</button></div>
       <p class="muted" id="pay-summary"></p>
-      <div class="tbl-wrap"><table class="tbl" id="pay-table"><thead><tr><th>When</th><th>Name</th><th>Board</th><th class="num">Plays</th><th class="num">Amount</th><th class="num">Refunded</th><th>Email</th><th>Source</th><th>Stripe</th></tr></thead><tbody></tbody></table></div>
+      <div class="tbl-wrap"><table class="tbl" id="pay-table"><thead><tr><th>When</th><th>Name</th><th>Board</th><th class="num">Games</th><th class="num">Amount</th><th class="num">Refunded</th><th>Email</th><th>Source</th><th>Stripe</th></tr></thead><tbody></tbody></table></div>
       <div class="pager"><button class="btn small" id="pay-prev" type="button">Previous</button><span id="pay-page" class="muted small"></span><button class="btn small" id="pay-next" type="button">Next</button></div>
       <p class="muted small">Refunds are made in Stripe and show here once Stripe reports them.</p>
     </section>
@@ -92,7 +105,7 @@
         <button class="btn" type="submit">Search</button>
       </form>
       <p class="muted" id="pl-summary"></p>
-      <div class="tbl-wrap"><table class="tbl" id="pl-table"><thead><tr><th>Name</th><th>Board</th><th>Code</th><th>Email</th><th>School email</th><th class="num">Plays</th><th class="num">Best</th><th class="num">Paid</th><th>Last seen</th><th></th></tr></thead><tbody></tbody></table></div>
+      <div class="tbl-wrap"><table class="tbl" id="pl-table"><thead><tr><th>Name</th><th>Board</th><th>Code</th><th>Email</th><th>School email</th><th class="num">Games</th><th class="num">Best</th><th class="num">Paid</th><th>Last seen</th><th></th></tr></thead><tbody></tbody></table></div>
       <div class="pager"><button class="btn small" id="pl-prev" type="button">Previous</button><span id="pl-page" class="muted small"></span><button class="btn small" id="pl-next" type="button">Next</button></div>
       <div class="detail" id="pl-detail" hidden></div>
     </section>
@@ -100,7 +113,7 @@
     <section data-page="winners" hidden>
       <div class="head"><h2>Winners</h2><button class="btn small" type="button" id="win-csv">Download CSV</button></div>
       <p class="muted" id="win-sub"></p>
-      <p class="muted small">Ties are split as the Terms say: on a board the earlier score wins; for best go, the next-best go; for first play, that play's lights.</p>
+      <p class="muted small">Ties are split as the Terms say: on a board the earlier score wins; for best play, the next-best play; for first game, that game's plays.</p>
       <p class="muted small">Committee members and staff mentors can play but can't win prizes. If one is placed, the next player takes the place.</p>
       <div id="win-slots"></div>
     </section>
@@ -121,7 +134,7 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 <script src="config.js"></script>
-<script>if (!(window.PRESLINK_CONFIG || {}).SUPABASE_URL) document.write('<script src="mock.js?v=43"><\/script>');</script>
-<script src="admin.js?v=8"></script>
+<script>if (!(window.PRESLINK_CONFIG || {}).SUPABASE_URL) document.write('<script src="mock.js?v=44"><\/script>');</script>
+<script src="admin.js?v=10"></script>
 </body>
 </html>

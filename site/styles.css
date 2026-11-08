@@ -148,10 +148,10 @@ button.cell:active { background: var(--fill); }
 .game-top .back { width: 44px; height: 44px; margin-left: -10px; border-radius: 12px; background: none; border: 0; color: var(--green); font-size: 28px; line-height: 1; cursor: pointer; padding: 0; }
 
 /* Segmented control */
-.segmented { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; margin: 0 0 14px; border-bottom: 2px solid var(--line); }
-.segmented .thumb { position: absolute; bottom: -2px; left: 0; height: 3px; width: calc(100% / var(--n, 3)); border-radius: 2px; background: var(--green); transform: translateX(calc(var(--i, 0) * 100%)); pointer-events: none; }
+.segmented { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; margin: 0 0 14px; padding: 4px; border-radius: 14px; background: var(--fill); }
+.segmented .thumb { position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px) / var(--n, 3)); border-radius: 11px; background: var(--surface); box-shadow: 0 1px 3px rgba(0, 0, 0, .1), 0 1px 1px rgba(0, 0, 0, .04); transform: translateX(calc(var(--i, 0) * 100%)); pointer-events: none; }
 .segmented > :not(.thumb) { position: relative; z-index: 1; }
-.segmented button, .segmented .tab { border: 0; background: transparent; min-height: 44px; font-weight: 700; font-size: 15px; color: var(--muted); cursor: pointer; transition: color .15s; }
+.segmented button, .segmented .tab { border: 0; background: transparent; min-height: 40px; border-radius: 11px; font-weight: 700; font-size: 15px; color: var(--muted); cursor: pointer; transition: color .15s; }
 .segmented button.active, .segmented button.on, .segmented .tab.active { background: transparent; color: var(--ink); box-shadow: none; }
 
 /* Choice buttons (student / teacher on the result screen) */
@@ -201,23 +201,28 @@ button.cell:active { background: var(--fill); }
 .sheet .demo-track { margin: 8px 6px 22px; }
 
 /* Home */
-.hero-card { padding: 10px 2px 0; }
-.hero-h { font-size: 28px; font-weight: 800; letter-spacing: -.035em; line-height: 1.1; margin: 0; text-wrap: balance; }
+/* Home: one centred column in the middle of the screen. The headline and its one rule, the game's bar, Play, the
+   two bundles, How to play; under them the charity in one purple line and the permission line. */
+[data-screen="home"] { display: flex; flex-direction: column; justify-content: center; min-height: calc(100dvh - var(--tab-h) - 72px - env(safe-area-inset-bottom)); padding: 12px 0 18px; }
+.hero-card { width: 100%; max-width: 480px; margin: 0 auto; padding: 0 2px; text-align: center; }
+.hero-h { font-size: 34px; font-weight: 800; letter-spacing: -.04em; line-height: 1.04; margin: 0; text-wrap: balance; }
+.hero-rule { margin: 12px auto 0; max-width: 360px; color: var(--muted-d); font-size: 15px; font-weight: 500; line-height: 1.4; text-wrap: balance; }
 .hero-p { margin: 0 0 16px; color: var(--muted); font-size: 14px; font-weight: 500; line-height: 1.45; }
 /* the charity first: who the money goes to, in one quiet line, with the way to read more */
-/* The charity: its own purple card, the whole card a way to About */
-.cause { display: grid; gap: 6px; width: 100%; margin: 22px 0 0; padding: 16px 18px; border: 0; border-radius: 16px; background: var(--purple-l); color: var(--purple-d); text-align: left; font: inherit; cursor: pointer; transition: transform .12s ease, background .15s ease; }
+/* The charity: one purple line with the crest, the whole of it a way to About */
+.cause { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 480px; margin: 30px auto 0; padding: 14px 16px; border: 0; border-radius: 16px; background: var(--purple-l); color: var(--purple-d); text-align: left; font: inherit; cursor: pointer; transition: transform .12s ease, background .15s ease; }
 .cause:active { transform: scale(.985); }
-.cause .hero-cause { font-size: 15px; font-weight: 600; line-height: 1.4; text-wrap: pretty; }
-.cause-link { font-size: 15px; font-weight: 800; color: var(--purple); }
-.cause + .home-top { margin-top: 12px; }
-/* How to play: a full white button under the price buttons, with its question mark */
-.hero-how { margin-top: 10px; gap: 10px; }
+.cause-crest { flex: none; width: 24px; height: 29px; }
+.cause .hero-cause { flex: 1; font-size: 14px; font-weight: 600; line-height: 1.4; text-wrap: pretty; }
+.cause-go { flex: none; color: var(--purple); font-size: 24px; font-weight: 600; line-height: 1; }
+/* How to play: a clear green link with its question mark, under the price buttons */
+.howto { display: inline-flex; align-items: center; gap: 9px; min-height: 48px; margin: 12px auto 0; padding: 6px 16px; border: 0; border-radius: 14px; background: none; color: var(--green-d); font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; transition: background .15s ease, transform .1s ease; }
+.howto:active { transform: scale(.97); background: var(--green-l); }
 .how-ic { width: 24px; height: 24px; border-radius: 50%; background: var(--green); color: #fff; display: grid; place-items: center; font-size: 15px; font-weight: 800; line-height: 1; }
 
 .hero-card .bundles-line { margin-top: 0; }
 /* The home preview is the game's bar in miniature: the same gradient, the black line and the white light, sweeping by a transform. */
-.demo-track { position: relative; height: 40px; border-radius: 20px; background: var(--slider); margin: 30px 0 22px; }
+.demo-track { position: relative; height: 44px; border-radius: 22px; background: var(--slider); margin: 40px 6px 34px; }
 .demo-pin { position: absolute; left: 64%; top: -10px; bottom: -10px; width: 3px; margin-left: -1.5px; border-radius: 2px; background: var(--ink); }
 .demo-pin::before { content: ''; position: absolute; left: 50%; top: -14px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: var(--ink); }
 .demo-marker { position: absolute; left: 0; top: -8px; bottom: -8px; width: 10px; border-radius: 5px; background: #fff; box-shadow: 0 0 0 2px #1c1c1e, 0 2px 4px rgba(0, 0, 0, .14); animation: demosweep 2.6s cubic-bezier(.45, 0, .55, 1) infinite alternate; will-change: transform; }
@@ -227,6 +232,8 @@ button.cell:active { background: var(--fill); }
 @media (prefers-reduced-motion: reduce) { .cab-coin.drop, .cab-token.out { animation-duration: .01s !important; } }
 @media (prefers-reduced-motion: reduce) { .demo-marker { animation: none !important; left: 64%; margin-left: -5px; } }
 .hero-card .btn-xl { margin-bottom: 10px; }
+#home-play { min-height: 60px; font-size: 18px; border-radius: 18px; }
+.hero-card .bundles-line .link { min-height: 50px; font-size: 15px; }
 .notice { margin: 12px 0 0; padding: 9px 12px; border-radius: 12px; background: var(--yellow-l); color: var(--yellow-d); font-weight: 600; font-size: 14px; text-align: center; }
 a.cell { text-decoration: none; }
 #about-stories > .card + .card, #about-stories + .card { margin-top: 12px; }
@@ -409,7 +416,7 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
 .rise-in > .hero-card > :nth-child(2) { animation-delay: .04s; } .rise-in > .hero-card > :nth-child(3) { animation-delay: .08s; } .rise-in > .hero-card > :nth-child(4) { animation-delay: .12s; }
 .rise-in > .hero-card > :nth-child(5) { animation-delay: .16s; } .rise-in > .hero-card > :nth-child(6) { animation-delay: .2s; } .rise-in > .hero-card > :nth-child(7) { animation-delay: .24s; }
 .rise-in > :nth-child(2) { animation-delay: .26s; } .rise-in > :nth-child(3) { animation-delay: .32s; } .rise-in > :nth-child(n+4) { animation-delay: .36s; }
-@media (prefers-reduced-motion: reduce) { .rise-in > *, .rise-in > .hero-card > * { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .rise-in > *, .rise-in > .hero-card > *, .podium .crown, .lb-you { animation: none; } }
 
 /* iPad and desktop */
 .title-sub { margin: 2px 0 0; color: var(--muted); font-size: 14px; font-weight: 500; }
@@ -507,12 +514,11 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
   .appbar, .screen, .splash-credit { max-width: 900px; }
   .game { max-width: 760px; margin: 0 auto; }
   /* Home: the hero beside the links, the top three under them */
-  [data-screen="home"] { display: grid; grid-template-columns: 1.2fr 1fr; grid-template-areas: "hero cause" "hero top"; column-gap: 28px; row-gap: 12px; align-items: start; align-content: start; }
-  [data-screen="home"] > .cause { grid-area: cause; margin-top: 22px; }
-  [data-screen="home"] > .hero-card { grid-area: hero; margin-top: 14px; padding: 10px 0 0; }
-  [data-screen="home"] > .home-top { grid-area: top; margin-top: 0; }
-  .hero-h { font-size: 30px; }
-  .demo-track { margin: 30px 0 28px; }
+  [data-screen="home"] { min-height: calc(100dvh - 120px); }
+
+  .hero-h { font-size: 42px; }
+  [data-screen="board"], [data-screen="prize"] { max-width: 720px; margin-left: auto; margin-right: auto; }
+  .demo-track { margin: 44px 6px 38px; }
   /* Result: one card, centred */
   .result { max-width: 560px; margin: 0 auto; }
 }
@@ -717,7 +723,7 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
 .legal a { color: var(--green-d); font-weight: 600; }
 /* The permission line where people pay, and plain text links inside sentences */
 .fine { margin: 12px 4px 0; text-align: center; color: var(--muted-d); font-size: 12px; font-weight: 500; line-height: 1.4; }
-.hero-card .fine { margin: 10px 4px 0; }
+.home-fine { max-width: 480px; margin: 14px auto 0; }
 
 .inline-link { border: 0; background: none; padding: 0; color: var(--green-d); font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 .org-line { margin: 18px 4px 0; text-align: center; color: var(--muted); font-size: 12px; font-weight: 500; line-height: 1.45; }
@@ -730,20 +736,26 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
    The boards, Prizes, You, the result and the practice: white, simple, few words.
    ========================================================================================================== */
 /* A board: the top three on a podium, the rest in plain rows under it. */
-.podium { list-style: none; margin: 0 auto; padding: 22px 16px 0; max-width: 440px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; column-gap: 8px; }
+/* Your place on the board, at a glance */
+.lb-you { margin: 0 0 12px; padding: 11px 14px; border-radius: 14px; background: var(--green-l); color: var(--green-d); font-size: 15px; font-weight: 600; text-align: center; animation: rise .35s cubic-bezier(.2, .8, .2, 1) both; }
+.lb-you strong { font-weight: 800; }
+.podium { list-style: none; margin: 0 auto; padding: 30px 16px 0; max-width: 460px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; column-gap: 10px; }
 .podium li { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; animation: rise .4s cubic-bezier(.2, .8, .2, 1) both; }
 .podium .p1 { grid-column: 2; grid-row: 1; animation-delay: .08s; }
 .podium .p2 { grid-column: 1; grid-row: 1; animation-delay: .04s; }
 .podium .p3 { grid-column: 3; grid-row: 1; }
-.podium .avatar { width: 52px; height: 40px; font-size: 14px; border-radius: 11px; }
-.podium .p1 .avatar { width: 60px; height: 46px; font-size: 16px; border-radius: 12px; }
+.podium .avatar { width: 58px; height: 44px; font-size: 15px; border-radius: 12px; }
+.podium .p1 .avatar { width: 70px; height: 54px; font-size: 18px; border-radius: 14px; }
+/* a crown over first place */
+.podium .crown { display: block; width: 30px; height: 22px; margin-bottom: -2px; background: #e9b81c; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 22'%3E%3Cpath d='M2 7l6.5 5L15 2l6.5 10L28 7l-3 13H5z'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 22'%3E%3Cpath d='M2 7l6.5 5L15 2l6.5 10L28 7l-3 13H5z'/%3E%3C/svg%3E") center / contain no-repeat; animation: crownin .5s cubic-bezier(.2, .9, .3, 1.5) .3s both; }
+@keyframes crownin { from { opacity: 0; transform: translateY(8px) scale(.6) rotate(-12deg); } to { opacity: 1; transform: none; } }
 .podium li.me .avatar { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--green); }
-.podium .pts { font-size: 17px; font-weight: 800; letter-spacing: -.01em; color: var(--ink); font-variant-numeric: tabular-nums; }
-.podium .p1 .pts { font-size: 19px; }
+.podium .pts { font-size: 18px; font-weight: 800; letter-spacing: -.01em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.podium .p1 .pts { font-size: 22px; }
 .podium .step { align-self: stretch; display: grid; place-items: center; border-radius: 10px 10px 0 0; font-size: 18px; font-weight: 800; transform-origin: bottom; animation: stepup .45s cubic-bezier(.2, .8, .2, 1) both; }
-.podium .p1 .step { height: 58px; background: var(--yellow); color: var(--yellow-d); animation-delay: .12s; }
-.podium .p2 .step { height: 42px; background: var(--fill); color: var(--text); animation-delay: .06s; }
-.podium .p3 .step { height: 30px; background: var(--fill); color: var(--text); }
+.podium .p1 .step { height: 70px; background: var(--yellow); color: var(--yellow-d); animation-delay: .12s; }
+.podium .p2 .step { height: 50px; background: var(--fill); color: var(--text); animation-delay: .06s; }
+.podium .p3 .step { height: 36px; background: var(--fill); color: var(--text); }
 @keyframes stepup { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 .podium:not([hidden]) + .board { border-top: 2px solid var(--line); }
 
@@ -752,10 +764,10 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
 .board li:nth-child(2) { animation-delay: .02s; } .board li:nth-child(3) { animation-delay: .04s; } .board li:nth-child(4) { animation-delay: .06s; } .board li:nth-child(n+5) { animation-delay: .08s; }
 .board li + li::before { content: ''; position: absolute; top: 0; left: 60px; right: 18px; height: 1px; background: var(--sep); }
 .board .rank { justify-self: center; font-size: 15px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
-.board .who { min-width: 0; font-size: 14px; font-weight: 700; color: var(--ink); }
+.board .who { min-width: 0; font-size: 14px; font-weight: 800; color: var(--green-d); }
 .board .pts { text-align: right; font-size: 17px; font-weight: 700; letter-spacing: -.01em; color: var(--ink); font-variant-numeric: tabular-nums; }
 /* your own row: an edge in green, the place and "You" in green */
-.board li.me { margin: 4px 8px; padding: 0 10px; border-radius: 14px; box-shadow: inset 0 0 0 2px #b8dcab; }
+.board li.me { margin: 4px 8px; padding: 0 10px; border-radius: 14px; background: var(--green-l); }
 .board li.me::before, .board li.me + li::before { display: none; }
 .board li.me .rank { color: var(--green-d); }
 /* the public board stops at 20; a player further down sees their own row under a gap */
@@ -766,9 +778,6 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
 .lb-empty strong { font-size: 17px; font-weight: 800; color: var(--ink); }
 .lb-empty span { max-width: 270px; color: var(--muted); font-size: 14px; font-weight: 500; line-height: 1.4; }
 /* Home: the top three as plain rows, then the way to the full board */
-.home-top .board { padding: 0 0 4px; }
-.home-top > .cell:first-of-type { border-top: 1px solid var(--sep); }
-.home-top > .card-h { padding-bottom: 6px; }
 
 /* Prizes: one white card each; the picture is a grey box with a question mark until a photo is added. */
 .prize-grid { display: grid; gap: 12px; }
@@ -838,7 +847,7 @@ dd { margin: 0; color: var(--ink); font-weight: 600; }
   .board li.me { margin: 4px 10px; padding: 0 12px; }
   .board .avatar { width: 48px; height: 36px; }
   .board .pts { font-size: 18px; }
-  .podium { padding-top: 26px; }
+  .podium { padding-top: 34px; }
   .lt strong { font-size: 26px; }
   .practice-box { max-width: 560px; min-height: 560px; margin-left: auto; margin-right: auto; padding: 34px 32px 28px; }
 }
@@ -861,4 +870,4 @@ p, .story-body p, .legal p { text-wrap: pretty; }
 /* Every control a finger uses is at least 44 px tall (the logo link, the bundle buttons, How to play). */
 .brand { min-height: 44px; }
 .bundles-line .link { min-height: 44px; align-content: center; }
-.hero-how { min-height: 52px; }
+

@@ -100,7 +100,7 @@
     payments: db.payments.length, plays: db.plays.filter((p) => p.score != null && !p.voided).length, players: Object.keys(db.players).length,
     week_start: weekStart(), week_end: (() => { const d = new Date(weekStart() + 'T12:00:00'); d.setDate(d.getDate() + 6); return d.toISOString().slice(0, 10); })(),
   });
-  const adminCheck = (code) => { if (code !== DEMO_ADMIN_CODE) fail('BAD_ADMIN'); };
+  const adminCheck = (code) => { if (code !== (((db && db.settings) || {}).admin_code || DEMO_ADMIN_CODE)) fail('BAD_ADMIN'); };
   // After the closing date (the end of that day) nothing more is bought or started, as on the server.
   const closed = () => { const e = db.settings.ends_on; return !!e && Date.now() > new Date(e + 'T23:59:59').getTime(); };
   const stripeStatus = () => { const s = db.settings.stripe; return s ? { connected: true, mode: s.mode, account: s.account, webhook: true, from_env: false } : { connected: false, mode: '', account: '', webhook: false, from_env: false }; };
@@ -221,7 +221,7 @@
         adminCheck(b.code);
         // The demo's owner code is OWNER: the site's words and photos, the prizes, the campaign, Stripe and the code.
         // The committee code alone runs the game: bans, cancelled plays, names, blocked names and free plays.
-        if (['set_code', 'settings', 'stripe_connect', 'stripe_disconnect', 'set_content', 'upload_image'].includes(b.op) && b.owner_code !== 'OWNER') fail('OWNER_ONLY');
+        if (['settings', 'stripe_connect', 'stripe_disconnect', 'set_content', 'upload_image'].includes(b.op) && b.owner_code !== 'OWNER') fail('OWNER_ONLY');
         const FREE_PLAY_LIMIT = 3;
         const freePlaysOf = (pid) => (db.free_plays || []).filter((x) => x.player_id === pid);
         const campaign = () => {
@@ -309,7 +309,11 @@
               first_play: first.slice(0, 3).map((x, i) => row(db.players[x.pid], i + 1, x.key[0], x.at, x.key.slice(1))),
               ends_on: cp.ends_on, closes_at: cp.closes_at, prize_mode: cp.prize_mode };
           }
-          case 'set_code': return { ok: true };
+          case 'set_code': {
+            const next = String(b.new_code || '');
+            if (next.length < 8 || next.length > 200) fail('CODE_TOO_SHORT');
+            db.settings.admin_code = next; save(db); return { ok: true };
+          }
           case 'payments': {
             const q = String(b.q || '').trim().toLowerCase();
             const inRange = (p) => (!b.from || p.created_at.slice(0, 10) >= b.from) && (!b.to || p.created_at.slice(0, 10) <= b.to);

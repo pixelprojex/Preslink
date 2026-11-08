@@ -18,7 +18,7 @@
     })();
   </script>
   <title>PresLink Arcade | Presentation Brothers College Charity, Cork</title>
-  <meta name="description" content="Play PresLink Arcade, the charity game of PresLink at Presentation Brothers College, Cork. €2 a play raises money for schools in Ghana and Nigeria.">
+  <meta name="description" content="Play PresLink Arcade, the charity game of PresLink at Presentation Brothers College, Cork. €2 a game raises money for schools in Ghana and Nigeria.">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="application-name" content="PresLink Arcade">
   <meta name="apple-mobile-web-app-title" content="PresLink Arcade">
@@ -29,16 +29,16 @@
   <meta property="og:site_name" content="PresLink Arcade">
   <meta property="og:url" content="https://preslink.netlify.app/">
   <meta property="og:title" content="PresLink Arcade: can you stop the light?">
-  <meta property="og:description" content="Play PresLink Arcade, the charity game of PresLink at Presentation Brothers College, Cork. €2 a play raises money for schools in Ghana and Nigeria.">
-  <meta property="og:image" content="https://preslink.netlify.app/posters/preslink-arcade-message.png?v=5">
+  <meta property="og:description" content="Play PresLink Arcade, the charity game of PresLink at Presentation Brothers College, Cork. €2 a game raises money for schools in Ghana and Nigeria.">
+  <meta property="og:image" content="https://preslink.netlify.app/posters/preslink-arcade-message.png?v=6">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="PresLink Arcade: Play. Win prizes. Fund a school. €2 a go at preslink.netlify.app.">
+  <meta property="og:image:alt" content="PresLink Arcade: can you stop the light on the line? A game of timing for PresLink, €2 a game, at preslink.netlify.app.">
   <meta property="og:locale" content="en_IE">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="PresLink Arcade: can you stop the light?">
-  <meta name="twitter:description" content="Play PresLink Arcade, the charity game of PresLink at Presentation Brothers College, Cork. €2 a play raises money for schools in Ghana and Nigeria.">
-  <meta name="twitter:image" content="https://preslink.netlify.app/posters/preslink-arcade-message.png?v=5">
+  <meta name="twitter:description" content="Play PresLink Arcade, the charity game of PresLink at Presentation Brothers College, Cork. €2 a game raises money for schools in Ghana and Nigeria.">
+  <meta name="twitter:image" content="https://preslink.netlify.app/posters/preslink-arcade-message.png?v=6">
   <!-- Who runs the site, for search engines: PresLink, the student charity of Presentation Brothers College, Cork.
        WebSite gives Google the site's name for its results; Organization and the school say whose it is. -->
   <script type="application/ld+json">
@@ -54,7 +54,7 @@
           "PresLink",
           "Pres Link Arcade"
         ],
-        "description": "Play PresLink Arcade, the charity game of PresLink at Presentation Brothers College, Cork. €2 a play raises money for schools in Ghana and Nigeria.",
+        "description": "Play PresLink Arcade, the charity game of PresLink at Presentation Brothers College, Cork. €2 a game raises money for schools in Ghana and Nigeria.",
         "inLanguage": "en-IE",
         "publisher": {
           "@id": "https://preslink.netlify.app/#preslink"
@@ -131,7 +131,8 @@
   <link rel="manifest" href="manifest.webmanifest">
   <!-- the game's server: connect while the page is still loading -->
   <link rel="preconnect" href="https://bsovummlmfclefdlvsic.supabase.co" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=64">
+  <link rel="preload" href="fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="styles.css?v=67">
 </head>
 <body>
 <div class="splash" id="splash" aria-hidden="true">
@@ -170,24 +171,19 @@
   <section class="screen" data-screen="home">
     <div class="hero-card">
       <h1 class="hero-h">Stop the light on the line.</h1>
+      <p class="hero-rule">Tap when the white light is on the black line.</p>
       <p class="notice" id="home-notice" hidden></p>
       <div class="demo-track" aria-hidden="true"><span class="demo-pin"></span><span class="demo-marker"></span></div>
       <button class="btn btn-primary btn-xl" id="home-play" type="button">Play · €2</button>
-      <p class="bundles-line"><button class="link" type="button" data-bundle="triple">3 plays · €5</button><button class="link" type="button" data-bundle="seven">7 plays · €10</button></p>
-      <button class="btn btn-xl hero-how" type="button" data-sheet="how"><span class="how-ic" aria-hidden="true">?</span>How to play</button>
-      <p class="fine">Under 18s need a parent's or guardian's permission to pay.</p>
+      <p class="bundles-line"><button class="link" type="button" data-bundle="triple">3 games · €5</button><button class="link" type="button" data-bundle="seven">7 games · €10</button></p>
+      <button class="howto" type="button" data-sheet="how"><span class="how-ic" aria-hidden="true">?</span>How to play</button>
     </div>
     <button class="cause" type="button" data-go="about">
+      <img class="cause-crest" src="assets/crest.svg?v=10" alt="" width="24" height="29">
       <span class="hero-cause">Every cent after card fees goes to PresLink, the school's charity.</span>
-      <span class="cause-link">About PresLink ›</span>
+      <span class="cause-go" aria-hidden="true">›</span>
     </button>
-    <div class="card home-top" id="home-top">
-      <h2 class="card-h">Leading now</h2>
-      <ol class="board mini" id="home-top-list"></ol>
-      <p class="empty" id="home-top-empty" hidden>No scores yet. Be the first.</p>
-      <button class="cell" type="button" data-go="board"><span>Full leaderboard</span> <span class="chev">›</span></button>
-      <button class="cell" type="button" data-go="prize"><span data-honours="Honours">Prizes</span> <span class="chev">›</span></button>
-    </div>
+    <p class="fine home-fine">Under 18s need a parent's or guardian's permission to pay.</p>
   </section>
 
   <!-- ================= CABINET (after a payment) ================= -->
@@ -195,7 +191,7 @@
     <div class="cabinet" aria-hidden="true">
       <div class="cab-panel" id="cab-panel">
         <div class="cab-slot-wrap"><div class="cab-coin" id="coin">€</div><div class="cab-slot" id="cab-slot"></div></div>
-        <div class="cab-led"><strong id="cab-credits">0</strong><span id="cab-unit">plays</span></div>
+        <div class="cab-led"><strong id="cab-credits">0</strong><span id="cab-unit">games</span></div>
       </div>
       <div class="cab-tray-wrap"><div class="cab-tray"></div><div class="cab-token" id="token">1</div></div>
     </div>
@@ -214,7 +210,7 @@
       <button class="back" type="button" data-go="home" aria-label="Back">‹</button>
       <p class="practice-tag">Practice</p>
       <h2>This is a practice</h2>
-      <p>Three free goes to learn the game. They don't count.</p>
+      <p>Three free plays to learn the game. They don't count.</p>
       <div class="demo-track" aria-hidden="true"><span class="demo-pin"></span><span class="demo-marker"></span></div>
       <p class="practice-rule" id="practice-rule">Tap when the white light is on the black line.</p>
       <button class="btn btn-primary btn-xl" type="button" id="practice-go">Start practice</button>
@@ -224,7 +220,7 @@
       <p class="practice-tag">Practice done</p>
       <strong class="practice-score" id="practice-score">0</strong>
       <h2>Now for real</h2>
-      <p>Your next three goes count.</p>
+      <p>Your next game counts: three plays.</p>
       <button class="btn btn-primary btn-xl" type="button" id="practice-real">Play for real</button>
     </div>
     <div class="game" id="game">
@@ -262,7 +258,7 @@
         </div>
         <p class="result-note" id="result-note" hidden></p>
         <button class="btn btn-primary btn-xl" type="button" id="result-again">Play again</button>
-        <p class="bundles-line" id="result-topup" hidden><button class="link" type="button" data-bundle="triple">3 plays · €5</button><button class="link" type="button" data-bundle="seven">7 plays · €10</button></p>
+        <p class="bundles-line" id="result-topup" hidden><button class="link" type="button" data-bundle="triple">3 games · €5</button><button class="link" type="button" data-bundle="seven">7 games · €10</button></p>
       </div>
       <div class="card">
         <button class="cell" type="button" id="result-email" hidden><span>Add your email</span> <span class="chev">›</span></button>
@@ -278,6 +274,7 @@
       <button role="tab" type="button" class="tab" data-role="student" aria-selected="false">Students</button>
       <button role="tab" type="button" class="tab" data-role="teacher" aria-selected="false">Teachers</button>
     </div>
+    <p class="lb-you" id="board-you" hidden></p>
     <div class="card lb">
       <ol class="podium" id="board-podium" aria-label="Top three" hidden></ol>
       <ol class="board" id="board-list"></ol>
@@ -292,8 +289,8 @@
       <article class="card prize" data-prize="everyone"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Top score</h2><p class="prize-what tba" id="prize-everyone">To be announced</p><p class="prize-lead" id="lead-everyone"></p></div></article>
       <article class="card prize" data-prize="students"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Top student</h2><p class="prize-what tba" id="prize-students">To be announced</p><p class="prize-lead" id="lead-students"></p></div></article>
       <article class="card prize" data-prize="teachers"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Top teacher</h2><p class="prize-what tba" id="prize-teachers">To be announced</p><p class="prize-lead" id="lead-teachers"></p></div></article>
-      <article class="card prize" data-prize="best_light"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Best go</h2><p class="prize-what tba" id="prize-best-light">To be announced</p><p class="prize-lead" id="lead-best-light"></p></div></article>
-      <article class="card prize" data-prize="first_play"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Best first play</h2><p class="prize-what tba" id="prize-first-play">To be announced</p><p class="prize-lead" id="lead-first-play"></p></div></article>
+      <article class="card prize" data-prize="best_light"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Best play</h2><p class="prize-what tba" id="prize-best-light">To be announced</p><p class="prize-lead" id="lead-best-light"></p></div></article>
+      <article class="card prize" data-prize="first_play"><div class="prize-media"><img alt="" hidden></div><div class="prize-body"><h2>Best first game</h2><p class="prize-what tba" id="prize-first-play">To be announced</p><p class="prize-lead" id="lead-first-play"></p></div></article>
     </div>
   </section>
 
@@ -352,7 +349,7 @@
         </div>
       </div>
       <div class="card you-stats">
-        <p><strong id="you-credits">0</strong><span>Plays left</span></p>
+        <p><strong id="you-credits">0</strong><span>Games left</span></p>
         <p><strong id="you-best">–</strong><span>Your best</span></p>
         <p><strong id="you-spent">€0</strong><span>Donated</span></p>
       </div>
@@ -438,7 +435,7 @@
     <div class="card">
       <ol class="steps">
         <li>Tap when the white light is on the black line.</li>
-        <li>You get three goes. Your score is the average of the three.</li>
+        <li>Each game is three plays. Your score is the average of the three.</li>
         <li data-honours="Top of the leaderboard when the game ends is honoured.">Top of the leaderboard when the game ends wins.</li>
       </ol>
     </div>
@@ -479,25 +476,25 @@
   <div class="sheet-head"><h2 id="terms-title">Terms</h2><button class="close" type="button" data-close aria-label="Close">×</button></div>
   <div class="sheet-body legal">
     <p class="small muted">Last updated 28 October 2026</p>
-    <p class="glance"><strong>In short.</strong> A game of skill. €2 a play, 3 for €5 or 7 for €10. Under 18s need a parent's or guardian's permission to pay. Unused plays can be refunded.</p>
+    <p class="glance"><strong>In short.</strong> A game of skill. €2 a game, 3 games for €5 or 7 for €10; each game is three plays. Under 18s need a parent's or guardian's permission to pay. Unused games can be refunded.</p>
     <h3>1. Who runs this</h3>
     <p>PresLink Arcade is run by PresLink, the student charity committee of Presentation Brothers College, The Mardyke, Cork T12 VK49 (“we”), with staff mentors<span class="org-legal"></span>. <span class="org-contact">You can contact us through the school.</span></p>
     <h3>2. What you are buying</h3>
-    <p>A play is three goes: each time, you stop the moving light as close to the line as you can. Your score is the average of the three. Plays cost €2 each, €5 for 3 or €10 for 7. They are added to your player straight away and can be used until the game closes. Everything you pay, less Stripe's card fees, goes to PresLink for the Presentation Brothers' schools and projects in Ghana and Nigeria.</p>
+    <p>A game is three plays: each time, you stop the moving light as close to the line as you can. Your score is the average of the three. Games cost €2 each, €5 for 3 or €10 for 7. They are added to your player straight away and can be used until the game closes. Everything you pay, less Stripe's card fees, goes to PresLink for the Presentation Brothers' schools and projects in Ghana and Nigeria.</p>
     <h3>3. Who can play</h3>
     <p>Anyone. Under 18s need a parent's or guardian's permission before paying. One player per person. <span class="mode-prizes">Committee members and staff mentors can play but can't win prizes.</span></p>
     <h3>4. Your initials, code and boards</h3>
     <p>You play under two or three initials of your choice. If someone already has them you are shown with a number, for example JAK#2. Offensive names are blocked or removed. Your four-digit code proves a score is yours and signs you in on another device: keep it private. Everyone is on the Everyone board. Students and teachers of Presentation Brothers College can also join the Students or Teachers board with their school email address, which we may check.</p>
     <h3 class="mode-prizes">5. Prizes</h3>
-    <p class="mode-prizes">Prizes are awarded once, when the game closes (the date is on the Prizes page): for the highest score on the Everyone, Students and Teachers boards, the best single go, and the best score on a player's first play. The prizes are described on the Prizes page and have no cash alternative. No prize counts spending; more plays give more chances at a best score, which is why spending is capped. Equal scores on a board: the earlier one wins. Equal best goes are split by each player's next-best go, then the one after; equal first plays by that play's best go, then the next. Only a person's first player counts for the First play prize. Winners are told by email, or in school, within 14 days of the close, collect by showing their initials and code, and receive their prizes within six weeks. Winners' initials and scores stay on the boards.</p>
+    <p class="mode-prizes">Prizes are awarded once, when the game closes (the date is on the Prizes page): for the highest score on the Everyone, Students and Teachers boards, the best single play, and the best score on a player's first game. The prizes are described on the Prizes page and have no cash alternative. No prize counts spending; more games give more chances at a best score, which is why spending is capped. Equal scores on a board: the earlier one wins. Equal best plays are split by each player's next-best play, then the one after; equal first games by that game's best play, then the next. Only a person's first player counts for the First game prize. Winners are told by email, or in school, within 14 days of the close, collect by showing their initials and code, and receive their prizes within six weeks. Winners' initials and scores stay on the boards.</p>
     <h3 class="mode-honours" hidden>5. Honours</h3>
-    <p class="mode-honours" hidden>When the game closes, the top of the Everyone, Students and Teachers boards, the best single go and the best first play are honoured, as described on the Honours page. There are no prizes of money or money's worth. Equal scores are split as on the boards: the earlier one wins, and equal best goes go to the better next-best go.</p>
+    <p class="mode-honours" hidden>When the game closes, the top of the Everyone, Students and Teachers boards, the best single play and the best first game are honoured, as described on the Honours page. There are no prizes of money or money's worth. Equal scores are split as on the boards: the earlier one wins, and equal best plays go to the better next-best play.</p>
     <h3>6. Fair play</h3>
-    <p>Each go scores up to 999 by how close to the line you stop the light, timed to the millisecond from the moment your finger touches the screen, which keeps differences between phones small. Everyone gets the same three goes on a given day, and nothing in a score is random. Our server checks every score. We may cancel scores or remove a player for cheating or tampering, and we will say why. If you disagree with a decision, email us: we will look again and reply.</p>
+    <p>Each play scores up to 999 by how close to the line you stop the light, timed to the millisecond from the moment your finger touches the screen, which keeps differences between phones small. Everyone gets the same three plays on a given day, and nothing in a score is random. Our server checks every score. We may cancel scores or remove a player for cheating or tampering, and we will say why. If you disagree with a decision, email us: we will look again and reply.</p>
     <h3>7. Refunds and problems</h3>
-    <p>Unused plays can be refunded if you ask within 14 days of buying them, or if the game ends before you can use them. A play can't be refunded once it has been used. If a play fails because of a fault on our side (it freezes, or the score is not saved), we will give you a new play or a refund. Each player can spend at most €20 a day and €100 in all; the You tab shows what you have donated. Payments are processed by Stripe, and we never see your card number. Your rights under Irish consumer law are not affected.</p>
+    <p>Unused games can be refunded if you ask within 14 days of buying them, or if the campaign ends before you can use them. A game can't be refunded once it has been used. If a game fails because of a fault on our side (it freezes, or the score is not saved), we will give you a new game or a refund. Each player can spend at most €20 a day and €100 in all; the You tab shows what you have donated. Payments are processed by Stripe, and we never see your card number. Your rights under Irish consumer law are not affected.</p>
     <h3>8. Changes</h3>
-    <p>We only change these terms for a good reason, such as fixing a fault, stopping cheating or following the law, and we post the change here first. We won't raise the price of plays you have bought or take away a prize we have announced. If we end the game early, we refund unused plays.</p>
+    <p>We only change these terms for a good reason, such as fixing a fault, stopping cheating or following the law, and we post the change here first. We won't raise the price of games you have bought or take away a prize we have announced. If we end the campaign early, we refund unused games.</p>
     <h3>9. Questions and complaints</h3>
     <p>Tell us first and we will reply within 7 days. You can also raise a concern about how a charity raises money with the Charities Regulator. These terms are governed by the laws of Ireland.</p>
     <h3>10. About the facts</h3>
@@ -513,7 +510,7 @@
     <h3>Who is responsible</h3>
     <p>PresLink, the student charity committee of Presentation Brothers College, The Mardyke, Cork T12 VK49, with staff mentors<span class="org-legal"></span>, is responsible for your data. <span class="org-contact">You can contact us through the school.</span></p>
     <h3>What we keep, and why</h3>
-    <p><b>Your initials, code, board, scores, taps and play times:</b> to run the game and the boards, and to check that scores are fair (our legitimate interest in running a fair game).</p>
+    <p><b>Your initials, code, board, scores, taps and game times:</b> to run the game and the boards, and to check that scores are fair (our legitimate interest in running a fair game).</p>
     <p><b>The kind of device you play on</b> (for example “iOS Safari”): to check that no kind of phone has an advantage (the same interest). Nothing that identifies your phone is kept.</p>
     <p><b>Payments</b> (amount, time, Stripe's reference, the email you give Stripe for your receipt, and which poster or post the visit came from): to take payment and keep accounts (our contract with you, and the law on charity accounts).</p>
     <p><b>Your email, if you give it</b> (it is optional): only to tell you if you <span data-honours="top a board">win</span> (your consent). If you are under 16, give a parent's or guardian's email instead. <b>Your school email, if you give it:</b> to put you on the Students or Teachers board (your consent).</p>
@@ -543,7 +540,7 @@
 
 <script src="config.js"></script>
 <!-- the demo backend loads only when no server is configured -->
-<script>if (!(window.PRESLINK_CONFIG || {}).SUPABASE_URL) document.write('<script src="mock.js?v=43"><\/script>');</script>
-<script src="app.js?v=57"></script>
+<script>if (!(window.PRESLINK_CONFIG || {}).SUPABASE_URL) document.write('<script src="mock.js?v=44"><\/script>');</script>
+<script src="app.js?v=59"></script>
 </body>
 </html>

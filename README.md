@@ -2,9 +2,11 @@
 
 A web app, opened from a QR code on any device with a browser, for the PresLink charity at Presentation Brothers College, Cork.
 Scan a QR code, tap **Play · €2**, pay with Apple Pay, Google Pay or a card, and
-**stop the light on the line**: three goes a play, the score is the average, out of 1,000.
-One campaign, three boards (Everyone, Students, Teachers) and prizes at the end, plus two spot prizes
-(the best single go and the best first play). Every payment goes to PresLink.
+**stop the light on the line**: a **game** (what you pay for: €2, or 3 games for €5, 7 for €10) is three
+**plays**, and its score is the average of the three, out of 1,000. One campaign, three boards (Everyone,
+Students, Teachers) and prizes at the end, plus two spot prizes (the best single play and the best first
+game). Every payment goes to PresLink. The words are kept apart everywhere: you buy games, each game has three
+plays.
 
 There is no sign-up. On the first tap a small sheet asks for two or three letters (your initials),
 picked on an on-screen letter pad (tap a box to clear that letter), so the phone keyboard never covers
@@ -21,23 +23,23 @@ already has the same letters you still get them, shown with a small blue numbere
 carries a 2), so nobody is ever refused.
 
 Before a player's very first real play comes a **practice**, once: after paying, Start opens a big box ("This
-is a practice: three free goes to learn the game, they don't count"), the three goes run on a game card
+is a practice: three free plays to learn the game, they don't count"), the three plays run on a game card
 edged in gold and marked Practice, and a second box ("Practice done", the practice score, "Now for real")
 leads into the real play. It can't be skipped (Back leaves, and it is there again next time), it never comes
-back once done, and a player who already has a score never sees it. Practice goes are made up on the
-device, not the day's real ones, and nothing about them is sent to the server or uses a play.
+back once done, and a player who already has a score never sees it. Practice plays are made up on the
+device, not the day's real ones, and nothing about them is sent to the server or uses a game.
 
 The look is white and plain, after Duolingo (white pages and cards with a light grey edge, white buttons with
 a lip, large titles, tabs underlined in green, initials tiles in one of eight muted pastel colours that the player can change on the You tab, a progress ring) in one palette taken from the PresLink mark (two chain links: the Ghana flag's red, yellow and green with its star, and purple, white and black), each colour with one job: purple for PresLink, the charity and the school; green for things you do and for success; the logo's yellow for the game (first place, prize cards); grey for everything secondary; red only for errors. The one gradient is the game's bar, a warm sweep from pale yellow to orange. The logo and the running
 total raised sit at the top of every screen; there is a tab bar (Play, Leaderboard, About, You), a Prizes page
 with a white card per prize (its photo, or a trophy on pale yellow until there is one), and very
-little text. The leaderboard puts the top three on a podium (their tiles and scores on flat gold, silver and
-bronze steps, first in the middle and highest) and everyone else in plain rows (place, initials tile, score),
-with your own row edged in green. The result is one
-card (the score, its three goes, your best and rank, Play again), and You is one card with your tile and
-code, three numbers (plays left, your best, donated) and a short list. The same pages lay themselves out for
-an iPad (a 640 px column with the tab bar underneath; About shares rows, Home gets a top-three
-card) and for a desktop (the tab bar becomes a sidebar with the school at its foot, sheets become centred
+little text. Home is one centred column: the headline and its one rule, the game's bar, Play, the two bundles,
+How to play, then the charity in one purple line and the permission line. The leaderboard has pill tabs, your
+place on that board at a glance ("You're 4th with 254"), a podium for the top three (a crown over first, on a
+yellow step; grey steps for second and third) and everyone else in plain rows, with your row tinted green. The
+result is one card (the score, its three plays, your best and rank, Play again), and You is one card with your
+tile and code, three numbers (games left, your best, donated) and a short list. The same pages lay themselves out for
+an iPad (a 640 px column with the tab bar underneath; About shares rows) and for a desktop (the tab bar becomes a sidebar with the school at its foot, sheets become centred
 modals, Home puts the hero beside the top three, You puts your card beside the rest, a mouse gets hover
 states that touch never sees, and a keyboard plays the whole game with Space or Enter).
 
@@ -149,7 +151,7 @@ Do these in order. Steps 1 and 2 are a one-off technical setup; 3 to 6 are the l
 
 The project **preslink-demo** (`bsovummlmfclefdlvsic`, London) already has all twenty-three migrations applied,
 both functions deployed, and `site/config.js` points at it. The committee code was set at deployment
-and handed over privately; change it any time from the console's Committee code page, which can also generate one in the form `PRES-KQX#-4821-9930`.
+and handed over privately. The committee changes it themselves on the console's Overview (**Change the committee code**), with the code they have; nobody else, the site's owner included, can read the new one back. A lost code is reset in the database (`docs/admin.sql`, step 0).
 
 If you ever need to redo this on a fresh project: Dashboard → **SQL Editor** → run the files in
 `supabase/migrations/` in order (the first line of `0007` must be run on its own, before the rest of that file), deploy the two functions with `--no-verify-jwt` (CLI below), set the
@@ -161,6 +163,12 @@ supabase link --project-ref <your-project-ref>
 supabase functions deploy api --no-verify-jwt
 supabase functions deploy stripe-webhook --no-verify-jwt
 ```
+
+**On Supabase's free plan** a project that sees little use for a week is paused, and the game stops until
+someone clicks Resume in the dashboard (nothing is lost). The workflow `.github/workflows/keep-awake.yml` asks the
+database for the total and the board once a day, so it always counts as in use. GitHub switches scheduled
+workflows off in a repository with no commits for 60 days; a push, or **Run workflow** on the Actions tab,
+switches it back on.
 
 ### 2. Stripe (payments)
 
@@ -222,7 +230,7 @@ the request came from.
 
 ### 6. Prizes at the end
 
-1. The owner sets the closing date and the five prize texts (Everyone, Students, Teachers, Best go,
+1. The owner sets the closing date and the five prize texts (Everyone, Students, Teachers, Best play,
    First play), each with a photo if there is one, through the API with the owner code (below). They
    appear on the Prizes page as typed, one card per prize; an empty line shows "To be announced". Under each
    prize the page shows who holds it right now (the top of each board, the best single light and the best first
@@ -246,7 +254,7 @@ charity**:
 - The committee page, the poster tools and the poster files say `noindex`, so the game's page is the one
   people find. Deploy previews are kept out of Google by Netlify itself.
 - Icons at 48, 96, 192 and 512 px give Google and phones a sharp logo; the photos have descriptive alt text.
-- The welcome plays on every open and reload (a pen draws the two links in their colours, they close with a clink, the star lands and the name rises; about two seconds, a tap skips it), not on the way back from Stripe and never for a crawler.
+- The welcome shows on every open and reload (a pen draws the two links in their colours, they close with a clink, the star lands and the name rises; about two seconds, a tap skips it), not on the way back from Stripe and never for a crawler.
 - The icons are all square, as Google and browsers require: the mark on a white tile. `favicon.ico` (16, 32 and 48 px) and `apple-touch-icon.png` (180 px) sit at the root, where browsers and iPhones look without being told; every page links them with the SVG tile icon (`assets/icon.svg`), and the manifest carries the 192, 512 and maskable 512.
 - A missing address shows `404.html`: the mark, one line and a button back to the game.
   Search engines and link previews never get it: they see the page at once.
@@ -305,14 +313,14 @@ changes the site. Every change asks first, in a box under what was clicked, then
 - **Players**: everyone, with a search over the name, the emails and the code, a board filter and a banned
   filter. A player's record shows their code (to help someone who lost it, and to check a winner), every
   play, free play and payment, and the controls:
-  - **Give a free play**, with a short reason, for a play that failed through a fault on our side (the
+  - **Give a free game**, with a short reason, for a game that failed through a fault on our side (the
     Terms promise a new play or a refund). It is not a payment, so the money raised and the limits don't
     move. At most three per player (`settings.free_play_limit`); none for a banned player or after the
     close.
   - **Cancel play** and **Restore**, on each play, with an optional reason kept with it.
   - **Ban** and **Unban**. A banned player can't pay or play and leaves the boards and the winners.
   - **Reset name**: a random new name, with the same code.
-- **Winners**: the top three of each prize (Everyone, Students, Teachers, Best go, First play), ranked
+- **Winners**: the top three of each prize (Everyone, Students, Teachers, Best play, First game), ranked
   exactly as the public site ranks them, with codes and emails, and a CSV.
 - **Blocked names**: initials nobody can choose for a new name. The committee's own can be unblocked; the
   site's built-in list stays.
@@ -320,7 +328,7 @@ changes the site. Every change asks first, in a box under what was clicked, then
 ### What the owner changes
 
 Changes to the site itself go through the same API (`action: "admin"`) but need the owner code as well as the
-committee code. The Edge Function refuses `settings`, `set_content`, `upload_image`, `set_code`,
+committee code. The Edge Function refuses `settings`, `set_content`, `upload_image`,
 `stripe_connect` and `stripe_disconnect` with `OWNER_ONLY` unless the request carries `owner_code` equal to
 the function's `OWNER_CODE` secret.
 - Until that secret is set, none of them can be used. The database functions still work from the Supabase
@@ -335,11 +343,11 @@ curl -X POST "$SUPABASE_URL/functions/v1/api" -H "Content-Type: application/json
   -d '{"action":"admin","code":"<committee code>","owner_code":"<owner code>","op":"settings","prizes":{"everyone":"€50 voucher"},"ends_on":"2026-12-12","goal_cents":200000}'
 ```
 
-- `settings`: the goal, the closing date and the five prize texts (Everyone, Students, Teachers, Best go,
+- `settings`: the goal, the closing date and the five prize texts (Everyone, Students, Teachers, Best play,
   First play). They show on the Prizes page as typed.
 - `set_content` and `upload_image`: the site's words and photos (below).
 - `stripe_connect` and `stripe_disconnect`: payments on or off (section 2 above).
-- `set_code`: a new committee code, at least six characters.
+- `set_code` needs the committee code alone: the committee changes its own code (at least eight characters) on the console's Overview.
 
 The spending limits and the prize mode are rows in `settings`, changed in SQL (see **Safeguards** and
 **Before taking real money**).
@@ -465,7 +473,7 @@ change one, edit that page and run `node tools/posters.cjs` (it needs Playwright
 `npx playwright install chromium` once), commit the files in `site/posters/`, and bump `?v=` on the link picture in
 `index.html`, because WhatsApp and Facebook keep an old preview for days. `--closes "12 December"` adds the closing
 date to the small print, `--org "NAME OF THE CHARITY (RCN 20000000)"` adds the organiser, and `--honours` swaps
-"Win prizes" for "Top the board" if the game runs for honours. If the site's address changes, change `SITE` in
+"top scores win prizes" for "top scores are honoured" if the game runs for honours. If the site's address changes, change `SITE` in
 `poster.html` and the `og:` tags in `index.html`.
 
 The small print on the print and social formats says how the prizes are won, that under-18s need a parent's or
