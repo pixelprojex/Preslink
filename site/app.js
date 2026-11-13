@@ -39,22 +39,23 @@
 
   const MESSAGES = {
     NETWORK: 'No connection. Check your signal and try again.',
-    NO_CREDITS: 'No games left.',
-    BAD_INITIALS: 'Two or three initials, A to Z.',
-    BLOCKED_INITIALS: 'Those initials are not allowed. Try others.',
-    TAKEN: 'Those initials are taken. Try others.',
+    NO_CREDITS: 'You have no games left.',
+    BAD_INITIALS: 'Please enter two or three initials, A to Z.',
+    BLOCKED_INITIALS: 'Those initials are not allowed. Please choose different ones.',
+    TAKEN: 'Those initials are taken. Please choose different ones.',
     BAD_ROLE: 'To join a school board, add your school email on the You tab.',
     BAD_SESSION: 'This payment link is not valid any more. Nothing was charged.',
     UNKNOWN_SESSION: 'This payment link is not valid any more. Nothing was charged.',
-    NO_PLAYER: 'No player with those initials.',
+    NO_PLAYER: 'We could not find a player with those initials.',
     BAD_SCHOOL_EMAIL: 'That is not a school email we recognise.',
     BAD_EMAIL: 'That does not look like an email address.',
     NEEDS_SCHOOL_EMAIL: 'Add your school email first.',
-    BAD_SIGNIN: 'That name and code do not match.',
-    LOCKED: 'Too many tries for that name. Try again later.',
+    BAD_SIGNIN: 'Those initials and that code do not match.',
+    LOCKED: 'Too many tries. Please wait a while and try again.',
     BANNED: 'This player has been removed by the committee.',
     CLOSED: 'The game has closed. Thank you for playing!',
     STRIPE_NOT_CONFIGURED: 'Payments are not switched on yet.',
+    PAUSED: 'Payments are paused for the moment. Please try again later.',
     NO_SITE_URL: 'Payments are not set up for this address yet.',
     PLAYER_NOT_FOUND: 'We could not find your player on this device. Tap Play to start fresh.',
     SCORE_MISMATCH: 'That score did not check out, so it was not saved.',
@@ -177,7 +178,7 @@
   function ensurePlayer(bundle) {
     if (player) return true;
     pendingBundle = bundle || 'single';
-    $('#name-submit').textContent = { single: 'Play · €2', triple: '3 games · €5', seven: '7 games · €10' }[pendingBundle] || 'Play';
+    $('#name-submit').textContent = { single: 'Play for €2', triple: '3 games for €5', seven: '7 games for €10' }[pendingBundle] || 'Play';
     showError('name-error', '');
     nameInitials.set('');
     openSheet('name');
@@ -474,7 +475,7 @@
   const canPlayNow = () => !!player && (credits > 0 || !!openPlay);
   const playsLeft = () => credits + (openPlay ? 1 : 0);
   const gamesLeft = (n) => `${n} ${n === 1 ? 'game' : 'games'} left`;
-  const playLabel = () => canPlayNow() ? `Play · ${gamesLeft(playsLeft())}` : 'Play · €2';
+  const playLabel = () => canPlayNow() ? `Play (${gamesLeft(playsLeft())})` : 'Play for €2';
   // After the closing date nothing more can be bought or started (the server refuses too).
   const isClosed = () => { const d = stats && stats.ends_on ? new Date(stats.ends_on + 'T23:59:59') : null; return !!d && !isNaN(d) && Date.now() > d.getTime(); };
   function renderHome() {
@@ -587,8 +588,8 @@
     statsTimer = setTimeout(() => { if (inPlay()) pollStats(); else refreshStats().finally(pollStats); }, STATS_EVERY);
   }
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshStats(); pollStats(); });
-  window.addEventListener('offline', () => toast('No connection', true, 4000));
-  window.addEventListener('online', () => { toast('Back online'); if (game.pending && game.state === 'done') submitPending().then((x) => showResult(game.lastScore, x.r, x.note)); else refreshStats(); });
+  window.addEventListener('offline', () => toast('You are offline.', true, 4000));
+  window.addEventListener('online', () => { toast('You are back online.'); if (game.pending && game.state === 'done') submitPending().then((x) => showResult(game.lastScore, x.r, x.note)); else refreshStats(); });
 
   // The committee's words and photos (the console's Site content page). Empty fields keep the page's own.
   let contentKey = '';
@@ -654,7 +655,7 @@
     $$('.org-legal').forEach((el) => { el.textContent = legal; });
     const email = String(org.email || contact.email || '').trim();
     $$('.org-contact').forEach((el) => { el.innerHTML = email ? `Email: <a href="mailto:${esc(email)}">${esc(email)}</a>.` : 'You can contact us through the school.'; });
-    $$('.org-rcn').forEach((el) => { el.textContent = org.rcn ? ` · RCN ${org.rcn}` : ''; });
+    $$('.org-rcn').forEach((el) => { el.textContent = org.rcn ? `, RCN ${org.rcn}` : ''; });
   }
   let statsSeq = 0, shownClosed = false;
   // The last numbers seen are kept on the device, so the total, the prizes and the words show at once on the
@@ -684,7 +685,7 @@
     $('#board-sub').textContent = ends;
     $('#board-sub').hidden = !ends;
     const closes = closesText();
-    $('#prize-sub').textContent = HONOURS() ? (closes ? `Closes ${closes}` : 'Honoured at the close') : (closes ? `Closes ${closes} · winners are emailed` : 'Winners are emailed at the close');
+    $('#prize-sub').textContent = HONOURS() ? (closes ? `The game closes on ${closes}.` : 'Honours are given when the game closes.') : (closes ? `The game closes on ${closes}. Winners will be emailed.` : 'Winners will be emailed when the game closes.');
     if (isClosed() !== shownClosed) { shownClosed = isClosed(); renderHome(); } // the close passes while the page is open
     const pz = stats.prizes || {};
     const put = (id, v) => { const el = $(id); const t = String(v || '').trim(); el.textContent = t || 'To be announced'; el.classList.toggle('tba', !t); };
@@ -937,7 +938,7 @@
     if (prog && prog.play_id === res.play_id && Array.isArray(prog.taps) && prog.taps.length > 0 && prog.taps.length < ROUNDS) {
       game.taps = prog.taps.slice(); game.scores = prog.scores.slice(); game.errs = prog.errs.slice();
       from = prog.taps.length;
-      toast(`Carrying on from go ${from + 1}`);
+      toast(`Carrying on from play ${from + 1}.`);
     } else if (prog) store.del(PROGRESS_KEY);
     beginRound(from);
   }
@@ -1250,13 +1251,13 @@
       setText(again, 'Try again');
       again.onclick = () => { n.hidden = true; submitPending().then((x) => showResult(score, x.r, x.note)); };
     } else if (credits > 0 && !isClosed()) {
-      setText(again, `Play again · ${gamesLeft(credits)}`);
+      setText(again, `Play again (${gamesLeft(credits)})`);
       again.onclick = () => { game.state = 'idle'; startGame(); };
     } else if (isClosed()) {
       setText(again, 'Done');
       again.onclick = () => go('home');
     } else {
-      setText(again, 'Another game · €2');
+      setText(again, 'Play again for €2');
       again.onclick = () => buy('single');
       $('#result-topup').hidden = false;
     }
@@ -1366,7 +1367,7 @@
   async function saveCodeImage() {
     if (!player) return;
     let t;
-    try { t = await ticketFor(); } catch (_) { toast('Could not make the picture', true); return; }
+    try { t = await ticketFor(); } catch (_) { toast('Sorry, the picture could not be made.', true); return; }
     const canShareFile = !!(navigator.canShare && navigator.canShare({ files: [t.file] }));
     if (IOS_TOUCH) {
       if (!canShareFile) { holdHint(); return; }
@@ -1441,7 +1442,7 @@
     const on = !!(player && player.contact_email);
     const line = $('#contact-saved');
     line.hidden = !on;
-    line.textContent = on ? `Saved · ${player.contact_email}` : '';
+    line.textContent = on ? `Saved as ${player.contact_email}` : '';
     $('#contact-submit').textContent = on ? 'Update email' : 'Save email';
     $('#contact-submit').hidden = on; // comes back the moment something is edited
   }

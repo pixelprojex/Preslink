@@ -129,6 +129,15 @@
     finally { btn.disabled = false; }
   });
   $('#signout').addEventListener('click', () => signOut());
+  // The school's safety switch: stop or resume new payments at once. It changes nothing on the site itself.
+  $('#pause-btn').addEventListener('click', (e) => {
+    const b = e.currentTarget, paused = b.dataset.paused === '1';
+    askFirst(b, $('#pause-box'), {
+      text: paused ? 'Resume payments? People will be able to pay again straight away.' : 'Pause payments? Nobody will be able to pay until you resume them. Games already bought can still be played.',
+      ok: paused ? 'Resume payments' : 'Pause payments', danger: !paused,
+      run: async () => { await call('pause', { paused: !paused }); closeConfirm(); await loadCampaign(); toast(paused ? 'Payments are on again.' : 'Payments are paused.'); },
+    });
+  });
   // The committee chooses its own code; this browser stays signed in with the new one.
   $('#code-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -295,7 +304,11 @@
     $('#cp-limits').textContent = `${whole(camp.daily_cap_cents)} a day, ${whole(camp.campaign_cap_cents)} in all`;
     $('#cp-mode').textContent = camp.prize_mode === 'honours' ? 'Honours only, no prizes' : 'Prizes';
     // Which Stripe account the money goes to, by its name in Stripe: if it ever changed, it would show here.
-    $('#cp-pay').textContent = !stripe ? '–' : !stripe.connected ? 'Off' : `${stripe.mode === 'live' ? 'On, live' : 'On, test mode'}${stripe.account ? ` · to ${stripe.account}` : ''}`;
+    const payText = !stripe ? '–' : !stripe.connected ? 'Off' : `${stripe.mode === 'live' ? 'On, live' : 'On, test mode'}${stripe.account ? `, paid to ${stripe.account}` : ''}`;
+    $('#cp-pay').textContent = camp.paused ? 'Paused by the committee' : payText;
+    $('#pause-btn').textContent = camp.paused ? 'Resume payments' : 'Pause payments';
+    $('#pause-btn').dataset.paused = camp.paused ? '1' : '';
+    $('#pause-note').textContent = camp.paused ? 'Nobody can pay while payments are paused. Games already bought can still be played.' : 'Stops new payments at once. Games already bought can still be played.';
   }
 
   // Payments -------------------------------------------------------------------
@@ -437,7 +450,7 @@
     box.innerHTML = `<div class="head"><h3 class="who">${esc(p.initials)}${p.banned ? ' <span class="tag">Banned</span>' : ''}</h3><button class="mini" type="button" data-act="close">Close</button></div>
       <p class="code-line"><span class="muted">Code</span> <strong class="code">${esc(p.claim_code)}</strong> <span class="muted small">Give it only to the player, in person.</span></p>
       <dl><dt>Board</dt><dd>${esc(BOARD[p.role] || p.role)}</dd><dt>Email</dt><dd>${esc(p.contact_email || '–')}</dd><dt>School email</dt><dd>${esc(p.school_email || '–')}</dd><dt>Games left</dt><dd>${left}</dd><dt>Free games</dt><dd>${free.length} of ${limit} given</dd><dt>First seen</dt><dd>${esc(when(p.created_at))}</dd><dt>Last seen</dt><dd>${esc(when(p.last_seen_at))}</dd>${(res.others || []).length ? `<dt>Same initials</dt><dd>${res.others.map(esc).join(', ')}</dd>` : ''}</dl>
-      <div class="actions" id="pl-actions"><button class="btn small" type="button" data-act="give"${canGive ? '' : ' disabled'}>Give a free game</button><button class="btn small" type="button" data-act="rename">Reset name</button><button class="btn small" type="button" data-act="${p.banned ? 'unban' : 'ban'}">${p.banned ? 'Unban' : 'Ban'}</button>${canGive ? '' : `<span class="muted small">${p.banned ? 'Unban them to give a free game.' : 'All the free games allowed are given.'}</span>`}</div>
+      <div class="actions" id="pl-actions"><button class="btn small" type="button" data-act="give"${canGive ? '' : ' disabled'}>Give a free game</button><button class="btn small" type="button" data-act="rename">Reset name</button>${p.role && p.role !== 'everyone' ? '<button class="btn small" type="button" data-act="unboard">Move to Everyone board</button>' : ''}<button class="btn small" type="button" data-act="${p.banned ? 'unban' : 'ban'}">${p.banned ? 'Unban' : 'Ban'}</button>${canGive ? '' : `<span class="muted small">${p.banned ? 'Unban them to give a free game.' : 'All the free games allowed are given.'}</span>`}</div>
       ${noteAt('top')}
       <h4>Games</h4>
       ${noteAt('plays')}
@@ -484,6 +497,13 @@
         });
         return;
       }
+      case 'unboard':
+        askFirst(b, top, {
+          text: `Move ${name} to the Everyone board? Use this for a wrong or made-up school email. Their scores and games stay, and their school email is removed.`,
+          ok: 'Move to Everyone',
+          run: async () => { await call('unboard', { player_id: id }); await changed(name, `${name} is now on the Everyone board.`); },
+        });
+        return;
       case 'ban':
         askFirst(b, top, {
           text: `Ban ${name}? They can't play or pay while banned, and their scores leave the boards and the winners. You can unban them.`,

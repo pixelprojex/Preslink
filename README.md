@@ -134,6 +134,7 @@ open Supabase.
 | `supabase/migrations/0029_public_reads_no_play_counts.sql` | The public board no longer carries play counts (paid plays measure spending); the unused `leaderboard()` and `past_winners()` closed to the public |
 | `supabase/migrations/0030_integrity.sql` | The closing date enforced, taps checked against the real time, sign-in lockouts that grow, demo checkouts granted once, Stripe refunds (`refund_payment`, `payments.refunded_cents`) taken off the total and the plays |
 | `supabase/migrations/0031_committee_controls.sql` | The console's controls: free plays (`free_plays`, `admin_give_play`, at most `settings.free_play_limit` each), the winners ranked as the public site ranks them (`admin_winners`), the blocked-names list (`admin_blocked`, `admin_unblock_initials`, the built-in list stays), the campaign at a glance (`admin_campaign`), refunds in the payments list and a player's record |
+| `supabase/migrations/0032_pause_and_boards.sql` | Two safety controls for the committee: pause payments (`payments_paused`, `admin_set_paused`; the API answers `PAUSED` to a new checkout while games already bought still play) and move a player off a school board (`admin_unboard`: back to Everyone, school email cleared) |
 | `site/poster.html` | The poster in four formats, `?f=a3`, `a4`, `social` and `message` (QR from the vendored encoder in `site/vendor/`) |
 | `site/posters/` | The four poster files, served at `/a3`, `/a4`, `/social` and `/message` |
 | `tools/posters.cjs` | Saves the four poster files from `poster.html` (Playwright) |
@@ -314,6 +315,10 @@ changes the site. Every change asks first, in a box under what was clicked, then
 - **Players**: everyone, with a search over the name, the emails and the code, a board filter and a banned
   filter. A player's record shows their code (to help someone who lost it, and to check a winner), every
   play, free play and payment, and the controls:
+  - **Pause payments** (Overview): stops new payments at once and resumes them the same way. Games already
+    bought can still be played. This is the school's safety switch; it changes nothing on the site.
+  - **Move to Everyone board** (on a player's record, for a player on the Students or Teachers board): for a
+    wrong or made-up school email. Scores and games stay; the school email is removed.
   - **Give a free game**, with a short reason, for a game that failed through a fault on our side (the
     Terms promise a new play or a refund). It is not a payment, so the money raised and the limits don't
     move. At most three per player (`settings.free_play_limit`); none for a banned player or after the
@@ -461,7 +466,7 @@ The printed poster is a white sheet that says little (the name, the headline, th
 | `preslink.netlify.app/a3` | A3 PDF | Corridors, the canteen, shop windows. Print at actual size. |
 | `preslink.netlify.app/a4` | A4 PDF | Noticeboards, doors, handouts. The A3 shrunk exactly, as the paper is. |
 | `preslink.netlify.app/social` | 1080 x 1350 picture | Instagram and Facebook posts, WhatsApp status. The web address takes the code's place. |
-| `preslink.netlify.app/message` | 1200 x 630 picture | To attach to a message or an email; it is also the picture a shared link shows. The web address, beside a photo. |
+| `preslink.netlify.app/message` | 1200 x 630 picture | The picture a shared link shows beside a message: only the logo and the name on white, kept inside the centre square so it reads at thumbnail size. |
 
 The addresses work in capitals too (`/A3`). The QR codes on the A3 and A4 open the site with a tag (`?r=a3`, `?r=a4`), and
 the tag goes with any payment that follows, so Stripe's payment details (metadata, `source`) show which posters

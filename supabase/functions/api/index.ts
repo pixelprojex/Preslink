@@ -199,6 +199,8 @@ async function checkout(req: Request, body: Body) {
   if (!b) throw new HttpError(400, "BAD_BUNDLE");
   const player = await rpc<{ initials: string; banned?: boolean }>("me_player", { p_id: playerId });
   if (player.banned) throw new HttpError(403, "BANNED");
+  // The committee can pause payments: no new checkout opens, and games already bought still play.
+  if (await paymentsPaused()) throw new HttpError(403, "PAUSED");
   const origin = siteOrigin(req);
   // The spending limits (a day's and the campaign's): DAILY_LIMIT or SPEND_LIMIT before any checkout opens.
   await rpc("spend_check", { p_player_id: playerId, p_amount_cents: b.amount });
@@ -294,6 +296,11 @@ async function confirm(body: Body) {
   return { paid: true, granted: grant.granted, credits_added: b.credits, bundle: meta.bundle, player };
 }
 
+// If the check itself fails, payments stay open: a fault here must not stop the fundraiser.
+async function paymentsPaused(): Promise<boolean> {
+  try { return (await rpc<boolean>("payments_paused", {})) === true; } catch { return false; }
+}
+
 async function start(body: Body) {
   const playerId = requireUuid(body.player_id, "BAD_PLAYER");
   return await rpc("start_play", { p_player_id: playerId });
@@ -353,11 +360,12 @@ async function signin(body: Body) {
   return await rpc("signin_player", { p_initials: initials, p_code: code });
 }
 
-const ADMIN_OPS = new Set(["overview", "emails", "void", "ban", "block", "set_code", "settings", "player", "reset_name", "stripe_status", "stripe_connect", "stripe_disconnect", "payments", "players", "set_content", "upload_image", "give_play", "winners", "blocked", "campaign"]);
+const ADMIN_OPS = new Set(["overview", "emails", "void", "ban", "block", "set_code", "settings", "player", "reset_name", "stripe_status", "stripe_connect", "stripe_disconnect", "payments", "players", "set_content", "upload_image", "give_play", "winners", "blocked", "campaign", "pause", "unboard"]);
 // The operations that change the site itself (its words and photos, the prizes, the campaign, Stripe) belong to
 // the site's owner, not the committee: they need the OWNER_CODE secret as well as the committee code. With no
 // OWNER_CODE configured, none of them can be used. Running the game (bans, cancelled plays, offensive names,
-// blocked names, free plays) needs the committee code alone, and so does changing the committee code: the
+// blocked names, free plays, pausing payments, moving a player off a school board) needs the committee code alone,
+// and so does changing the committee code: the
 // committee (the principal, say) can choose a code the site's owner does not know. If it is ever lost, a new one
 // is set in the database (docs/admin.sql, step 0).
 const OWNER_OPS = new Set(["settings", "stripe_connect", "stripe_disconnect", "set_content", "upload_image"]);
@@ -466,7 +474,17 @@ async function admin(body: Body) {
     // The top three of each prize slot, ranked as the public site ranks them, with codes and emails.
     case "winners": return await rpc("admin_winners", { p_code: code });
     // The closing date, goal, spending limits and prize mode, read only.
-    case "campaign": return await rpc("admin_campaign", { p_code: code });
+    case "campaign": {
+      const c = await rpc<Record<string, unknown>>("admin_campaign", { p_code: code });
+      return { ...c, paused: await paymentsPaused() };
+    }
+    // Stop or resume new payments at once (a safety switch for the school; it changes nothing on the site).
+    case "pause": return await rpc("admin_set_paused", { p_code: code, p_paused: body.paused !== false });
+    // Back to the Everyone board, school email cleared: for a wrong or made-up school email.
+    case "unboard": {
+      const playerId = requireUuid(body.player_id, "BAD_PLAYER");
+      return await rpc("admin_unboard", { p_code: code, p_player_id: playerId });
+    }
     case "set_code": {
       const newCode = String(body.new_code ?? "");
       if (newCode.length < 8 || newCode.length > 200) throw new HttpError(400, "CODE_TOO_SHORT");

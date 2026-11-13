@@ -170,6 +170,7 @@
         if (!player) fail('PLAYER_NOT_FOUND');
         if (player.banned) fail('BANNED');
         if (closed()) fail('CLOSED');
+        if (db.settings.payments_paused) fail('PAUSED');
         const bu = BUNDLES[b.bundle]; if (!bu) fail('BAD_BUNDLE');
         const sp = spendOf(player.id);
         if (sp.spent_today_cents + bu.amount > sp.daily_cap_cents) fail('DAILY_LIMIT');
@@ -227,7 +228,7 @@
         const campaign = () => {
           const e = db.settings.ends_on || '';
           return { ends_on: e, closes_at: e ? new Date(new Date(e + 'T23:59:59').getTime() + 1000).toISOString() : null, closed: closed(), goal_cents: db.settings.goal_cents,
-            prize_mode: db.settings.prize_mode === 'honours' ? 'honours' : 'prizes', daily_cap_cents: CAPS.daily, campaign_cap_cents: CAPS.campaign, free_play_limit: FREE_PLAY_LIMIT, server_time: new Date().toISOString() };
+            prize_mode: db.settings.prize_mode === 'honours' ? 'honours' : 'prizes', daily_cap_cents: CAPS.daily, campaign_cap_cents: CAPS.campaign, free_play_limit: FREE_PLAY_LIMIT, paused: !!db.settings.payments_paused, server_time: new Date().toISOString() };
         };
         const tidy = (s) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
         switch (b.op) {
@@ -262,6 +263,8 @@
           case 'reset_name': { const p = db.players[b.player_id]; if (!p) fail('PLAYER_NOT_FOUND'); p.initials = randomInitials(); p.suffix = 1; save(db); return { ok: true, initials: p.initials }; }
           case 'void': { const pl = db.plays.find((x) => x.id === b.play_id); if (!pl) fail('PLAY_NOT_FOUND'); pl.voided = b.voided !== false; pl.void_reason = pl.voided ? (tidy(b.reason).slice(0, 200) || 'committee') : null; save(db); return { ok: true }; }
           case 'ban': { const p = db.players[b.player_id]; if (!p) fail('PLAYER_NOT_FOUND'); p.banned = b.banned !== false; save(db); return { ok: true }; }
+          case 'pause': { db.settings.payments_paused = b.paused !== false; save(db); return { ok: true, paused: db.settings.payments_paused }; }
+          case 'unboard': { const p = db.players[b.player_id]; if (!p) fail('PLAYER_NOT_FOUND'); p.role = 'everyone'; p.school_email = null; save(db); return { ok: true }; }
           // Blocking adds a name; unblocking reaches only the committee's own, as on the server.
           case 'block': {
             const i = String(b.initials || '').toUpperCase().trim(); if (!/^[A-Z]{3}$/.test(i)) fail('BAD_INITIALS');

@@ -9,7 +9,7 @@
   <link rel="icon" href="/assets/icon.svg?v=7" type="image/svg+xml">
   <link rel="shortcut icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=7">
-  <link rel="stylesheet" href="admin.css?v=7">
+  <link rel="stylesheet" href="admin.css?v=8">
 </head>
 <body>
 
@@ -17,7 +17,7 @@
   <form id="login-form" class="login-card" autocomplete="off" novalidate>
     <img class="login-mark" src="assets/preslink-mark.svg?v=5" alt="" width="46" height="60">
     <h1>Committee</h1>
-    <p class="muted">PresLink Arcade console</p>
+    <p class="muted">The school's page for PresLink Arcade</p>
     <label class="lbl" for="login-code">Committee code</label>
     <div class="pw">
       <input id="login-code" type="password" autocomplete="current-password" spellcheck="false" autocapitalize="none" autocorrect="off">
@@ -34,7 +34,7 @@
     <div class="brand">PresLink Arcade <span>Committee</span></div>
     <div class="top-right"><span class="pill" id="top-stripe"></span><a class="btn small" href="index.html" target="_blank" rel="noopener">Open the site</a><button class="btn small" type="button" id="signout">Sign out</button></div>
   </header>
-  <nav class="menu" id="menu" aria-label="Console">
+  <nav class="menu" id="menu" aria-label="Pages">
     <a href="#overview" data-page="overview">Overview</a>
     <a href="#payments" data-page="payments">Payments</a>
     <a href="#players" data-page="players">Players</a>
@@ -54,6 +54,10 @@
           <div><dt>Payments</dt><dd id="cp-pay"></dd></div>
         </dl>
         <p class="muted small campaign-note">Set by the site's owner. To change any of these, ask them.</p>
+        <div class="pause" id="pause-box">
+          <button class="btn small" type="button" id="pause-btn">Pause payments</button>
+          <span class="muted small" id="pause-note">Stops new payments at once. Games already bought can still be played.</span>
+        </div>
       </div>
       <details class="code-change" id="code-change">
         <summary>Change the committee code</summary>
@@ -134,7 +138,7 @@
 </div>
 <div class="toast" id="toast" hidden></div>
 <script src="config.js"></script>
-<script>if (!(window.PRESLINK_CONFIG || {}).SUPABASE_URL) document.write('<script src="mock.js?v=44"><\/script>');</script>
-<script src="admin.js?v=10"></script>
+<script>if (!(window.PRESLINK_CONFIG || {}).SUPABASE_URL) document.write('<script src="mock.js?v=45"><\/script>');</script>
+<script src="admin.js?v=11"></script>
 </body>
 </html>

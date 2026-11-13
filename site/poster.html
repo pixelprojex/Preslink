@@ -161,7 +161,14 @@
     .social .terms { margin-top: 8px; font-size: 15px; }
 
     /* Message: 1200 × 630, for chats, emails and the link's preview: the words beside three photos */
-    .message .sheet { width: 1200px; height: 630px; padding: 40px 40px 34px 56px; }
+    .msg-card { display: none; }
+    /* The message picture is the logo and the name on white, kept inside the centre square that small previews crop to. */
+    .message .sheet { width: 1200px; height: 630px; padding: 0; background: #fff; display: grid; place-items: center; }
+    .message .sheet > :not(.msg-card) { display: none !important; }
+    .message .msg-card { display: flex; flex-direction: column; align-items: center; gap: 30px; }
+    .message .msg-mark { height: 330px; width: auto; }
+    .message .msg-word { font-size: 70px; font-weight: 800; letter-spacing: -.035em; line-height: 1; color: var(--purple); white-space: nowrap; }
+    .message .msg-word span { color: var(--green); }
     .message .top { height: 60px; }
     .message .brand { gap: 15px; }
     .message .mark-tile { width: 60px; height: 60px; border-radius: 16px; }
@@ -218,6 +225,8 @@
   <div class="stage">
     <div class="frame">
       <div class="sheet">
+        <!-- The message picture (the small preview beside a shared link): only the logo and the name, so it reads at thumbnail size. -->
+        <div class="msg-card"><img class="msg-mark" src="assets/preslink-mark.svg?v=5" alt=""><div class="msg-word">PresLink <span>Arcade</span></div></div>
 
         <header class="top">
           <div class="brand">
@@ -234,7 +243,7 @@
           <section class="hero">
             <h1>Can you stop the light<br><span class="g">on the line?</span></h1>
             <div class="bar" aria-hidden="true"><span class="pin"></span><span class="light"></span></div>
-            <p class="lede" id="lede">A game of timing for PresLink, the school's charity. Three plays a game; top scores win prizes.</p>
+            <p class="lede" id="lede">A game of timing in aid of PresLink, the school's charity. Each game has three plays, and the top scores win prizes.</p>
             <p class="price only-screen">€2 a game</p>
             <p class="url only-message">preslink.netlify.app</p>
           </section>
@@ -266,7 +275,7 @@
           <div class="scan-words">
             <p class="scan-label" id="scan-label">Scan to play</p>
             <p class="scan-price">€2 a game</p>
-            <p class="scan-bundles">3 games €5 · 7 games €10</p>
+            <p class="scan-bundles">3 games for €5, 7 games for €10</p>
             <p class="url">preslink.netlify.app</p>
           </div>
         </section>
@@ -315,10 +324,10 @@
       else if (f === 'message') drop('.stories, .terms, .scan');
       else drop('.only-screen, .only-message, .mosaic');
 
-      if (honours) document.getElementById('lede').textContent = "A game of timing for PresLink, the school's charity. Three plays a game; top scores are honoured.";
+      if (honours) document.getElementById('lede').textContent = "A game of timing in aid of PresLink, the school's charity. Each game has three plays, and the top scores are honoured.";
       var terms = document.getElementById('terms');
       if (terms) {
-        terms.textContent = '€2 a game of three plays, 3 games for €5, 7 for €10. ' + (honours ? 'The top scores are honoured when the game closes' : 'Prizes for the top scores when the game closes')
+        terms.textContent = 'A game costs €2 and has three plays. You can also buy 3 games for €5 or 7 for €10. ' + (honours ? 'The top scores are honoured when the game closes' : 'The top scores win prizes when the game closes')
           + (closes ? ' on ' + closes : '') + '. Under 18s need a parent’s or guardian’s permission to pay. '
           + 'Run by PresLink, Presentation Brothers College, Cork' + (org ? ', under ' + org : '') + '. Terms at preslink.netlify.app';
       }
