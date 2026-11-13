@@ -132,7 +132,7 @@
   <!-- the game's server: connect while the page is still loading -->
   <link rel="preconnect" href="https://bsovummlmfclefdlvsic.supabase.co" crossorigin>
   <link rel="preload" href="fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=69">
+  <link rel="stylesheet" href="styles.css?v=70">
 </head>
 <body>
 <div class="splash" id="splash" aria-hidden="true">
@@ -223,9 +223,9 @@
       <button class="back" type="button" data-go="home" aria-label="Back">‹</button>
       <p class="practice-tag">Practice done</p>
       <strong class="practice-score" id="practice-score">0</strong>
-      <h2>Now for real</h2>
-      <p>Your next game counts. You get three plays.</p>
-      <button class="btn btn-primary btn-xl" type="button" id="practice-real">Play for real</button>
+      <h2>Your game is next</h2>
+      <p>This one counts. You get three plays.</p>
+      <button class="btn btn-primary btn-xl" type="button" id="practice-real">Start my game</button>
     </div>
     <div class="game" id="game">
       <div class="game-top">
@@ -407,6 +407,7 @@
 <div class="sheet" id="sheet-name" role="dialog" aria-modal="true" aria-labelledby="name-title" hidden>
   <div class="sheet-head"><h2 id="name-title">Your initials</h2><button class="close" type="button" data-close aria-label="Close">×</button></div>
   <form class="sheet-body stack" id="name-form" autocomplete="off" novalidate>
+    <p class="sheet-note name-why">Choose two or three initials. They are how you appear on the leaderboard.</p>
     <div class="initials" id="name-initials" role="group" aria-label="Your initials, two or three" aria-live="polite">
       <button class="box" type="button" aria-label="First initial"></button><button class="box" type="button" aria-label="Second initial"></button><button class="box opt" type="button" aria-label="Third initial, optional"></button>
     </div>
@@ -450,7 +451,7 @@
 <!-- Optional: people at the school join the Students or Teachers board with their school email. -->
 <!-- After the first play: the two things to keep, an email for the news and the code that collects. -->
 <div class="sheet sheet-tall" id="sheet-contact" role="dialog" aria-modal="true" aria-labelledby="contact-title" hidden>
-  <div class="sheet-head"><h2 id="contact-title">Keep your details</h2><button class="close" type="button" id="contact-close" aria-label="Close">×</button></div>
+  <div class="sheet-head"><h2 id="contact-title" data-honours="In case you top a board">In case you win</h2><button class="close" type="button" id="contact-close" aria-label="Close">×</button></div>
   <div class="sheet-body">
     <p class="sheet-note" id="contact-note"><span data-honours="We only use your email to tell you if you top a board, and then we delete it.">We only use your email to tell you if you win, and then we delete it.</span> If you are under 16, please give a parent's email. <button class="inline-link" type="button" data-sheet="privacy">Privacy</button></p>
     <form class="card step" id="contact-form" autocomplete="on" novalidate>
@@ -479,7 +480,7 @@
 <div class="sheet" id="sheet-terms" role="dialog" aria-modal="true" aria-labelledby="terms-title" hidden>
   <div class="sheet-head"><h2 id="terms-title">Terms</h2><button class="close" type="button" data-close aria-label="Close">×</button></div>
   <div class="sheet-body legal">
-    <p class="small muted">Last updated 28 October 2026</p>
+    <p class="small muted">Last updated 13 November 2026</p>
     <p class="glance"><strong>In short.</strong> PresLink Arcade is a game of skill. A game costs €2, or you can buy 3 for €5 or 7 for €10, and each game has three plays. Under 18s need a parent's or guardian's permission to pay. Unused games can be refunded.</p>
     <h3>1. Who runs this</h3>
     <p>PresLink Arcade is run by PresLink, the student charity committee of Presentation Brothers College, The Mardyke, Cork T12 VK49 (“we”), with staff mentors<span class="org-legal"></span>. <span class="org-contact">You can contact us through the school.</span></p>
@@ -509,7 +510,7 @@
 <div class="sheet" id="sheet-privacy" role="dialog" aria-modal="true" aria-labelledby="privacy-title" hidden>
   <div class="sheet-head"><h2 id="privacy-title">Privacy</h2><button class="close" type="button" data-close aria-label="Close">×</button></div>
   <div class="sheet-body legal">
-    <p class="small muted">Last updated 28 October 2026</p>
+    <p class="small muted">Last updated 13 November 2026</p>
     <p class="glance"><strong>In short.</strong> We keep as little as we can, only to run the game and tell winners, never for marketing, and we delete it when the game is over. We do not use cookies, tracking or ads.</p>
     <h3>Who is responsible</h3>
     <p>PresLink, the student charity committee of Presentation Brothers College, The Mardyke, Cork T12 VK49, with staff mentors<span class="org-legal"></span>, is responsible for your data. <span class="org-contact">You can contact us through the school.</span></p>
@@ -545,6 +546,6 @@
 <script src="config.js"></script>
 <!-- the demo backend loads only when no server is configured -->
 <script>if (!(window.PRESLINK_CONFIG || {}).SUPABASE_URL) document.write('<script src="mock.js?v=45"><\/script>');</script>
-<script src="app.js?v=61"></script>
+<script src="app.js?v=62"></script>
 </body>
 </html>

@@ -883,6 +883,7 @@
   }
   function updatePlayCredits() {
     $('#play-credits').textContent = gamesLeft(credits);
+    $('#play-credits').hidden = !(credits > 0); // nothing to say while playing your only game
   }
 
   // The play is fetched before the tap (see prefetchPlay), so the light is moving on the first frame.
@@ -1155,7 +1156,7 @@
     game.practice = true;
     game.play = { play_id: null, speed_ms: 1000, rounds: practiceRounds() };
     $('#game').classList.add('practice');
-    $('#play-credits').textContent = 'Practice';
+    $('#play-credits').textContent = 'Practice'; $('#play-credits').hidden = false;
     const g = $('#game');
     g.classList.remove('enter'); void g.offsetWidth; g.classList.add('enter');
     armedAt = performance.now();
