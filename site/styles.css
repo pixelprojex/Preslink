@@ -207,6 +207,7 @@ button.cell:active { background: var(--fill); }
 .hero-card { width: 100%; max-width: 480px; margin: 0 auto; padding: 0 2px; text-align: center; }
 .hero-h { font-size: 34px; font-weight: 800; letter-spacing: -.04em; line-height: 1.04; margin: 0; text-wrap: balance; }
 .hero-rule { margin: 12px auto 0; max-width: 360px; color: var(--muted-d); font-size: 15px; font-weight: 500; line-height: 1.4; text-wrap: balance; }
+.hero-rule span { display: block; }
 .hero-p { margin: 0 0 16px; color: var(--muted); font-size: 14px; font-weight: 500; line-height: 1.45; }
 /* the charity first: who the money goes to, in one quiet line, with the way to read more */
 /* The charity: one purple line with the crest, the whole of it a way to About */
