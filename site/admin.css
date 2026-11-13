@@ -107,7 +107,7 @@ input[readonly] { background: var(--panel); }
 .campaign-note { margin: 0 0 12px; }
 .pause { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin: 0 0 16px; }
 /* Changing the committee code: folded away until opened */
-.code-change { margin: 0 0 18px; border: 1px solid var(--line); border-radius: 8px; }
+.code-change { margin: 22px 0 18px; border: 1px solid var(--line); border-radius: 8px; }
 .code-change summary { padding: 11px 14px; cursor: pointer; font-weight: 600; font-size: 14px; }
 .code-change form { padding: 0 14px 14px; max-width: 420px; }
 .code-change form > p.muted { margin: 0; }
