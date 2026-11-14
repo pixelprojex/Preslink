@@ -482,8 +482,11 @@ date to the small print, `--org "NAME OF THE CHARITY (RCN 20000000)"` adds the o
 "top scores win prizes" for "top scores are honoured" if the game runs for honours. If the site's address changes, change `SITE` in
 `poster.html` and the `og:` tags in `index.html`.
 
-The small print on the print and social formats says how the prizes are won, that under-18s need a parent's or
-guardian's permission to pay, who runs it, and where the terms are.
+Every poster keeps to a few words: the question, one line about the charity, the photos, and where to play. The
+small print on paper says that under-18s need a parent's or guardian's permission to pay, who runs it and where
+the terms are; the post carries only the first of those. The post is white like the printed poster, with the
+address in the purple panel where the code would be. The message picture is saved at 2400 x 1260 so the logo
+stays sharp.
 
 ## Before taking real money
 

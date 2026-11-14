@@ -19,7 +19,7 @@ const JOBS = [
   { f: 'a3', file: 'preslink-arcade-a3.pdf', w: 1123, h: 1588 },
   { f: 'a4', file: 'preslink-arcade-a4.pdf', w: 794, h: 1123 },
   { f: 'social', file: 'preslink-arcade-social.png', w: 1080, h: 1350 },
-  { f: 'message', file: 'preslink-arcade-message.png', w: 1200, h: 630 },
+  { f: 'message', file: 'preslink-arcade-message.png', w: 1200, h: 630, scale: 2 }, // saved at 2400 × 1260 so the logo stays sharp
 ];
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg', '.png': 'image/png', '.woff2': 'font/woff2' };
 
@@ -44,7 +44,7 @@ const server = http.createServer((req, res) => {
   const browser = await chromium.launch();
   fs.mkdirSync(OUT, { recursive: true });
   for (const j of JOBS.filter((x) => !only.length || only.includes(x.f))) {
-    const page = await browser.newPage({ viewport: { width: j.w, height: j.h }, deviceScaleFactor: 1 });
+    const page = await browser.newPage({ viewport: { width: j.w, height: j.h }, deviceScaleFactor: j.scale || 1 });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
     const q = new URLSearchParams({ f: j.f, render: '' });
