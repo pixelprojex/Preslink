@@ -102,6 +102,10 @@
     .print .lede { margin: calc(9 * var(--u)) auto 0; max-width: calc(220 * var(--u)); font-size: calc(6.4 * var(--u)); }
     .print .stories { gap: calc(6 * var(--u)); margin-top: calc(12 * var(--u)); }
     .print .stories img { height: calc(76 * var(--u)); border-radius: calc(6 * var(--u)); }
+    /* A3 only: a short line under each photo's heading (the A4 keeps the headings alone) */
+    .stories .sub { display: none; }
+    .print:not(.a4) .stories img { height: calc(64 * var(--u)); }
+    .print:not(.a4) .stories .sub { display: block; margin: calc(1.6 * var(--u)) auto 0; max-width: calc(78 * var(--u)); color: var(--muted); font-size: calc(3.9 * var(--u)); font-weight: 500; line-height: 1.35; text-wrap: balance; }
     .print .stories figcaption { margin-top: calc(3.4 * var(--u)); }
     .print .stories b { font-size: calc(5.6 * var(--u)); }
     .print .scan { gap: calc(13 * var(--u)); margin-top: calc(13 * var(--u)); padding: calc(10 * var(--u)) calc(14 * var(--u)) calc(10 * var(--u)) calc(10 * var(--u)); border-radius: calc(9 * var(--u)); background: var(--plum); color: #fff; }
@@ -219,15 +223,15 @@
         <section class="stories">
           <figure>
             <img src="assets/photo-bikes.jpg" alt="Students with bicycles" style="object-position: 50% 30%">
-            <figcaption><b>Bikes to school</b></figcaption>
+            <figcaption><b>Bikes to school</b><span class="sub">Bicycles so students can get to class and stay in school.</span></figcaption>
           </figure>
           <figure>
             <img src="assets/photo-classrooms.jpg" alt="A new classroom in Ghana" style="object-position: 62% 45%">
-            <figcaption><b>New classrooms</b></figcaption>
+            <figcaption><b>New classrooms</b><span class="sub">A three-classroom block in Sokabisi, Bolgatanga.</span></figcaption>
           </figure>
           <figure>
             <img src="assets/photo-babies.jpg" alt="Mother of Mercy Babies Home" style="object-position: 50% 55%">
-            <figcaption><b>Care for babies</b></figcaption>
+            <figcaption><b>Care for babies</b><span class="sub">For the Mother of Mercy Babies Home in Sirigu, Ghana.</span></figcaption>
           </figure>
         </section>
 
